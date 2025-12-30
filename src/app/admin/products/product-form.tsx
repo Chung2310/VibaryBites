@@ -34,7 +34,7 @@ const productSchema = z.object({
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
-    imageUrl: z.string().min(1, { message: "Vui lòng tải lên ảnh cho sản phẩm." }),
+    imageUrl: z.string().optional(),
     description: z.string().min(10, { message: "Mô tả phải có ít nhất 10 ký tự." }),
 });
 
@@ -51,11 +51,12 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: ProductFormValues) => void;
+  onSubmit: (data: ProductFormValues & { imageUrl: string }) => void;
 }
 
 export function ProductForm({ product, onSubmit }: ProductFormProps) {
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
   const form = useForm<ProductFormValues>({
@@ -77,29 +78,42 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
     },
   });
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file) return;
-
-      setIsUploading(true);
-      setImagePreview(URL.createObjectURL(file));
-
-      try {
-          const imageUrl = await uploadImage(file);
-          form.setValue("imageUrl", imageUrl);
-          setImagePreview(imageUrl);
-      } catch (error) {
-          console.error("Upload failed", error);
-          form.setError("imageUrl", { message: "Tải ảnh lên thất bại." });
-          setImagePreview(null);
-      } finally {
-          setIsUploading(false);
+      if (file) {
+          setImageFile(file);
+          setImagePreview(URL.createObjectURL(file));
       }
+  }
+
+  const handleFormSubmit = async (values: ProductFormValues) => {
+    setIsSubmitting(true);
+    let finalImageUrl = product?.imageUrl || '';
+
+    if (imageFile) {
+        try {
+            finalImageUrl = await uploadImage(imageFile);
+        } catch (error) {
+            console.error("Upload failed", error);
+            form.setError("imageUrl", { message: "Tải ảnh lên thất bại." });
+            setIsSubmitting(false);
+            return;
+        }
+    }
+
+    if (!finalImageUrl) {
+        form.setError("imageUrl", { message: "Vui lòng tải lên ảnh cho sản phẩm." });
+        setIsSubmitting(false);
+        return;
+    }
+
+    onSubmit({ ...values, imageUrl: finalImageUrl });
+    setIsSubmitting(false);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -177,7 +191,7 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
                         <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
                     </div>
                 )}
-                {isUploading && <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/> Đang tải ảnh lên...</div>}
+                {isSubmitting && imageFile && <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/> Đang tải ảnh lên...</div>}
                 <FormMessage />
                 </FormItem>
             )}
@@ -199,7 +213,14 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isUploading}>{isUploading ? 'Đang tải ảnh...' : (product ? 'Lưu thay đổi' : 'Thêm sản phẩm')}</Button>
+        <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang lưu...
+                </>
+            ) : (product ? 'Lưu thay đổi' : 'Thêm sản phẩm')}
+        </Button>
       </form>
     </Form>
   );
