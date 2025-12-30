@@ -99,51 +99,54 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = async (data: ProductFormValues & { imageUrl: string }) => {
-        if (selectedProduct) {
-            // Update existing product
-            const updated: Product = {
-                ...selectedProduct,
-                ...data,
-                price: Number(data.price),
-                stock: Number(data.stock),
-                slug: data.name.toLowerCase().replace(/ /g, '-'),
-                imageUrl: data.imageUrl
-            };
-            updateProduct(updated);
-            toast({
-                title: "Cập nhật thành công!",
-                description: `Sản phẩm "${data.name}" đã được cập nhật.`,
-            });
-        } else {
-            // Add new product
-            const newProduct: Product = {
-                id: `prod-${Date.now()}`,
-                slug: data.name.toLowerCase().replace(/ /g, '-'),
-                name: data.name,
-                subtitle: data.categorySlug,
-                description: data.description,
-                detailedDescription: {
-                    flavor: 'Cập nhật sau',
-                    ingredients: 'Cập nhật sau',
-                    serving: 'Cập nhật sau',
-                    storage: 'Cập nhật sau',
-                    dimensions: 'Cập nhật sau',
-                    accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
-                },
-                price: Number(data.price),
-                stock: Number(data.stock),
-                imageUrl: data.imageUrl,
-                collection: 'special-occasions',
-                categorySlug: data.categorySlug,
-            };
-            addProduct(newProduct);
-            toast({
-                title: "Thêm thành công!",
-                description: `Sản phẩm "${data.name}" đã được thêm vào hệ thống.`,
-            });
-        }
-        closeForm();
+    const handleFormSubmit = (data: ProductFormValues & { imageUrl: string }): Promise<void> => {
+        return new Promise((resolve) => {
+            if (selectedProduct) {
+                // Update existing product
+                const updated: Product = {
+                    ...selectedProduct,
+                    ...data,
+                    price: Number(data.price),
+                    stock: Number(data.stock),
+                    slug: data.name.toLowerCase().replace(/ /g, '-'),
+                    imageUrl: data.imageUrl,
+                };
+                updateProduct(updated);
+                toast({
+                    title: "Cập nhật thành công!",
+                    description: `Sản phẩm "${data.name}" đã được cập nhật.`,
+                });
+            } else {
+                // Add new product
+                const newProduct: Product = {
+                    id: `prod-${Date.now()}`,
+                    slug: data.name.toLowerCase().replace(/ /g, '-'),
+                    name: data.name,
+                    subtitle: data.categorySlug,
+                    description: data.description,
+                    detailedDescription: {
+                        flavor: 'Cập nhật sau',
+                        ingredients: 'Cập nhật sau',
+                        serving: 'Cập nhật sau',
+                        storage: 'Cập nhật sau',
+                        dimensions: 'Cập nhật sau',
+                        accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
+                    },
+                    price: Number(data.price),
+                    stock: Number(data.stock),
+                    imageUrl: data.imageUrl, // Ensure this is passed correctly
+                    collection: 'special-occasions',
+                    categorySlug: data.categorySlug,
+                };
+                addProduct(newProduct);
+                toast({
+                    title: "Thêm thành công!",
+                    description: `Sản phẩm "${data.name}" đã được thêm vào hệ thống.`,
+                });
+            }
+            closeForm();
+            resolve();
+        });
     };
 
 

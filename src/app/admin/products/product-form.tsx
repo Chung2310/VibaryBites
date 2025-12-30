@@ -51,7 +51,7 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: ProductFormValues & { imageUrl: string }) => Promise<void> | void;
+  onSubmit: (data: ProductFormValues & { imageUrl: string }) => Promise<void>;
 }
 
 export function ProductForm({ product, onSubmit }: ProductFormProps) {
@@ -110,8 +110,10 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
         setIsSubmitting(false);
         return;
     }
-
+    
+    // Use the correct `finalImageUrl` here
     await onSubmit({ ...values, imageUrl: finalImageUrl });
+
     setIsSubmitting(false);
   }
 
