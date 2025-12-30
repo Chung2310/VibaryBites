@@ -51,11 +51,12 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: ProductFormValues & { imageUrl: string }) => void;
+  onSubmit: (data: ProductFormValues & { imageUrl: string }) => Promise<void> | void;
 }
 
 export function ProductForm({ product, onSubmit }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
@@ -91,14 +92,17 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
     let finalImageUrl = product?.imageUrl || '';
 
     if (imageFile) {
+        setIsUploading(true);
         try {
             finalImageUrl = await uploadImage(imageFile);
         } catch (error) {
             console.error("Upload failed", error);
             form.setError("imageUrl", { message: "Tải ảnh lên thất bại." });
             setIsSubmitting(false);
+            setIsUploading(false);
             return;
         }
+        setIsUploading(false);
     }
 
     if (!finalImageUrl) {
@@ -107,7 +111,7 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
         return;
     }
 
-    onSubmit({ ...values, imageUrl: finalImageUrl });
+    await onSubmit({ ...values, imageUrl: finalImageUrl });
     setIsSubmitting(false);
   }
 
@@ -191,7 +195,7 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
                         <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
                     </div>
                 )}
-                {isSubmitting && imageFile && <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/> Đang tải ảnh lên...</div>}
+                {isUploading && <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/> Đang tải ảnh lên...</div>}
                 <FormMessage />
                 </FormItem>
             )}

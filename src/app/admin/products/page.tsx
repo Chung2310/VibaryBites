@@ -99,7 +99,7 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = (data: ProductFormValues & { imageUrl: string }) => {
+    const handleFormSubmit = async (data: ProductFormValues & { imageUrl: string }) => {
         if (selectedProduct) {
             // Update existing product
             const updated: Product = {
