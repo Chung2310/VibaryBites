@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import React from "react";
+import { FirebaseClientProvider } from "@/firebase";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -73,9 +74,11 @@ export default function RootLayout({
           lexend.variable
         )}
       >
-        <AppProvider>
-          <LayoutContent>{children}</LayoutContent>
-        </AppProvider>
+        <FirebaseClientProvider>
+          <AppProvider>
+            <LayoutContent>{children}</LayoutContent>
+          </AppProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
