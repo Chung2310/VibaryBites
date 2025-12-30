@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import { uploadImage } from "@/firebase/storage";
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -34,7 +33,6 @@ const productSchema = z.object({
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
-    imageUrl: z.string().optional(),
     description: z.string().min(10, { message: "Mô tả phải có ít nhất 10 ký tự." }),
 });
 
@@ -51,12 +49,12 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: ProductFormValues & { imageUrl: string }) => Promise<void>;
+  onSubmit: (values: ProductFormValues, imageFile: File | null) => Promise<void>;
+  onClose: () => void;
 }
 
-export function ProductForm({ product, onSubmit }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
@@ -67,14 +65,12 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
         price: product.price,
         stock: product.stock,
         categorySlug: product.categorySlug,
-        imageUrl: product.imageUrl,
         description: product.description,
     } : {
         name: "",
         price: 0,
         stock: 0,
         categorySlug: "",
-        imageUrl: "",
         description: "",
     },
   });
@@ -84,36 +80,18 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
       if (file) {
           setImageFile(file);
           setImagePreview(URL.createObjectURL(file));
+          form.clearErrors("imageUrl");
       }
   }
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    setIsSubmitting(true);
-    let finalImageUrl = product?.imageUrl || '';
-
-    if (imageFile) {
-        setIsUploading(true);
-        try {
-            finalImageUrl = await uploadImage(imageFile);
-        } catch (error) {
-            console.error("Upload failed", error);
-            form.setError("imageUrl", { message: "Tải ảnh lên thất bại." });
-            setIsSubmitting(false);
-            setIsUploading(false);
-            return;
-        }
-        setIsUploading(false);
-    }
-
-    if (!finalImageUrl) {
-        form.setError("imageUrl", { message: "Vui lòng tải lên ảnh cho sản phẩm." });
-        setIsSubmitting(false);
+    if (!imagePreview) {
+        form.setError("imageUrl" as any, { message: "Vui lòng tải lên ảnh cho sản phẩm." });
         return;
     }
     
-    // Use the correct `finalImageUrl` here
-    await onSubmit({ ...values, imageUrl: finalImageUrl });
-
+    setIsSubmitting(true);
+    await onSubmit(values, imageFile);
     setIsSubmitting(false);
   }
 
@@ -183,25 +161,18 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
                 </FormItem>
             )}
         />
-         <FormField
-            control={form.control}
-            name="imageUrl"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Ảnh sản phẩm</FormLabel>
-                <FormControl>
-                    <Input type="file" accept="image/*" onChange={handleImageChange} className="file:text-foreground"/>
-                </FormControl>
-                 {imagePreview && (
-                    <div className="mt-4">
-                        <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
-                    </div>
-                )}
-                {isUploading && <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/> Đang tải ảnh lên...</div>}
-                <FormMessage />
-                </FormItem>
+         <FormItem>
+            <FormLabel>Ảnh sản phẩm</FormLabel>
+            <FormControl>
+                <Input type="file" accept="image/*" onChange={handleImageChange} className="file:text-foreground"/>
+            </FormControl>
+                {imagePreview && (
+                <div className="mt-4">
+                    <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
+                </div>
             )}
-        />
+            <FormMessage>{form.formState.errors.imageUrl?.message as any}</FormMessage>
+        </FormItem>
         <FormField
           control={form.control}
           name="description"
@@ -219,15 +190,20 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Đang lưu...
-                </>
-            ) : (product ? 'Lưu thay đổi' : 'Thêm sản phẩm')}
-        </Button>
+        <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Đang lưu...
+                    </>
+                ) : (product ? 'Lưu thay đổi' : 'Thêm sản phẩm')}
+            </Button>
+        </div>
       </form>
     </Form>
   );
 }
+
+    

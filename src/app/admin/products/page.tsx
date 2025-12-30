@@ -58,6 +58,7 @@ import {
 import { ProductForm, type ProductFormValues } from './product-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/hooks/use-app-store';
+import { uploadImage } from '@/firebase/storage';
 
 export default function ProductsPage() {
     const { products, addProduct, updateProduct, deleteProduct } = useAppStore();
@@ -99,54 +100,69 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = (data: ProductFormValues & { imageUrl: string }): Promise<void> => {
-        return new Promise((resolve) => {
-            if (selectedProduct) {
-                // Update existing product
-                const updated: Product = {
-                    ...selectedProduct,
-                    ...data,
-                    price: Number(data.price),
-                    stock: Number(data.stock),
-                    slug: data.name.toLowerCase().replace(/ /g, '-'),
-                    imageUrl: data.imageUrl,
-                };
-                updateProduct(updated);
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
+        let finalImageUrl = selectedProduct?.imageUrl || '';
+
+        if (imageFile) {
+            try {
+                finalImageUrl = await uploadImage(imageFile);
+            } catch (error) {
+                console.error("Upload failed", error);
                 toast({
-                    title: "Cập nhật thành công!",
-                    description: `Sản phẩm "${data.name}" đã được cập nhật.`,
+                    variant: "destructive",
+                    title: "Tải ảnh lên thất bại!",
+                    description: "Đã có lỗi xảy ra khi tải ảnh lên. Vui lòng thử lại.",
                 });
-            } else {
-                // Add new product
-                const newProduct: Product = {
-                    id: `prod-${Date.now()}`,
-                    slug: data.name.toLowerCase().replace(/ /g, '-'),
-                    name: data.name,
-                    subtitle: data.categorySlug,
-                    description: data.description,
-                    detailedDescription: {
-                        flavor: 'Cập nhật sau',
-                        ingredients: 'Cập nhật sau',
-                        serving: 'Cập nhật sau',
-                        storage: 'Cập nhật sau',
-                        dimensions: 'Cập nhật sau',
-                        accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
-                    },
-                    price: Number(data.price),
-                    stock: Number(data.stock),
-                    imageUrl: data.imageUrl, // Ensure this is passed correctly
-                    collection: 'special-occasions',
-                    categorySlug: data.categorySlug,
-                };
-                addProduct(newProduct);
-                toast({
-                    title: "Thêm thành công!",
-                    description: `Sản phẩm "${data.name}" đã được thêm vào hệ thống.`,
-                });
+                return; // Stop submission if upload fails
             }
-            closeForm();
-            resolve();
-        });
+        } else if (!finalImageUrl) {
+            toast({
+                variant: "destructive",
+                title: "Thiếu ảnh sản phẩm",
+                description: "Vui lòng chọn một ảnh cho sản phẩm.",
+            });
+            return;
+        }
+
+        if (selectedProduct) {
+            const updated: Product = {
+                ...selectedProduct,
+                ...values,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                slug: values.name.toLowerCase().replace(/ /g, '-'),
+                imageUrl: finalImageUrl,
+            };
+            updateProduct(updated);
+            toast({
+                title: "Cập nhật thành công!",
+                description: `Sản phẩm "${values.name}" đã được cập nhật.`,
+            });
+        } else {
+            const newProduct: Product = {
+                id: `prod-${Date.now()}`,
+                slug: values.name.toLowerCase().replace(/ /g, '-'),
+                ...values,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                imageUrl: finalImageUrl,
+                detailedDescription: {
+                    flavor: 'Cập nhật sau',
+                    ingredients: 'Cập nhật sau',
+                    serving: 'Cập nhật sau',
+                    storage: 'Cập nhật sau',
+                    dimensions: 'Cập nhật sau',
+                    accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
+                },
+                collection: 'special-occasions',
+            };
+            addProduct(newProduct);
+            toast({
+                title: "Thêm thành công!",
+                description: `Sản phẩm "${values.name}" đã được thêm vào hệ thống.`,
+            });
+        }
+        closeForm();
     };
 
 
@@ -278,7 +294,8 @@ export default function ProductsPage() {
                    <ProductForm 
                         key={selectedProduct ? selectedProduct.id : 'new'}
                         product={selectedProduct} 
-                        onSubmit={handleFormSubmit} 
+                        onSubmit={handleFormSubmit}
+                        onClose={closeForm}
                     />
                 </div>
             </DialogContent>
@@ -304,3 +321,5 @@ export default function ProductsPage() {
         </>
     )
 }
+
+    
