@@ -1,30 +1,26 @@
+
 /**
  * Core Philosophy: This ruleset implements a hybrid security model designed for a pastry shop application.
  * It strictly separates public, read-only data from private, user-owned data. Publicly accessible
- * information like cakes, categories, and news articles can be read by anyone but cannot be modified by clients.
- * All customer-specific data, such as profiles and orders, is protected under a strict ownership model,
- * ensuring users can only access their own information. User-generated content, like reviews, is
- * publicly readable but write access is restricted to the original author.
+ * information like cakes, categories, and news articles can be read by anyone but cannot be modified by clients
+ * unless they have an admin role. All customer-specific data, such as profiles and orders, is protected 
+ * under a strict ownership model, ensuring users can only access their own information.
  *
  * Data Structure: The data is organized into two main types:
  * 1. Top-level public collections: /cakes, /categories, /news_articles, /quiz_questions. These are
- *    globally readable.
+ *    globally readable. Write access is restricted to admins.
  * 2. User-owned data trees: All private data is nested under /customers/{customerId}, where the document
  *    ID matches the user's authentication UID. This includes subcollections like /orders and /order_items.
  *
  * Key Security Decisions:
- * - Read-Only Public Data: All top-level collections intended for public browsing are configured to be
- *   read-only for clients. Writes to these collections are disallowed, anticipating that they will be
- *   managed by a backend service or an administrative role not defined here.
+ * - Admin-Only Writes for Public Data: Writes to top-level collections are restricted to authenticated
+ *   users with a custom claim `admin: true`. This prevents unauthorized clients from modifying the product catalog or content.
  * - Strict Path-Based Ownership: Security for customer data (/customers/{customerId}) and all its
  *   subcollections is enforced using the customerId from the document path. This is a highly performant
  *   and secure pattern that prevents users from accessing or manipulating each other's data.
  * - Denormalization for Authorization: Reviews contain a denormalized `customerId` field. This allows
  *   rules on the /reviews collection to grant update/delete permissions directly to the author without
  *   requiring slow or complex lookups to other documents.
- * - Structural Segregation: Private data (like orders) is structurally separated into a user-specific
- *   subcollection, which is more secure and performant for list queries than storing them in a single
- *   top-level collection with ownership flags.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -55,65 +51,64 @@ service cloud.firestore {
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
+    
+    /**
+     * Checks if the user has admin privileges via custom claims.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
 
     // --------------------------------
     // Public Collections
     // --------------------------------
 
     /**
-     * @description Publicly readable cake information. Writes are disabled for clients.
+     * @description Publicly readable cake information. Writes are restricted to admins.
      * @path /cakes/{cakeId}
-     * @allow (get) Any user, signed in or not, can read a specific cake's details.
-     * @deny (create) A signed-in user cannot create a new cake document.
-     * @principle Public read access for catalog data, with writes reserved for backend/admin processes.
+     * @allow (get, list) Any user can read cake details.
+     * @allow (create, update, delete) Only users with an admin claim can modify cakes.
+     * @principle Public read access for catalog data, with writes reserved for admin roles.
      */
     match /cakes/{cakeId} {
       allow get, list: if true;
-      allow create: if false; // TODO: Implement admin-only access for creating cakes.
-      allow update: if false; // TODO: Implement admin-only access for updating cakes.
-      allow delete: if false; // TODO: Implement admin-only access for deleting cakes.
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Publicly readable cake categories. Writes are disabled for clients.
+     * @description Publicly readable cake categories. Writes are restricted to admins.
      * @path /categories/{categoryId}
-     * @allow (list) Any user, signed in or not, can list all cake categories.
-     * @deny (update) A signed-in user cannot modify an existing category document.
-     * @principle Public read access for catalog data, with writes reserved for backend/admin processes.
+     * @allow (get, list) Any user can read category details.
+     * @allow (write) Only users with an admin claim can modify categories.
+     * @principle Public read access for catalog data, with writes reserved for admin roles.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow create: if false; // TODO: Implement admin-only access for creating categories.
-      allow update: if false; // TODO: Implement admin-only access for updating categories.
-      allow delete: if false; // TODO: Implement admin-only access for deleting categories.
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Publicly readable news articles. Writes are disabled for clients.
+     * @description Publicly readable news articles. Writes are restricted to admins.
      * @path /news_articles/{newsArticleId}
-     * @allow (get) Any user, signed in or not, can read a news article.
-     * @deny (delete) A signed-in user cannot delete a news article.
-     * @principle Public read access for content, with writes reserved for backend/admin processes.
+     * @allow (get, list) Any user can read articles.
+     * @allow (write) Only users with an admin claim can modify articles.
+     * @principle Public read access for content, with writes reserved for admin roles.
      */
     match /news_articles/{newsArticleId} {
       allow get, list: if true;
-      allow create: if false; // TODO: Implement admin-only access for creating articles.
-      allow update: if false; // TODO: Implement admin-only access for updating articles.
-      allow delete: if false; // TODO: Implement admin-only access for deleting articles.
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Publicly readable quiz questions. Writes are disabled for clients.
+     * @description Publicly readable quiz questions. Writes are restricted to admins.
      * @path /quiz_questions/{quizQuestionId}
-     * @allow (list) Any user, signed in or not, can list all quiz questions.
-     * @deny (create) A signed-in user cannot create a new quiz question.
-     * @principle Public read access for interactive content, with writes reserved for backend/admin processes.
+     * @allow (get, list) Any user can read quiz questions.
+     * @allow (write) Only users with an admin claim can modify quiz questions.
+     * @principle Public read access for interactive content, with writes reserved for admin roles.
      */
     match /quiz_questions/{quizQuestionId} {
       allow get, list: if true;
-      allow create: if false; // TODO: Implement admin-only access for creating questions.
-      allow update: if false; // TODO: Implement admin-only access for updating questions.
-      allow delete: if false; // TODO: Implement admin-only access for deleting questions.
+      allow write: if isAdmin();
     }
 
     // --------------------------------
