@@ -2,7 +2,6 @@
 "use client";
 
 import { faqs } from "@/lib/data";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
       id: product.id,
       name: product.name,
       price: priceToShow,
-      imageId: product.imageIds[0],
+      imageUrl: product.imageUrl,
       slug: product.slug,
       quantity: quantity,
       size: selectedSize,
@@ -58,21 +57,15 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
         <div className="flex flex-col gap-4">
-          {product.imageIds.map(imageId => {
-            const image = PlaceHolderImages.find((p) => p.id === imageId);
-            return image ? (
-              <div key={imageId} className="aspect-square w-full overflow-hidden rounded-lg">
+            <div className="aspect-square w-full overflow-hidden rounded-lg">
                 <Image
-                  src={image.imageUrl}
-                  alt={product.name}
-                  width={800}
-                  height={800}
-                  className="h-full w-full object-cover"
-                  data-ai-hint={image.imageHint}
+                    src={product.imageUrl}
+                    alt={product.name}
+                    width={800}
+                    height={800}
+                    className="h-full w-full object-cover"
                 />
-              </div>
-            ) : null;
-          })}
+            </div>
         </div>
         
         <div className="sticky top-24 h-fit">

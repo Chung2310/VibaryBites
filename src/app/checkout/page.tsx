@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -239,12 +238,10 @@ export default function CheckoutPage() {
                     <CardTitle className="font-headline">Tóm Tắt Đơn Hàng</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 divide-y">
-                     {cartItems.map(item => {
-                         const image = PlaceHolderImages.find(p => p.id === item.imageId);
-                         return (
+                     {cartItems.map(item => (
                             <div key={`${item.id}-${item.size}`} className="flex items-center pt-4">
                                 <div className="relative h-16 w-16 rounded-md overflow-hidden border">
-                                    {image && <Image src={image.imageUrl} alt={item.name} fill className="object-cover" />}
+                                    {item.imageUrl && <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />}
                                     <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">{item.quantity}</span>
                                 </div>
                                 <div className="ml-4 flex-1">
@@ -254,7 +251,7 @@ export default function CheckoutPage() {
                                 <p className="font-medium">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price * item.quantity)}</p>
                             </div>
                          )
-                     })}
+                     )}
                      <div className="space-y-2 pt-4">
                         <div className="flex justify-between text-muted-foreground">
                             <span>Tạm tính</span>

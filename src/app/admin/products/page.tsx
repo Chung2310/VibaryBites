@@ -36,7 +36,6 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useState } from 'react';
 import type { Product } from '@/lib/types';
 import {
@@ -109,7 +108,7 @@ export default function ProductsPage() {
                 price: Number(data.price),
                 stock: Number(data.stock),
                 slug: data.name.toLowerCase().replace(/ /g, '-'),
-                imageIds: [data.imageId] 
+                imageUrl: data.imageUrl
             };
             updateProduct(updated);
             toast({
@@ -134,7 +133,7 @@ export default function ProductsPage() {
                 },
                 price: Number(data.price),
                 stock: Number(data.stock),
-                imageIds: [data.imageId],
+                imageUrl: data.imageUrl,
                 collection: 'special-occasions',
                 categorySlug: data.categorySlug,
             };
@@ -200,16 +199,15 @@ export default function ProductsPage() {
                   </TableHeader>
                   <TableBody>
                    {products.map(product => {
-                     const image = PlaceHolderImages.find(p => p.id === product.imageIds[0]);
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {image && (
+                                {product.imageUrl && (
                                     <Image
                                         alt={product.name}
                                         className="aspect-square rounded-md object-cover"
                                         height="64"
-                                        src={image.imageUrl}
+                                        src={product.imageUrl}
                                         width="64"
                                     />
                                 )}

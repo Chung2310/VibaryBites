@@ -19,7 +19,7 @@ export type Product = {
     name: string;
     price: number;
   }[];
-  imageIds: string[];
+  imageUrl: string; // Changed from imageIds: string[]
   collection: string;
   categorySlug: string;
   flavorProfile?: string[];
@@ -62,7 +62,7 @@ export type CartItem = {
   name: string;
   price: number;
   quantity: number;
-  imageId: string;
+  imageUrl: string; // Changed from imageId
   slug: string;
   size?: string;
 };

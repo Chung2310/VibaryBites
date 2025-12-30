@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Minus, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -28,19 +27,16 @@ export default function CartPage() {
         <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ul role="list" className="divide-y divide-border">
-              {cartItems.map((item) => {
-                const image = PlaceHolderImages.find((p) => p.id === item.imageId);
-                return (
+              {cartItems.map((item) => (
                   <li key={`${item.id}-${item.size}`} className="flex py-6">
                     <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border">
-                      {image && (
+                      {item.imageUrl && (
                         <Image
-                          src={image.imageUrl}
+                          src={item.imageUrl}
                           alt={item.name}
                           width={96}
                           height={96}
                           className="h-full w-full object-cover"
-                          data-ai-hint={image.imageHint}
                         />
                       )}
                     </div>
@@ -74,8 +70,8 @@ export default function CartPage() {
                       </div>
                     </div>
                   </li>
-                );
-              })}
+                )
+              )}
             </ul>
           </div>
 
