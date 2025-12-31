@@ -7,7 +7,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
-import { ProductForm, type ProductFormValues } from '../../product-form';
+import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,8 +61,7 @@ export default function EditProductPage() {
 
             const docRef = doc(firestore, 'cakes', product.id);
 
-            const updatedProductData: Product = {
-                ...product,
+            const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
                 description: values.description,
@@ -70,17 +69,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: finalImageUrls,
-                detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    serving: values.detailedDescription_serving,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),
-                },
-                flavorProfile: values.flavorProfile.split('\n').filter(Boolean),
-                structure: values.structure.split('\n').filter(Boolean),
-                slug: values.name.toLowerCase().replace(/\s+/g, '-'), // Also update slug
+                slug: values.name.toLowerCase().replace(/\s+/g, '-'),
             };
 
             await setDoc(docRef, updatedProductData, { merge: true });
@@ -142,8 +131,8 @@ export default function EditProductPage() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Thông tin chi tiết sản phẩm</CardTitle>
-                    <CardDescription>Cập nhật tất cả các thuộc tính cho sản phẩm của bạn tại đây.</CardDescription>
+                    <CardTitle>Thông tin cơ bản sản phẩm</CardTitle>
+                    <CardDescription>Cập nhật các thông tin cơ bản cho sản phẩm. Các thuộc tính chi tiết được quản lý ở trang "Thuộc tính sản phẩm".</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
