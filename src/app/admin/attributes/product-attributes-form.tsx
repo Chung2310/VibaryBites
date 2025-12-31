@@ -41,6 +41,10 @@ interface ProductAttributesFormProps {
   isSubmitting: boolean;
 }
 
+const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
+Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị chảy)
+Sử dụng trong vòng 03 ngày`;
+
 export function ProductAttributesForm({ product, onSubmit, onCancel, isSubmitting }: ProductAttributesFormProps) {
   const form = useForm<ProductAttributesFormValues>({
     resolver: zodResolver(attributesSchema),
@@ -48,7 +52,7 @@ export function ProductAttributesForm({ product, onSubmit, onCancel, isSubmittin
         detailedDescription_flavor: product.detailedDescription?.flavor || "",
         detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
         detailedDescription_serving: product.detailedDescription?.serving || "",
-        detailedDescription_storage: product.detailedDescription?.storage || "",
+        detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
         detailedDescription_dimensions: product.detailedDescription?.dimensions || "",
         detailedDescription_accessories: product.detailedDescription?.accessories?.join('\n') || "",
         flavorProfile: product.flavorProfile?.join('\n') || "",
