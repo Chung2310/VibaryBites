@@ -79,7 +79,7 @@ export default function NewProductPage() {
                 description: `Sản phẩm "${values.name}" đã được thêm. Bạn có thể chỉnh sửa chi tiết ngay bây giờ.`,
             });
             
-            router.push(`/admin/products/edit/${id}`);
+            router.push(`/admin/attributes`);
 
         } catch (error) {
             console.error("Error creating product: ", error);
