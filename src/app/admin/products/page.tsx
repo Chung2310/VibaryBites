@@ -113,7 +113,7 @@ export default function ProductsPage() {
         <Tabs defaultValue="all">
           <div className="flex items-center">
              <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-              Sản phẩm
+              Quản lý sản phẩm
             </h1>
             <div className="hidden items-center gap-2 md:ml-auto md:flex">
               <Button size="sm" variant="outline" className="h-8 gap-1">
