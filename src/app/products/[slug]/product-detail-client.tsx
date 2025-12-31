@@ -30,37 +30,43 @@ import type { Product } from '@/lib/types';
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
-  const product = products.find((p) => p.slug === slug) as Product & { imageUrl?: string };
+  const product = products.find((p) => p.slug === slug) as Product | undefined;
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
-    product?.sizes ? product.sizes[0].name : undefined
+    product?.sizes?.[0]?.name
   );
   
   if (!product) {
-    notFound();
+    // Let's give it a moment for the products to load from the store
+    if (products.length > 0) {
+      notFound();
+    }
+    // You might want to show a loading state here instead of an immediate notFound
+    return <div>Đang tìm sản phẩm...</div>;
   }
 
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
   
-  // Safely get image URLs, falling back to the old single imageUrl field if the new array doesn't exist
-  const images = product.imageUrls || (product.imageUrl ? [product.imageUrl] : []);
+  const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [];
 
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
       name: product.name,
       price: priceToShow,
-      imageUrl: images[0], // Use first image for cart
+      imageUrl: images[0],
       slug: product.slug,
       quantity: quantity,
       size: selectedSize,
     });
-    setQuantity(1); // Reset quantity after adding to cart
+    setQuantity(1);
   };
 
   const collectionTitle = product.collection === 'half-entremet' ? 'BÁNH NỬA ENTREMET' : 
                           product.collection === 'baby-collection' ? 'BÁNH PETIT' :
                           'BÁNH ENTREMET';
+                          
+  const detailedDescription = product.detailedDescription || {};
 
   return (
     <>
@@ -137,14 +143,14 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                 </div>
 
                 <div className="mt-10 space-y-6 border-t pt-8">
-                  <div>
-                      <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
-                      <p className="mt-2 text-muted-foreground leading-relaxed">
-                        {product.detailedDescription.flavor}
-                      </p>
-                  </div>
+                  {product.subtitle && (
+                    <div>
+                        <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
+                        {detailedDescription.flavor && <p className="mt-2 text-muted-foreground leading-relaxed">{detailedDescription.flavor}</p>}
+                    </div>
+                  )}
                   
-                  {product.flavorProfile && (
+                  {product.flavorProfile && product.flavorProfile.length > 0 && (
                       <div>
                           <h3 className="font-bold tracking-wider text-sm uppercase">CẢM GIÁC BÁNH</h3>
                           <div className="mt-4 flex flex-wrap gap-2">
@@ -157,7 +163,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                       </div>
                   )}
 
-                  {product.structure && (
+                  {product.structure && product.structure.length > 0 && (
                       <div>
                           <h3 className="font-bold tracking-wider text-sm uppercase">CẤU TRÚC VỊ BÁNH</h3>
                           <div className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -179,24 +185,28 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
           <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
             <div className="py-8 md:pr-8">
               <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
-              <p className="text-muted-foreground text-sm">{product.detailedDescription.dimensions}</p>
-              <p className="text-muted-foreground text-sm mt-1">{product.detailedDescription.serving}</p>
+              <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
+              <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>
             </div>
             <div className="py-8 md:px-8">
               <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                  {product.detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
-                      <li key={index}>{line}</li>
-                  ))}
-              </ul>
+               {detailedDescription.storage && (
+                <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                    {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
+                        <li key={index}>{line}</li>
+                    ))}
+                </ul>
+               )}
             </div>
             <div className="py-8 md:pl-8">
               <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                  {product.detailedDescription.accessories.map((item, index) => (
-                      <li key={index}>{item}</li>
-                  ))}
-              </ul>
+              {detailedDescription.accessories && detailedDescription.accessories.length > 0 && (
+                <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                    {detailedDescription.accessories.map((item, index) => (
+                        <li key={index}>{item}</li>
+                    ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
