@@ -60,15 +60,15 @@ export default function NewProductPage() {
                 imageUrls: uploadedUrls,
                 // Initialize detailed fields as empty
                 detailedDescription: {
-                    flavor: values.detailedDescription_flavor || "",
-                    ingredients: values.detailedDescription_ingredients || "",
-                    serving: values.detailedDescription_serving || "",
-                    storage: values.detailedDescription_storage || "",
-                    dimensions: values.detailedDescription_dimensions || "",
-                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                    flavor: "",
+                    ingredients: "",
+                    serving: "",
+                    storage: "",
+                    dimensions: "",
+                    accessories: [],
                 },
-                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-                structure: values.structure?.split('\n').filter(Boolean) || [],
+                flavorProfile: [],
+                structure: [],
                 collection: 'special-occasions', // Default collection
             };
 
@@ -103,13 +103,13 @@ export default function NewProductPage() {
                     </Link>
                 </Button>
                 <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                    Thêm Sản phẩm Mới (Bước 1/2)
+                    Thêm Sản phẩm Mới
                 </h1>
             </div>
             <Card>
                 <CardHeader>
                     <CardTitle>Thông tin cơ bản</CardTitle>
-                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm các chi tiết khác ở bước tiếp theo.</CardDescription>
+                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm các chi tiết khác ở trang "Thuộc tính sản phẩm".</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
