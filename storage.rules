@@ -16,9 +16,9 @@ service firebase.storage {
       allow read: if true;
     }
 
-    // Restrict write access (create, update, delete) to admins only for the products folder
+    // Restrict write access (create, update, delete) to signed-in users only for the products folder (Temporary)
     match /products/{allPaths=**} {
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
   }
 }

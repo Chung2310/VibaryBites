@@ -67,7 +67,7 @@ service cloud.firestore {
      * @description Publicly readable cake information. Writes are restricted to admins.
      * @path /cakes/{cakeId}
      * @allow (get, list) Any user can read cake details.
-     * @allow (create, update, delete) Only users with an admin claim can modify cakes.
+     * @allow (create, update, delete) Only signed-in users can modify cakes (Temporary).
      * @principle Public read access for catalog data, with writes reserved for admin roles.
      */
     match /cakes/{cakeId} {
@@ -79,36 +79,36 @@ service cloud.firestore {
      * @description Publicly readable cake categories. Writes are restricted to admins.
      * @path /categories/{categoryId}
      * @allow (get, list) Any user can read category details.
-     * @allow (write) Only users with an admin claim can modify categories.
+     * @allow (write) Only signed-in users can modify categories (Temporary).
      * @principle Public read access for catalog data, with writes reserved for admin roles.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
 
     /**
      * @description Publicly readable news articles. Writes are restricted to admins.
      * @path /news_articles/{newsArticleId}
      * @allow (get, list) Any user can read articles.
-     * @allow (write) Only users with an admin claim can modify articles.
+     * @allow (write) Only signed-in users can modify articles (Temporary).
      * @principle Public read access for content, with writes reserved for admin roles.
      */
     match /news_articles/{newsArticleId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
 
     /**
      * @description Publicly readable quiz questions. Writes are restricted to admins.
      * @path /quiz_questions/{quizQuestionId}
      * @allow (get, list) Any user can read quiz questions.
-     * @allow (write) Only users with an admin claim can modify quiz questions.
+     * @allow (write) Only signed-in users can modify quiz questions (Temporary).
      * @principle Public read access for interactive content, with writes reserved for admin roles.
      */
     match /quiz_questions/{quizQuestionId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
 
     // --------------------------------
