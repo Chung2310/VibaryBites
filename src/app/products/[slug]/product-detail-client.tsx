@@ -165,63 +165,66 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                       </div>
                   )}
                 </div>
-
-                 <div className="mt-16 border-t border-b">
-                    <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
-                        {detailedDescription?.dimensions && (
-                            <div className="py-8 md:pr-8">
-                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
-                            <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
-                            {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
-                            </div>
-                        )}
-                        {detailedDescription?.storage && (
-                            <div className="py-8 md:px-8">
-                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
-                            <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                                {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
-                                    <li key={index}>{line}</li>
-                                ))}
-                            </ul>
-                            </div>
-                        )}
-                        {detailedDescription?.accessories && detailedDescription.accessories.length > 0 && (
-                            <div className="py-8 md:pl-8">
-                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
-                            <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                                {detailedDescription.accessories.map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                ))}
-                            </ul>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
-                    <div className="sm:col-span-1">
-                        <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
-                        <p className="mt-4 text-muted-foreground">
-                            Một số câu hỏi thường gặp khi đặt bánh. Ngoài ra, bạn có thể xem chi tiết hơn tại mục{' '}
-                            <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
-                                Hỏi Đáp
-                            </Link>.
-                        </p>
-                    </div>
-                    <div className="sm:col-span-2">
-                        <Accordion type="single" collapsible className="w-full">
-                          {faqs.map((faq) => (
-                            <AccordionItem key={faq.id} value={faq.id}>
-                              <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                              <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
-                            </AccordionItem>
-                          ))}
-                      </Accordion>
-                    </div>
-                </div>
               </div>
           </div>
         </div>
+
+        {/* --- Secondary Details Section --- */}
+        <div className="mt-16 border-t border-b">
+            <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
+                {detailedDescription?.dimensions && (
+                    <div className="py-8 md:pr-8">
+                    <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
+                    <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
+                    {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
+                    </div>
+                )}
+                {detailedDescription?.storage && (
+                    <div className="py-8 md:px-8">
+                    <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
+                    <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                        {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
+                            <li key={index}>{line}</li>
+                        ))}
+                    </ul>
+                    </div>
+                )}
+                {detailedDescription?.accessories && detailedDescription.accessories.length > 0 && (
+                    <div className="py-8 md:pl-8">
+                    <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
+                    <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                        {detailedDescription.accessories.map((item, index) => (
+                            <li key={index}>{item}</li>
+                        ))}
+                    </ul>
+                    </div>
+                )}
+            </div>
+        </div>
+        
+        {/* --- FAQ Section --- */}
+        <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
+            <div className="sm:col-span-1">
+                <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
+                <p className="mt-4 text-muted-foreground">
+                    Một số câu hỏi thường gặp khi đặt bánh. Ngoài ra, bạn có thể xem chi tiết hơn tại mục{' '}
+                    <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
+                        Hỏi Đáp
+                    </Link>.
+                </p>
+            </div>
+            <div className="sm:col-span-2">
+                <Accordion type="single" collapsible className="w-full">
+                  {faqs.map((faq) => (
+                    <AccordionItem key={faq.id} value={faq.id}>
+                      <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+              </Accordion>
+            </div>
+        </div>
+
       </div>
     </>
   );
