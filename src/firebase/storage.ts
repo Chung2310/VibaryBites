@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -38,5 +38,35 @@ export const uploadImage = async (file: File): Promise<string> => {
     console.error("Error uploading image to Firebase Storage:", error);
     // Re-throw the error to be handled by the calling function
     throw error;
+  }
+};
+
+/**
+ * Deletes an image from Firebase Storage using its public URL.
+ * @param imageUrl The public download URL of the image to delete.
+ * @returns A promise that resolves when the image is deleted.
+ */
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  if (!imageUrl) {
+    console.warn("No image URL provided for deletion.");
+    return;
+  }
+
+  try {
+    // Create a reference from the HTTPS URL
+    const storageRef = ref(storage, imageUrl);
+    
+    // Delete the file
+    await deleteObject(storageRef);
+  } catch (error: any) {
+    // It's common to encounter 'object-not-found' if the file is already deleted
+    // or if the URL is incorrect. We can choose to log this as a warning instead of an error.
+    if (error.code === 'storage/object-not-found') {
+      console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
+    } else {
+      console.error("Error deleting image from Firebase Storage:", error);
+      // Re-throw the error to be handled by the calling function if it's not a 'not-found' error
+      throw error;
+    }
   }
 };

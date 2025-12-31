@@ -55,6 +55,7 @@ import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { deleteImage } from '@/firebase/storage';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -82,10 +83,18 @@ export default function ProductsPage() {
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
+            // Delete images from Firebase Storage first
+            if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
+                const deletePromises = selectedProduct.imageUrls.map(url => deleteImage(url));
+                await Promise.all(deletePromises);
+            }
+
+            // Then delete the document from Firestore
             await deleteDoc(docRef);
+            
             toast({
                 title: "Xóa thành công",
-                description: `Sản phẩm "${selectedProduct.name}" đã được xóa.`,
+                description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
                 variant: 'destructive',
             });
         } catch (error) {
@@ -167,15 +176,16 @@ export default function ProductsPage() {
                         </TableRow>
                    ))}
                    {products && products.map(product => {
+                     const imageUrls = product.imageUrls || [];
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {product.imageUrls && product.imageUrls[0] && (
+                                {imageUrls.length > 0 && (
                                     <Image
                                         alt={product.name}
                                         className="aspect-square rounded-md object-cover"
                                         height="64"
-                                        src={product.imageUrls[0]}
+                                        src={imageUrls[0]}
                                         width="64"
                                     />
                                 )}
@@ -238,7 +248,7 @@ export default function ProductsPage() {
                 <AlertDialogDescription>
                     Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn sản phẩm
                     <span className="font-semibold"> {selectedProduct?.name} </span>
-                    khỏi hệ thống.
+                    và các hình ảnh liên quan.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
