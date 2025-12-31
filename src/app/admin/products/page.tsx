@@ -60,6 +60,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { uploadImage } from '@/firebase/storage';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -114,7 +115,7 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = async (values: ProductFormValues): Promise<void> => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile?: File): Promise<void> => {
         if (!firestore) {
              toast({
                 variant: "destructive",
@@ -125,6 +126,12 @@ export default function ProductsPage() {
         };
 
         try {
+             let finalImageUrl = values.imageUrl;
+
+            if (imageFile) {
+                finalImageUrl = await uploadImage(imageFile);
+            }
+
             if (selectedProduct) {
                 // Update existing product
                 const docRef = doc(firestore, 'cakes', selectedProduct.id);
@@ -133,6 +140,7 @@ export default function ProductsPage() {
                     ...values,
                     price: Number(values.price),
                     stock: Number(values.stock),
+                    imageUrl: finalImageUrl,
                 };
                 await setDoc(docRef, updatedProductData, { merge: true });
                 
@@ -142,6 +150,9 @@ export default function ProductsPage() {
                 });
             } else {
                 // Add new product
+                if (!finalImageUrl) {
+                    throw new Error("Vui lòng cung cấp hình ảnh cho sản phẩm mới.");
+                }
                 const id = `prod-${Date.now()}`;
                 const docRef = doc(firestore, 'cakes', id);
                  const newProduct: Product = {
@@ -150,6 +161,7 @@ export default function ProductsPage() {
                     slug: values.name.toLowerCase().replace(/\s+/g, '-'),
                     price: Number(values.price),
                     stock: Number(values.stock),
+                    imageUrl: finalImageUrl,
                     subtitle: values.subtitle || 'Cập nhật sau',
                     detailedDescription: {
                         flavor: 'Cập nhật sau',
