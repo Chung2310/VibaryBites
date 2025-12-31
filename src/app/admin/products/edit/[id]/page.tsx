@@ -93,6 +93,7 @@ export default function EditProductPage() {
             router.push('/admin/products');
 
         } catch (error) {
+            console.error("Error updating product: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Uh oh! Something went wrong.',
@@ -136,16 +137,17 @@ export default function EditProductPage() {
                     </Link>
                 </Button>
                 <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                    Chỉnh sửa: {product.name}
+                    Chỉnh sửa chi tiết: {product.name}
                 </h1>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Thông tin sản phẩm</CardTitle>
-                    <CardDescription>Cập nhật các chi tiết cho sản phẩm của bạn.</CardDescription>
+                    <CardTitle>Thông tin chi tiết sản phẩm</CardTitle>
+                    <CardDescription>Cập nhật tất cả các thuộc tính cho sản phẩm của bạn tại đây.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
+                        isEditMode={true} // Specify this is edit mode
                         product={product}
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/products')}
@@ -156,4 +158,3 @@ export default function EditProductPage() {
         </div>
     );
 }
-

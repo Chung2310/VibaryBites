@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
@@ -20,7 +20,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFiles: File[], existingImageUrls: string[]) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFiles: File[]) => {
         if (!firestore) {
             toast({
                 variant: 'destructive',
@@ -58,29 +58,31 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedUrls,
+                // Initialize detailed fields as empty
                 detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    serving: values.detailedDescription_serving,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),
+                    flavor: values.detailedDescription_flavor || "",
+                    ingredients: values.detailedDescription_ingredients || "",
+                    serving: values.detailedDescription_serving || "",
+                    storage: values.detailedDescription_storage || "",
+                    dimensions: values.detailedDescription_dimensions || "",
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
                 },
-                flavorProfile: values.flavorProfile.split('\n').filter(Boolean),
-                structure: values.structure.split('\n').filter(Boolean),
-                collection: 'special-occasions', // Default collection, consider making this a form field
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
+                collection: 'special-occasions', // Default collection
             };
 
             await setDoc(docRef, newProduct);
             
             toast({
                 title: 'Thêm thành công!',
-                description: `Sản phẩm "${values.name}" đã được thêm vào hệ thống.`,
+                description: `Sản phẩm "${values.name}" đã được thêm. Bạn có thể chỉnh sửa chi tiết ngay bây giờ.`,
             });
             
-            router.push('/admin/products');
+            router.push(`/admin/products/edit/${id}`);
 
         } catch (error) {
+            console.error("Error creating product: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Uh oh! Something went wrong.',
@@ -101,16 +103,17 @@ export default function NewProductPage() {
                     </Link>
                 </Button>
                 <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                    Thêm Sản phẩm Mới
+                    Thêm Sản phẩm Mới (Bước 1/2)
                 </h1>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Thông tin sản phẩm</CardTitle>
-                    <CardDescription>Điền các chi tiết cho sản phẩm mới của bạn.</CardDescription>
+                    <CardTitle>Thông tin cơ bản</CardTitle>
+                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm các chi tiết khác ở bước tiếp theo.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
+                        isEditMode={false} // Specify this is not edit mode
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/products')}
                         isSubmitting={isSubmitting}
@@ -120,4 +123,3 @@ export default function NewProductPage() {
         </div>
     );
 }
-

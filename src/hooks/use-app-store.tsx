@@ -71,9 +71,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const quantityToAdd = item.quantity || 1;
     
-    // Ensure imageUrl is valid
-    const productInStore = products.find(p => p.id === item.id) as Product & { imageUrl?: string };
-    const imageUrl = item.imageUrl || (productInStore?.imageUrls && productInStore.imageUrls[0]) || productInStore?.imageUrl || '';
+    const productInStore = products.find(p => p.id === item.id) as Product | undefined;
+    const imageUrl = item.imageUrl || (productInStore?.imageUrls && productInStore.imageUrls[0]) || '';
 
     const itemToAdd = { ...item, imageUrl, quantity: quantityToAdd };
 
