@@ -36,7 +36,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Product } from '@/lib/types';
 import {
   Dialog,
@@ -57,11 +57,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProductForm, type ProductFormValues } from './product-form';
 import { useToast } from '@/hooks/use-toast';
-import { useAppStore } from '@/hooks/use-app-store';
 import { uploadImage } from '@/firebase/storage';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductsPage() {
-    const { products, addProduct, updateProduct, deleteProduct } = useAppStore();
+    const firestore = useFirestore();
+    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+    const { data: products, isLoading } = useCollection<Product>(productsCollection);
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
@@ -87,20 +92,32 @@ export default function ProductsPage() {
         setSelectedProduct(undefined);
     }
     
-    const handleDelete = () => {
-        if (!selectedProduct) return;
+    const handleDelete = async () => {
+        if (!selectedProduct || !firestore) return;
         
-        deleteProduct(selectedProduct.id);
-
-        toast({
-            title: "Xóa thành công",
-            description: `Sản phẩm "${selectedProduct.name}" đã được xóa.`,
-            variant: 'destructive',
-        });
+        const docRef = doc(firestore, 'cakes', selectedProduct.id);
+        
+        try {
+            await deleteDoc(docRef);
+            toast({
+                title: "Xóa thành công",
+                description: `Sản phẩm "${selectedProduct.name}" đã được xóa.`,
+                variant: 'destructive',
+            });
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: (error as Error).message || "Không thể xóa sản phẩm.",
+            });
+        }
+        
         closeDeleteConfirm();
     }
     
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
+        if (!firestore) return;
+
         let finalImageUrl = selectedProduct?.imageUrl || '';
 
         if (imageFile) {
@@ -113,7 +130,7 @@ export default function ProductsPage() {
                     title: "Tải ảnh lên thất bại!",
                     description: "Đã có lỗi xảy ra khi tải ảnh lên. Vui lòng thử lại.",
                 });
-                return; // Stop submission if upload fails
+                return; 
             }
         } else if (!finalImageUrl) {
             toast({
@@ -124,45 +141,57 @@ export default function ProductsPage() {
             return;
         }
 
-        if (selectedProduct) {
-            const updated: Product = {
-                ...selectedProduct,
-                ...values,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                slug: values.name.toLowerCase().replace(/ /g, '-'),
-                imageUrl: finalImageUrl,
-            };
-            updateProduct(updated);
-            toast({
-                title: "Cập nhật thành công!",
-                description: `Sản phẩm "${values.name}" đã được cập nhật.`,
-            });
-        } else {
-            const newProduct: Product = {
-                id: `prod-${Date.now()}`,
-                slug: values.name.toLowerCase().replace(/ /g, '-'),
-                ...values,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                imageUrl: finalImageUrl,
-                detailedDescription: {
-                    flavor: 'Cập nhật sau',
-                    ingredients: 'Cập nhật sau',
-                    serving: 'Cập nhật sau',
-                    storage: 'Cập nhật sau',
-                    dimensions: 'Cập nhật sau',
-                    accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
-                },
-                collection: 'special-occasions',
-            };
-            addProduct(newProduct);
-            toast({
-                title: "Thêm thành công!",
-                description: `Sản phẩm "${values.name}" đã được thêm vào hệ thống.`,
+        try {
+            if (selectedProduct) {
+                // Update existing product
+                const docRef = doc(firestore, 'cakes', selectedProduct.id);
+                await setDoc(docRef, { 
+                    ...values,
+                    price: Number(values.price),
+                    stock: Number(values.stock),
+                    imageUrl: finalImageUrl,
+                }, { merge: true });
+                
+                toast({
+                    title: "Cập nhật thành công!",
+                    description: `Sản phẩm "${values.name}" đã được cập nhật.`,
+                });
+            } else {
+                // Add new product
+                const id = `prod-${Date.now()}`;
+                const docRef = doc(firestore, 'cakes', id);
+                const newProduct: Product = {
+                    id: id,
+                    slug: values.name.toLowerCase().replace(/ /g, '-'),
+                    ...values,
+                    price: Number(values.price),
+                    stock: Number(values.stock),
+                    imageUrl: finalImageUrl,
+                    subtitle: values.subtitle || 'Cập nhật sau',
+                    detailedDescription: {
+                        flavor: 'Cập nhật sau',
+                        ingredients: 'Cập nhật sau',
+                        serving: 'Cập nhật sau',
+                        storage: 'Cập nhật sau',
+                        dimensions: 'Cập nhật sau',
+                        accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
+                    },
+                    collection: 'special-occasions',
+                };
+                await setDoc(docRef, newProduct);
+                toast({
+                    title: "Thêm thành công!",
+                    description: `Sản phẩm "${values.name}" đã được thêm vào hệ thống.`,
+                });
+            }
+            closeForm();
+        } catch(error) {
+             toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: (error as Error).message || "Không thể lưu sản phẩm.",
             });
         }
-        closeForm();
     };
 
 
@@ -217,7 +246,21 @@ export default function ProductsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                   {products.map(product => {
+                   {isLoading && Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell className="hidden sm:table-cell">
+                                <Skeleton className="h-16 w-16 rounded-md" />
+                            </TableCell>
+                            <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
+                            <TableCell>
+                                <Skeleton className="h-8 w-8" />
+                            </TableCell>
+                        </TableRow>
+                   ))}
+                   {products && products.map(product => {
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
@@ -275,7 +318,7 @@ export default function ProductsPage() {
               </CardContent>
               <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  Hiển thị <strong>{products.length}</strong> trên <strong>{products.length}</strong> sản phẩm
+                  Hiển thị <strong>{products?.length || 0}</strong> trên <strong>{products?.length || 0}</strong> sản phẩm
                 </div>
               </CardFooter>
             </Card>
@@ -321,5 +364,3 @@ export default function ProductsPage() {
         </>
     )
 }
-
-    

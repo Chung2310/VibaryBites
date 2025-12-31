@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { useToast } from "./use-toast";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 interface AppContextType {
   // Cart
@@ -23,9 +25,7 @@ interface AppContextType {
   totalPrice: number;
   // Products
   products: Product[];
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (productId: string) => void;
+  isLoadingProducts: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,8 +40,13 @@ export const useAppStore = () => {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
   const { toast } = useToast();
+
+  const firestore = useFirestore();
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
+
+  const products = productsData || [];
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -54,20 +59,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to parse cart from localStorage", e);
             setCartItems([]);
         }
-
-        try {
-            const storedProducts = localStorage.getItem("products");
-             if (storedProducts) {
-                setProducts(JSON.parse(storedProducts));
-            } else {
-                // If no products in local storage, initialize with default and save
-                localStorage.setItem("products", JSON.stringify(initialProducts));
-                setProducts(initialProducts);
-            }
-        } catch (e) {
-            console.error("Failed to parse products from localStorage", e);
-            setProducts(initialProducts);
-        }
     }
   }, []);
 
@@ -76,13 +67,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("cart", JSON.stringify(cartItems));
     }
   }, [cartItems]);
-
-  useEffect(() => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem("products", JSON.stringify(products));
-    }
-  }, [products]);
-
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const quantityToAdd = item.quantity || 1;
@@ -131,18 +115,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setCartItems([]);
   };
 
-  const addProduct = (product: Product) => {
-    setProducts(prev => [product, ...prev]);
-  };
-
-  const updateProduct = (updatedProduct: Product) => {
-    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  };
-  
-  const deleteProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-  }
-
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const totalPrice = cartItems.reduce(
@@ -161,9 +133,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         cartCount,
         totalPrice,
         products,
-        addProduct,
-        updateProduct,
-        deleteProduct
+        isLoadingProducts,
       }}
     >
       {children}

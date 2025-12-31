@@ -30,6 +30,7 @@ import { Loader2 } from "lucide-react";
 
 const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
+    subtitle: z.string().optional(),
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
@@ -62,12 +63,14 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
     resolver: zodResolver(productSchema),
     defaultValues: product ? {
         name: product.name,
+        subtitle: product.subtitle,
         price: product.price,
         stock: product.stock,
         categorySlug: product.categorySlug,
         description: product.description,
     } : {
         name: "",
+        subtitle: "",
         price: 0,
         stock: 0,
         categorySlug: "",
@@ -79,14 +82,18 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
       const file = event.target.files?.[0];
       if (file) {
           setImageFile(file);
-          setImagePreview(URL.createObjectURL(file));
-          form.clearErrors("imageUrl");
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+          }
+          reader.readAsDataURL(file);
+          form.clearErrors("imageUrl" as any);
       }
   }
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    if (!imagePreview) {
-        form.setError("imageUrl" as any, { message: "Vui lòng tải lên ảnh cho sản phẩm." });
+    if (!product && !imageFile) {
+        form.setError("imageUrl" as any, { type: "manual", message: "Vui lòng tải lên ảnh cho sản phẩm mới." });
         return;
     }
     
@@ -106,6 +113,19 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
               <FormLabel>Tên sản phẩm</FormLabel>
               <FormControl>
                 <Input placeholder="BE IN BLOSSOM" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="subtitle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tên phụ (VÍ DỤ: VẢI & HOA HỒNG)</FormLabel>
+              <FormControl>
+                <Input placeholder="VẢI & HOA HỒNG" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -205,5 +225,3 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
     </Form>
   );
 }
-
-    
