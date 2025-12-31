@@ -35,6 +35,7 @@ const productSchema = z.object({
     stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
     description: z.string().min(10, { message: "Mô tả phải có ít nhất 10 ký tự." }),
+    imageUrl: z.string().url({ message: "Vui lòng nhập một URL ảnh hợp lệ." }),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -50,14 +51,12 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFile: File | null) => Promise<void>;
+  onSubmit: (values: ProductFormValues) => Promise<void>;
   onClose: () => void;
 }
 
 export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -68,6 +67,7 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
         stock: product.stock,
         categorySlug: product.categorySlug,
         description: product.description,
+        imageUrl: product.imageUrl,
     } : {
         name: "",
         subtitle: "",
@@ -75,24 +75,15 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
         stock: 0,
         categorySlug: "",
         description: "",
+        imageUrl: "",
     },
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (file) {
-          setImageFile(file);
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setImagePreview(reader.result as string);
-          }
-          reader.readAsDataURL(file);
-      }
-  }
+  const imagePreview = form.watch("imageUrl");
 
   const handleFormSubmit = async (values: ProductFormValues) => {
     setIsSubmitting(true);
-    await onSubmit(values, imageFile);
+    await onSubmit(values);
     setIsSubmitting(false);
   }
 
@@ -175,17 +166,24 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
                 </FormItem>
             )}
         />
-         <FormItem>
-            <FormLabel>Ảnh sản phẩm</FormLabel>
-            <FormControl>
-                <Input type="file" accept="image/*" onChange={handleImageChange} className="file:text-foreground"/>
-            </FormControl>
-                {imagePreview && (
+         <FormField
+          control={form.control}
+          name="imageUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL Ảnh sản phẩm</FormLabel>
+              <FormControl>
+                <Input placeholder="https://example.com/image.png" {...field} />
+              </FormControl>
+               {imagePreview && (
                 <div className="mt-4">
                     <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
                 </div>
             )}
-        </FormItem>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="description"

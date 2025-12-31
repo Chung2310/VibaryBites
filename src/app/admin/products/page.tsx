@@ -36,7 +36,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Product } from '@/lib/types';
 import {
   Dialog,
@@ -57,7 +57,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProductForm, type ProductFormValues } from './product-form';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/firebase/storage';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -115,33 +114,15 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null): Promise<void> => {
-        if (!firestore) return;
-
-        let finalImageUrl = selectedProduct?.imageUrl;
-
-        if (imageFile) {
-            try {
-                finalImageUrl = await uploadImage(imageFile);
-            } catch (error) {
-                console.error("Upload failed", error);
-                toast({
-                    variant: "destructive",
-                    title: "Tải ảnh lên thất bại!",
-                    description: (error as Error).message || "Đã có lỗi xảy ra khi tải ảnh lên.",
-                });
-                return; 
-            }
-        }
-        
-        if (!finalImageUrl) {
+    const handleFormSubmit = async (values: ProductFormValues): Promise<void> => {
+        if (!firestore) {
              toast({
                 variant: "destructive",
-                title: "Thiếu ảnh sản phẩm",
-                description: "Vui lòng cung cấp một URL ảnh hoặc tải lên một ảnh mới.",
+                title: "Lỗi Firestore",
+                description: "Không thể kết nối tới cơ sở dữ liệu.",
             });
             return;
-        }
+        };
 
         try {
             if (selectedProduct) {
@@ -152,7 +133,6 @@ export default function ProductsPage() {
                     ...values,
                     price: Number(values.price),
                     stock: Number(values.stock),
-                    imageUrl: finalImageUrl,
                 };
                 await setDoc(docRef, updatedProductData, { merge: true });
                 
@@ -170,7 +150,6 @@ export default function ProductsPage() {
                     slug: values.name.toLowerCase().replace(/\s+/g, '-'),
                     price: Number(values.price),
                     stock: Number(values.stock),
-                    imageUrl: finalImageUrl,
                     subtitle: values.subtitle || 'Cập nhật sau',
                     detailedDescription: {
                         flavor: 'Cập nhật sau',
