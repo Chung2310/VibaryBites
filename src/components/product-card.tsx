@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -29,14 +30,16 @@ export function ProductCard({ product }: ProductCardProps) {
     setRandomPositionClass(positionClasses[Math.floor(Math.random() * positionClasses.length)]);
   }, []);
 
+  const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
+
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden border-0 shadow-none bg-transparent rounded-none">
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full text-center">
         <div className="relative w-full overflow-hidden aspect-square flex-grow">
-          {product.imageUrl && (
+          {thumbnailUrl && (
             <Image
-              src={product.imageUrl}
+              src={thumbnailUrl}
               alt={product.name}
               fill
               className="object-contain transition-transform duration-300 ease-in-out group-hover:scale-105"

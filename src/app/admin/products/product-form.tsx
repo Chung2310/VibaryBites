@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 import React, { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const productSchema = z.object({
@@ -36,14 +37,16 @@ const productSchema = z.object({
     stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
-    // Detailed Description
+    
+    // Image URLs will be handled separately, not part of the form schema for validation
+    
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
     detailedDescription_ingredients: z.string().min(1, "Vui lòng nhập thành phần."),
     detailedDescription_serving: z.string().min(1, "Vui lòng nhập khẩu phần."),
     detailedDescription_storage: z.string().min(1, "Vui lòng nhập hướng dẫn bảo quản."),
     detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước."),
     detailedDescription_accessories: z.string().min(1, "Vui lòng nhập phụ kiện."),
-    // Other details
+    
     flavorProfile: z.string().min(1, "Vui lòng nhập cảm giác vị bánh."),
     structure: z.string().min(1, "Vui lòng nhập cấu trúc bánh."),
 });
@@ -61,20 +64,20 @@ const productCategories = [
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFile?: File) => Promise<void> | void;
-  onClose: () => void;
+  onSubmit: (values: ProductFormValues, imageFiles: File[], existingImageUrls: string[]) => Promise<void> | void;
+  onCancel: () => void;
+  isSubmitting: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
-  const [imagePreview, setImagePreview] = useState<string | undefined>(product?.imageUrl);
+export function ProductForm({ product, onSubmit, onCancel, isSubmitting }: ProductFormProps) {
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>(product?.imageUrls || []);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: product ? {
         name: product.name,
-        subtitle: product.subtitle,
+        subtitle: product.subtitle || "",
         price: product.price,
         stock: product.stock,
         categorySlug: product.categorySlug,
@@ -106,21 +109,35 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
   });
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (event.target.files) {
+      const files = Array.from(event.target.files);
+      setImageFiles(prev => [...prev, ...files]);
+      
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
     }
   };
 
+  const removeImage = (index: number) => {
+    const newPreviews = [...imagePreviews];
+    const newFiles = [...imageFiles];
+    
+    const removedPreview = newPreviews[index];
+    newPreviews.splice(index, 1);
+    setImagePreviews(newPreviews);
+    
+    // If the removed preview was from a newly selected file, remove the file too
+    const fileIndex = imageFiles.findIndex(file => URL.createObjectURL(file) === removedPreview);
+    if(fileIndex > -1){
+        newFiles.splice(fileIndex, 1);
+        setImageFiles(newFiles);
+    }
+  };
+
+
   const handleFormSubmit = async (values: ProductFormValues) => {
-    setIsSubmitting(true);
-    await onSubmit(values, imageFile);
-    setIsSubmitting(false);
+    const existingImageUrls = imagePreviews.filter(p => p.startsWith('http'));
+    await onSubmit(values, imageFiles, existingImageUrls);
   }
 
   return (
@@ -202,23 +219,37 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
                 </FormItem>
             )}
         />
-         <FormItem>
-          <FormLabel>Ảnh sản phẩm</FormLabel>
-          <FormControl>
-            <Input type="file" accept="image/*" onChange={handleImageChange} />
-          </FormControl>
-          {imagePreview && (
-            <div className="mt-4">
-              <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
-            </div>
-          )}
-           {!imagePreview && !product?.imageUrl && (
-              <FormDescription>
-                Vui lòng cung cấp ảnh cho sản phẩm mới.
-              </FormDescription>
+        <FormItem>
+            <FormLabel>Ảnh sản phẩm</FormLabel>
+            <FormControl>
+                <Input type="file" accept="image/*" multiple onChange={handleImageChange} />
+            </FormControl>
+            {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square">
+                            <Image src={preview} alt={`Xem trước ảnh ${index + 1}`} fill className="rounded-md object-cover" />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                onClick={() => removeImage(index)}
+                            >
+                                <Trash2 className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
             )}
-          <FormMessage />
+            {imagePreviews.length === 0 && (
+                <FormDescription>
+                    Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.
+                </FormDescription>
+            )}
+            <FormMessage />
         </FormItem>
+
         <FormField
           control={form.control}
           name="description"
@@ -304,7 +335,7 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
         )}/>
 
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={onClose}>Hủy</Button>
+            <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>Hủy</Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                     <>

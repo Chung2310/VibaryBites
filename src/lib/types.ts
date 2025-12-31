@@ -19,7 +19,7 @@ export type Product = {
     name: string;
     price: number;
   }[];
-  imageUrl: string; // Changed from imageIds: string[]
+  imageUrls: string[]; // Changed from imageUrl: string to support multiple images
   collection: string;
   categorySlug: string;
   flavorProfile?: string[];
@@ -62,7 +62,7 @@ export type CartItem = {
   name: string;
   price: number;
   quantity: number;
-  imageUrl: string; // Changed from imageId
+  imageUrl: string; // Will use the first image from product.imageUrls
   slug: string;
   size?: string;
 };

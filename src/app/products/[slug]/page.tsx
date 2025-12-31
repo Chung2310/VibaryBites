@@ -11,6 +11,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
 // Re-generate static paths at build time
 export async function generateStaticParams() {
+    // This should fetch from Firestore in a real app
     return products.map(product => ({
         slug: product.slug
     }))

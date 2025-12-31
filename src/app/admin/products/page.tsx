@@ -39,13 +39,6 @@ import Image from 'next/image';
 import { useState } from 'react';
 import type { Product } from '@/lib/types';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -55,32 +48,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ProductForm, type ProductFormValues } from './product-form';
+
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { uploadImage } from '@/firebase/storage';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
+    const router = useRouter();
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
-    const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
     const { toast } = useToast();
-    
-    const openForm = (product?: Product) => {
-        setSelectedProduct(product);
-        setIsFormOpen(true);
-    };
-
-    const closeForm = () => {
-        setIsFormOpen(false);
-        setSelectedProduct(undefined);
-    };
     
     const openDeleteConfirm = (product: Product) => {
         setSelectedProduct(product);
@@ -114,86 +98,6 @@ export default function ProductsPage() {
         
         closeDeleteConfirm();
     }
-    
-    const handleFormSubmit = async (values: ProductFormValues, imageFile?: File) => {
-        if (!firestore) {
-             toast({
-                variant: "destructive",
-                title: "Lỗi Firestore",
-                description: "Không thể kết nối tới cơ sở dữ liệu.",
-            });
-            return;
-        };
-
-        try {
-            let finalImageUrl = selectedProduct?.imageUrl;
-            
-            if (imageFile) {
-                finalImageUrl = await uploadImage(imageFile);
-            }
-
-            const productData: Omit<Product, 'id' | 'slug' | 'collection'> = {
-                name: values.name,
-                subtitle: values.subtitle,
-                description: values.description,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                categorySlug: values.categorySlug,
-                imageUrl: finalImageUrl || '',
-                detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    serving: values.detailedDescription_serving,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),
-                },
-                flavorProfile: values.flavorProfile.split('\n').filter(Boolean),
-                structure: values.structure.split('\n').filter(Boolean),
-            };
-
-            if (selectedProduct) {
-                // Update existing product
-                const docRef = doc(firestore, 'cakes', selectedProduct.id);
-                const updatedProductData: Product = {
-                    ...selectedProduct,
-                    ...productData,
-                };
-                await setDoc(docRef, updatedProductData, { merge: true });
-                
-                toast({
-                    title: "Cập nhật thành công!",
-                    description: `Sản phẩm "${values.name}" đã được cập nhật.`,
-                });
-            } else {
-                // Add new product
-                if (!finalImageUrl) {
-                    throw new Error("Vui lòng cung cấp hình ảnh cho sản phẩm mới.");
-                }
-                const id = `prod-${Date.now()}`;
-                const docRef = doc(firestore, 'cakes', id);
-                 const newProduct: Product = {
-                    ...productData,
-                    id: id,
-                    slug: values.name.toLowerCase().replace(/\s+/g, '-'),
-                    collection: 'special-occasions', // Default collection
-                };
-                await setDoc(docRef, newProduct);
-                toast({
-                    title: "Thêm thành công!",
-                    description: `Sản phẩm "${values.name}" đã được thêm vào hệ thống.`,
-                });
-            }
-            closeForm();
-        } catch(error) {
-             toast({
-                variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: (error as Error).message || "Không thể lưu sản phẩm.",
-            });
-        }
-    };
-
 
     return (
         <>
@@ -209,11 +113,13 @@ export default function ProductsPage() {
                   Xuất File
                 </span>
               </Button>
-              <Button size="sm" className="h-8 gap-1" onClick={() => openForm()}>
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Thêm sản phẩm
-                </span>
+              <Button size="sm" className="h-8 gap-1" asChild>
+                <Link href="/admin/products/new">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Thêm sản phẩm
+                    </span>
+                </Link>
               </Button>
             </div>
           </div>
@@ -264,12 +170,12 @@ export default function ProductsPage() {
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {product.imageUrl && (
+                                {product.imageUrls && product.imageUrls[0] && (
                                     <Image
                                         alt={product.name}
                                         className="aspect-square rounded-md object-cover"
                                         height="64"
-                                        src={product.imageUrl}
+                                        src={product.imageUrls[0]}
                                         width="64"
                                     />
                                 )}
@@ -304,7 +210,7 @@ export default function ProductsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => openForm(product)}>Chỉnh sửa</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className='text-destructive' onClick={() => openDeleteConfirm(product)}>Xóa</DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -324,23 +230,6 @@ export default function ProductsPage() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{selectedProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</DialogTitle>
-                    <DialogDescription>
-                        {selectedProduct ? 'Cập nhật thông tin chi tiết cho sản phẩm.' : 'Điền thông tin để tạo một sản phẩm mới.'}
-                    </DialogDescription>
-                </DialogHeader>
-                <ProductForm 
-                    key={selectedProduct ? selectedProduct.id : 'new'}
-                    product={selectedProduct} 
-                    onSubmit={handleFormSubmit}
-                    onClose={closeForm}
-                />
-            </DialogContent>
-        </Dialog>
         
         <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
             <AlertDialogContent>
