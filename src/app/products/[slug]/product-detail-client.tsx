@@ -18,6 +18,13 @@ import {
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product } from '@/lib/types';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
@@ -65,7 +72,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
           {/* Image Gallery - Sticky Scroll */}
           <div className="relative h-fit">
-            <div className="sticky top-24 space-y-4">
+            <div className="space-y-4">
               {images.map((url, index) => (
                 <div key={index} className="aspect-square w-full overflow-hidden rounded-lg">
                   <Image
@@ -122,9 +129,8 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                   }).format(priceToShow * quantity)}
                   </Button>
                 </div>
-              </div>
 
-              <div className="mt-10 space-y-6 border-t pt-8">
+                <div className="mt-10 space-y-6 border-t pt-8">
                   {product.subtitle && detailedDescription?.flavor && (
                     <div>
                         <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
@@ -213,6 +219,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                       </Accordion>
                     </div>
                 </div>
+              </div>
           </div>
         </div>
       </div>
