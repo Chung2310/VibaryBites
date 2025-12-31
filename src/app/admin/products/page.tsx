@@ -115,7 +115,7 @@ export default function ProductsPage() {
         closeDeleteConfirm();
     }
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile?: File): Promise<void> => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile?: File) => {
         if (!firestore) {
              toast({
                 variant: "destructive",
@@ -126,21 +126,38 @@ export default function ProductsPage() {
         };
 
         try {
-             let finalImageUrl = values.imageUrl;
-
+            let finalImageUrl = selectedProduct?.imageUrl;
+            
             if (imageFile) {
                 finalImageUrl = await uploadImage(imageFile);
             }
 
+            const productData: Omit<Product, 'id' | 'slug' | 'collection'> = {
+                name: values.name,
+                subtitle: values.subtitle,
+                description: values.description,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                imageUrl: finalImageUrl || '',
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    serving: values.detailedDescription_serving,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),
+                },
+                flavorProfile: values.flavorProfile.split('\n').filter(Boolean),
+                structure: values.structure.split('\n').filter(Boolean),
+            };
+
             if (selectedProduct) {
                 // Update existing product
                 const docRef = doc(firestore, 'cakes', selectedProduct.id);
-                const updatedProductData = { 
+                const updatedProductData: Product = {
                     ...selectedProduct,
-                    ...values,
-                    price: Number(values.price),
-                    stock: Number(values.stock),
-                    imageUrl: finalImageUrl,
+                    ...productData,
                 };
                 await setDoc(docRef, updatedProductData, { merge: true });
                 
@@ -156,22 +173,10 @@ export default function ProductsPage() {
                 const id = `prod-${Date.now()}`;
                 const docRef = doc(firestore, 'cakes', id);
                  const newProduct: Product = {
-                    ...values,
+                    ...productData,
                     id: id,
                     slug: values.name.toLowerCase().replace(/\s+/g, '-'),
-                    price: Number(values.price),
-                    stock: Number(values.stock),
-                    imageUrl: finalImageUrl,
-                    subtitle: values.subtitle || 'Cập nhật sau',
-                    detailedDescription: {
-                        flavor: 'Cập nhật sau',
-                        ingredients: 'Cập nhật sau',
-                        serving: 'Cập nhật sau',
-                        storage: 'Cập nhật sau',
-                        dimensions: 'Cập nhật sau',
-                        accessories: ['01 Chiếc nến sinh nhật', '01 Dao cắt bánh']
-                    },
-                    collection: 'special-occasions',
+                    collection: 'special-occasions', // Default collection
                 };
                 await setDoc(docRef, newProduct);
                 toast({
@@ -321,21 +326,19 @@ export default function ProductsPage() {
         </Tabs>
 
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{selectedProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</DialogTitle>
                     <DialogDescription>
                         {selectedProduct ? 'Cập nhật thông tin chi tiết cho sản phẩm.' : 'Điền thông tin để tạo một sản phẩm mới.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                   <ProductForm 
-                        key={selectedProduct ? selectedProduct.id : 'new'}
-                        product={selectedProduct} 
-                        onSubmit={handleFormSubmit}
-                        onClose={closeForm}
-                    />
-                </div>
+                <ProductForm 
+                    key={selectedProduct ? selectedProduct.id : 'new'}
+                    product={selectedProduct} 
+                    onSubmit={handleFormSubmit}
+                    onClose={closeForm}
+                />
             </DialogContent>
         </Dialog>
         
