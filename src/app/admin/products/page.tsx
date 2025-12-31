@@ -77,35 +77,43 @@ export default function ProductsPage() {
         setSelectedProduct(undefined);
     }
     
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!selectedProduct || !firestore) return;
-        
+
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
-        try {
-            // Delete images from Firebase Storage first
-            if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-                const deletePromises = selectedProduct.imageUrls.map(url => deleteImage(url));
-                await Promise.all(deletePromises);
-            }
+        const deletePromises: Promise<any>[] = [];
 
-            // Then delete the document from Firestore
-            await deleteDoc(docRef);
-            
-            toast({
-                title: "Xóa thành công",
-                description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
-                variant: 'destructive',
-            });
-        } catch (error) {
-             toast({
-                variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: (error as Error).message || "Không thể xóa sản phẩm.",
-            });
+        // Add image deletion promises
+        if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
+            selectedProduct.imageUrls.forEach(url => deletePromises.push(deleteImage(url)));
         }
-        
-        closeDeleteConfirm();
+
+        // Add Firestore document deletion promise
+        deletePromises.push(deleteDoc(docRef));
+
+        Promise.allSettled(deletePromises)
+            .then(results => {
+                const errors = results.filter(r => r.status === 'rejected');
+                if (errors.length > 0) {
+                    console.error("Some deletions failed:", errors);
+                    toast({
+                        variant: "destructive",
+                        title: "Uh oh! Something went wrong.",
+                        description: `Could not delete all parts of the product. Check console for details.`,
+                    });
+                } else {
+                    toast({
+                        title: "Xóa thành công",
+                        description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
+                        variant: 'destructive',
+                    });
+                }
+            })
+            .finally(() => {
+                // This ensures the dialog closes only after all async operations are done.
+                closeDeleteConfirm();
+            });
     }
 
     return (
