@@ -48,6 +48,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
   
   const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [];
+  const detailedDescription = product.detailedDescription || {};
 
   const handleAddToCart = () => {
     addToCart({
@@ -66,8 +67,6 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                           product.collection === 'baby-collection' ? 'BÁNH PETIT' :
                           'BÁNH ENTREMET';
                           
-  const detailedDescription = product.detailedDescription || {};
-
   return (
     <>
       <div className="sticky top-20 z-30">
@@ -143,10 +142,10 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                 </div>
 
                 <div className="mt-10 space-y-6 border-t pt-8">
-                  {product.subtitle && (
+                  {product.subtitle && detailedDescription.flavor && (
                     <div>
                         <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
-                        {detailedDescription.flavor && <p className="mt-2 text-muted-foreground leading-relaxed">{detailedDescription.flavor}</p>}
+                        <p className="mt-2 text-muted-foreground leading-relaxed">{detailedDescription.flavor}</p>
                     </div>
                   )}
                   
@@ -183,31 +182,33 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
 
         <div className="mt-16 border-t border-b">
           <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
-            <div className="py-8 md:pr-8">
-              <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
-              <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
-              <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>
-            </div>
-            <div className="py-8 md:px-8">
-              <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
-               {detailedDescription.storage && (
+            {detailedDescription.dimensions && (
+                <div className="py-8 md:pr-8">
+                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
+                <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
+                {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
+                </div>
+            )}
+            {detailedDescription.storage && (
+                <div className="py-8 md:px-8">
+                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
                     {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
                         <li key={index}>{line}</li>
                     ))}
                 </ul>
-               )}
-            </div>
-            <div className="py-8 md:pl-8">
-              <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
-              {detailedDescription.accessories && detailedDescription.accessories.length > 0 && (
+                </div>
+            )}
+            {detailedDescription.accessories && detailedDescription.accessories.length > 0 && (
+                <div className="py-8 md:pl-8">
+                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
                     {detailedDescription.accessories.map((item, index) => (
                         <li key={index}>{item}</li>
                     ))}
                 </ul>
-              )}
-            </div>
+                </div>
+            )}
           </div>
         </div>
 
