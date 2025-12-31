@@ -87,7 +87,6 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
             setImagePreview(reader.result as string);
           }
           reader.readAsDataURL(file);
-          // Removed automatic error clearing as it's not needed with the new flow
       }
   }
 
@@ -176,8 +175,6 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
                 </FormItem>
             )}
         />
-         {/* The image upload input is temporarily hidden to prevent CORS errors */}
-         {/*
          <FormItem>
             <FormLabel>Ảnh sản phẩm</FormLabel>
             <FormControl>
@@ -188,9 +185,7 @@ export function ProductForm({ product, onSubmit, onClose }: ProductFormProps) {
                     <Image src={imagePreview} alt="Xem trước ảnh" width={100} height={100} className="rounded-md object-cover" />
                 </div>
             )}
-            <FormDescription>Chức năng tải ảnh lên tạm thời bị vô hiệu hóa.</FormDescription>
         </FormItem>
-        */}
         <FormField
           control={form.control}
           name="description"

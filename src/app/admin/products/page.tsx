@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProductForm, type ProductFormValues } from './product-form';
 import { useToast } from '@/hooks/use-toast';
-// import { uploadImage } from '@/firebase/storage';
+import { uploadImage } from '@/firebase/storage';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -118,28 +118,27 @@ export default function ProductsPage() {
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null): Promise<void> => {
         if (!firestore) return;
 
-        let finalImageUrl = selectedProduct?.imageUrl || `https://picsum.photos/seed/${Math.random()}/800/800`;
+        let finalImageUrl = selectedProduct?.imageUrl;
 
-        // Temporarily disable image upload to avoid CORS issues
-        // if (imageFile) {
-        //     try {
-        //         finalImageUrl = await uploadImage(imageFile);
-        //     } catch (error) {
-        //         console.error("Upload failed", error);
-        //         toast({
-        //             variant: "destructive",
-        //             title: "Tải ảnh lên thất bại!",
-        //             description: (error as Error).message || "Đã có lỗi xảy ra khi tải ảnh lên.",
-        //         });
-        //         return; 
-        //     }
-        // }
+        if (imageFile) {
+            try {
+                finalImageUrl = await uploadImage(imageFile);
+            } catch (error) {
+                console.error("Upload failed", error);
+                toast({
+                    variant: "destructive",
+                    title: "Tải ảnh lên thất bại!",
+                    description: (error as Error).message || "Đã có lỗi xảy ra khi tải ảnh lên.",
+                });
+                return; 
+            }
+        }
         
         if (!finalImageUrl) {
              toast({
                 variant: "destructive",
                 title: "Thiếu ảnh sản phẩm",
-                description: "Vui lòng cung cấp một URL ảnh cho sản phẩm.",
+                description: "Vui lòng cung cấp một URL ảnh hoặc tải lên một ảnh mới.",
             });
             return;
         }
@@ -148,13 +147,14 @@ export default function ProductsPage() {
             if (selectedProduct) {
                 // Update existing product
                 const docRef = doc(firestore, 'cakes', selectedProduct.id);
-                await setDoc(docRef, { 
-                    ...selectedProduct, // Start with existing data
-                    ...values, // Override with form values
+                const updatedProductData = { 
+                    ...selectedProduct,
+                    ...values,
                     price: Number(values.price),
                     stock: Number(values.stock),
                     imageUrl: finalImageUrl,
-                }, { merge: true });
+                };
+                await setDoc(docRef, updatedProductData, { merge: true });
                 
                 toast({
                     title: "Cập nhật thành công!",
@@ -171,7 +171,6 @@ export default function ProductsPage() {
                     price: Number(values.price),
                     stock: Number(values.stock),
                     imageUrl: finalImageUrl,
-                    // Default values for fields not in the form
                     subtitle: values.subtitle || 'Cập nhật sau',
                     detailedDescription: {
                         flavor: 'Cập nhật sau',
