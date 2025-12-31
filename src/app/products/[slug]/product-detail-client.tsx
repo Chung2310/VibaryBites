@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
 import { notFound } from 'next/navigation';
-import { Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Accordion,
@@ -17,37 +17,26 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import type { Product } from '@/lib/types';
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
-  const product = products.find((p) => p.slug === slug) as Product | undefined;
+  const product = products.find((p) => p.slug === slug);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
     product?.sizes?.[0]?.name
   );
   
   if (!product) {
-    // Let's give it a moment for the products to load from the store
     if (products.length > 0) {
       notFound();
     }
-    // You might want to show a loading state here instead of an immediate notFound
     return <div>Đang tìm sản phẩm...</div>;
   }
 
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
   
-  const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [];
+  const images = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls : [];
   const detailedDescription = product.detailedDescription || {};
 
   const handleAddToCart = () => {
@@ -73,35 +62,28 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
         <AnnouncementBar />
       </div>
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
-          
-          {/* Image Gallery */}
-          <Carousel className="w-full">
-            <CarouselContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
+          {/* Image Gallery - Sticky Scroll */}
+          <div className="relative h-fit">
+            <div className="sticky top-24 space-y-4">
               {images.map((url, index) => (
-                <CarouselItem key={index}>
-                  <div className="p-1">
-                    <Card>
-                      <CardContent className="relative flex aspect-square items-center justify-center p-0 overflow-hidden rounded-lg">
-                        <Image
-                          src={url}
-                          alt={`${product.name} - image ${index + 1}`}
-                          fill
-                          className="object-cover w-full h-full"
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CarouselItem>
+                <div key={index} className="aspect-square w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={url}
+                    alt={`${product.name} - image ${index + 1}`}
+                    width={800}
+                    height={800}
+                    className="h-full w-full object-cover"
+                    priority={index === 0}
+                  />
+                </div>
               ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-4" />
-            <CarouselNext className="right-4" />
-          </Carousel>
+            </div>
+          </div>
           
           {/* Product Info */}
-          <div className="sticky top-24 h-fit">
-              <div className="flex flex-col">
+          <div className="relative row-start-1 md:row-start-auto">
+              <div className="md:sticky md:top-24">
                 <p className="text-sm uppercase tracking-widest text-muted-foreground">{collectionTitle}</p>
                 <h1 className="font-headline text-6xl mt-2">{product.name}</h1>
                 
@@ -140,9 +122,10 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                   }).format(priceToShow * quantity)}
                   </Button>
                 </div>
+              </div>
 
-                <div className="mt-10 space-y-6 border-t pt-8">
-                  {product.subtitle && detailedDescription.flavor && (
+              <div className="mt-10 space-y-6 border-t pt-8">
+                  {product.subtitle && detailedDescription?.flavor && (
                     <div>
                         <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
                         <p className="mt-2 text-muted-foreground leading-relaxed">{detailedDescription.flavor}</p>
@@ -176,62 +159,61 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                       </div>
                   )}
                 </div>
-              </div>
-          </div>
-        </div>
 
-        <div className="mt-16 border-t border-b">
-          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
-            {detailedDescription.dimensions && (
-                <div className="py-8 md:pr-8">
-                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
-                <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
-                {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
+                 <div className="mt-16 border-t border-b">
+                    <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
+                        {detailedDescription?.dimensions && (
+                            <div className="py-8 md:pr-8">
+                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
+                            <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
+                            {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
+                            </div>
+                        )}
+                        {detailedDescription?.storage && (
+                            <div className="py-8 md:px-8">
+                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
+                            <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                                {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
+                                    <li key={index}>{line}</li>
+                                ))}
+                            </ul>
+                            </div>
+                        )}
+                        {detailedDescription?.accessories && detailedDescription.accessories.length > 0 && (
+                            <div className="py-8 md:pl-8">
+                            <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
+                            <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                                {detailedDescription.accessories.map((item, index) => (
+                                    <li key={index}>{item}</li>
+                                ))}
+                            </ul>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
-            {detailedDescription.storage && (
-                <div className="py-8 md:px-8">
-                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                    {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
-                        <li key={index}>{line}</li>
-                    ))}
-                </ul>
-                </div>
-            )}
-            {detailedDescription.accessories && detailedDescription.accessories.length > 0 && (
-                <div className="py-8 md:pl-8">
-                <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                    {detailedDescription.accessories.map((item, index) => (
-                        <li key={index}>{item}</li>
-                    ))}
-                </ul>
-                </div>
-            )}
-          </div>
-        </div>
 
-        <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
-            <div className="sm:col-span-1">
-                <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
-                <p className="mt-4 text-muted-foreground">
-                    Một số câu hỏi thường gặp khi đặt bánh. Ngoài ra, bạn có thể xem chi tiết hơn tại mục{' '}
-                    <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
-                        Hỏi Đáp
-                    </Link>.
-                </p>
-            </div>
-            <div className="sm:col-span-2">
-                <Accordion type="single" collapsible className="w-full">
-                  {faqs.map((faq) => (
-                    <AccordionItem key={faq.id} value={faq.id}>
-                      <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-              </Accordion>
-            </div>
+                <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
+                    <div className="sm:col-span-1">
+                        <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
+                        <p className="mt-4 text-muted-foreground">
+                            Một số câu hỏi thường gặp khi đặt bánh. Ngoài ra, bạn có thể xem chi tiết hơn tại mục{' '}
+                            <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
+                                Hỏi Đáp
+                            </Link>.
+                        </p>
+                    </div>
+                    <div className="sm:col-span-2">
+                        <Accordion type="single" collapsible className="w-full">
+                          {faqs.map((faq) => (
+                            <AccordionItem key={faq.id} value={faq.id}>
+                              <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                              <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+                            </AccordionItem>
+                          ))}
+                      </Accordion>
+                    </div>
+                </div>
+          </div>
         </div>
       </div>
     </>
