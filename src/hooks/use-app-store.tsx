@@ -3,7 +3,6 @@
 "use client";
 
 import type { CartItem, Product } from "@/lib/types";
-import { products as initialProducts } from "@/lib/data";
 import {
   createContext,
   useContext,
@@ -71,6 +70,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const quantityToAdd = item.quantity || 1;
+    
+    // Ensure imageUrl is valid
+    const productInStore = products.find(p => p.id === item.id) as Product & { imageUrl?: string };
+    const imageUrl = item.imageUrl || (productInStore?.imageUrls && productInStore.imageUrls[0]) || productInStore?.imageUrl || '';
+
+    const itemToAdd = { ...item, imageUrl, quantity: quantityToAdd };
+
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(
         (i) => i.id === item.id && i.size === item.size
@@ -82,7 +88,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             : i
         );
       }
-      return [...prevItems, { ...item, quantity: quantityToAdd }];
+      return [...prevItems, itemToAdd];
     });
     toast({
       title: "Đã thêm vào giỏ hàng",

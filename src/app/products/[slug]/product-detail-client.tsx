@@ -26,10 +26,11 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import type { Product } from '@/lib/types';
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
-  const product = products.find((p) => p.slug === slug);
+  const product = products.find((p) => p.slug === slug) as Product & { imageUrl?: string };
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
     product?.sizes ? product.sizes[0].name : undefined
@@ -40,13 +41,16 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
   }
 
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
+  
+  // Safely get image URLs, falling back to the old single imageUrl field if the new array doesn't exist
+  const images = product.imageUrls || (product.imageUrl ? [product.imageUrl] : []);
 
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
       name: product.name,
       price: priceToShow,
-      imageUrl: product.imageUrls[0], // Use first image for cart
+      imageUrl: images[0], // Use first image for cart
       slug: product.slug,
       quantity: quantity,
       size: selectedSize,
@@ -69,7 +73,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
           {/* Image Gallery */}
           <Carousel className="w-full">
             <CarouselContent>
-              {product.imageUrls.map((url, index) => (
+              {images.map((url, index) => (
                 <CarouselItem key={index}>
                   <div className="p-1">
                     <Card>
