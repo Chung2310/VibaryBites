@@ -16,7 +16,8 @@ import {
   Warehouse,
   MoreHorizontal,
   Newspaper,
-  BookMarked
+  BookMarked,
+  List
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -40,12 +41,19 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import React from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '6' },
-  { href: '/admin/products', label: 'Sản phẩm', icon: Package },
-  { href: '/admin/attributes', label: 'Thuộc tính', icon: Settings },
+  { 
+    label: 'Quản lý sản phẩm', 
+    icon: Package,
+    subLinks: [
+        { href: '/admin/products', label: 'Danh sách sản phẩm', icon: List },
+        { href: '/admin/attributes', label: 'Thuộc tính', icon: Settings },
+    ]
+  },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
   { href: '/admin/customers', label: 'Khách hàng', icon: Users },
   { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
@@ -61,6 +69,11 @@ function AdminSidebar() {
   function toggleSidebar() {
     setIsCollapsed(!isCollapsed);
   }
+
+  const getActiveAccordionItem = () => {
+    const activeItem = navLinks.find(link => link.subLinks?.some(sub => pathname.startsWith(sub.href)));
+    return activeItem ? activeItem.label : undefined;
+  };
 
   return (
     <div className={cn(
@@ -80,28 +93,57 @@ function AdminSidebar() {
             </div>
             <div className="flex-1 overflow-y-auto">
                 <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isCollapsed && "px-2")}>
-                    {navLinks.map((link) => {
-                        const isActive = pathname === link.href;
-                        return (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={cn(
-                                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                                isActive && 'bg-muted text-primary',
-                                isCollapsed && "justify-center"
-                            )}
-                        >
-                            <link.icon className="h-4 w-4" />
-                            {!isCollapsed && link.label}
-                            {link.badge && !isCollapsed && (
-                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                                {link.badge}
-                            </Badge>
-                            )}
-                        </Link>
-                        )
-                    })}
+                    <Accordion type="single" collapsible defaultValue={getActiveAccordionItem()} className="w-full">
+                        {navLinks.map((link) => (
+                            link.subLinks ? (
+                                <AccordionItem value={link.label} key={link.label} className="border-b-0">
+                                    <AccordionTrigger className={cn(
+                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:no-underline",
+                                        link.subLinks.some(sub => pathname.startsWith(sub.href)) && "text-primary"
+                                    )}>
+                                         <div className="flex items-center gap-3">
+                                            <link.icon className="h-4 w-4" />
+                                            {!isCollapsed && link.label}
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pl-4">
+                                        {link.subLinks.map(subLink => (
+                                             <Link
+                                                key={subLink.href}
+                                                href={subLink.href}
+                                                className={cn(
+                                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                                    pathname.startsWith(subLink.href) && 'bg-muted text-primary',
+                                                    isCollapsed && "justify-center"
+                                                )}
+                                            >
+                                                <subLink.icon className="h-4 w-4" />
+                                                {!isCollapsed && subLink.label}
+                                            </Link>
+                                        ))}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ) : (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                        pathname === link.href && 'bg-muted text-primary',
+                                        isCollapsed && "justify-center"
+                                    )}
+                                >
+                                    <link.icon className="h-4 w-4" />
+                                    {!isCollapsed && link.label}
+                                    {link.badge && !isCollapsed && (
+                                    <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                                        {link.badge}
+                                    </Badge>
+                                    )}
+                                </Link>
+                            )
+                        ))}
+                    </Accordion>
                 </nav>
             </div>
             <div className="mt-auto p-4">
@@ -171,19 +213,43 @@ export default function AdminLayout({
                   <span className="sr-only">VIBARY Admin</span>
                 </Link>
                 {navLinks.map(link => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                    >
-                         <link.icon className="h-5 w-5" />
-                        {link.label}
-                         {link.badge && (
-                            <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                                {link.badge}
-                            </Badge>
+                    link.subLinks ? (
+                        <Accordion type="single" collapsible key={link.label}>
+                            <AccordionItem value={link.label} className="border-b-0">
+                                <AccordionTrigger className="text-lg font-medium text-muted-foreground transition-colors hover:text-foreground hover:no-underline">
+                                    <div className="flex items-center gap-4">
+                                        <link.icon className="h-5 w-5" />
+                                        {link.label}
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pl-8">
+                                    {link.subLinks.map(subLink => (
+                                        <Link
+                                            key={subLink.href}
+                                            href={subLink.href}
+                                            className="block py-2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {subLink.label}
+                                        </Link>
+                                    ))}
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    ) : (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                        >
+                            <link.icon className="h-5 w-5" />
+                            {link.label}
+                            {link.badge && (
+                                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                                    {link.badge}
+                                </Badge>
                             )}
-                    </Link>
+                        </Link>
+                    )
                 ))}
               </nav>
             </SheetContent>
