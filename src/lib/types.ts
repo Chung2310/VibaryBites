@@ -46,6 +46,18 @@ export type Article = {
   content: string;
 };
 
+export type NewsArticle = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  publicationDate: string;
+  category: string;
+  imageUrl: string;
+}
+
 export type FaqItem = {
   id: string;
   question: string;

@@ -16,7 +16,8 @@ import {
   LogOut,
   Ticket,
   Warehouse,
-  MoreHorizontal
+  MoreHorizontal,
+  Newspaper
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -45,10 +46,11 @@ import React from 'react';
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '6' },
-  { href: '/admin/products', label: 'Quản lý sản phẩm', icon: Package },
+  { href: '/admin/products', label: 'Sản phẩm', icon: Package },
   { href: '/admin/attributes', label: 'Thuộc tính sản phẩm', icon: Settings },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
   { href: '/admin/customers', label: 'Khách hàng', icon: Users },
+  { href: '/admin/news', label: 'Quản lý tin tức', icon: Newspaper },
   { href: '/admin/reports', label: 'Báo cáo', icon: LineChart },
   { href: '/admin/promotions', label: 'Khuyến mãi', icon: Ticket },
 ];
