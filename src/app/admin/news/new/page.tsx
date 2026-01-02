@@ -13,6 +13,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { unescape } from 'querystring';
+
+const generateSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
@@ -47,8 +61,9 @@ export default function NewNewsArticlePage() {
             const id = `news-${Date.now()}`;
             const docRef = doc(firestore, 'news_articles', id);
             
-            const newArticle: Omit<NewsArticle, 'id'> = {
-                slug: values.title.toLowerCase().replace(/\s+/g, '-'),
+            const newArticle: NewsArticle = {
+                id,
+                slug: generateSlug(values.title),
                 title: values.title,
                 author: values.author,
                 category: values.category,
@@ -58,7 +73,7 @@ export default function NewNewsArticlePage() {
                 publicationDate: new Date().toISOString(),
             };
 
-            await setDoc(docRef, { ...newArticle, id });
+            await setDoc(docRef, newArticle);
             
             toast({
                 title: 'Thêm thành công!',
@@ -109,3 +124,5 @@ export default function NewNewsArticlePage() {
         </div>
     );
 }
+
+    

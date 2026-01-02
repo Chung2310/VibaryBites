@@ -15,6 +15,18 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+const generateSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 export default function EditNewsArticlePage() {
     const router = useRouter();
     const params = useParams();
@@ -51,7 +63,7 @@ export default function EditNewsArticlePage() {
                 if (existingImageUrl && existingImageUrl !== newImageUrl) {
                     await deleteImage(existingImageUrl);
                 }
-            } else if (!existingImageUrl && !imageFile) { // If the image was removed
+            } else if (!imagePreview && existingImageUrl) { // If the image was removed
                  if (article.imageUrl) {
                     await deleteImage(article.imageUrl);
                 }
@@ -77,7 +89,7 @@ export default function EditNewsArticlePage() {
                 excerpt: values.excerpt,
                 content: values.content,
                 imageUrl: newImageUrl,
-                slug: values.title.toLowerCase().replace(/\s+/g, '-'),
+                slug: generateSlug(values.title),
             };
 
             await setDoc(docRef, updatedArticleData, { merge: true });
@@ -155,3 +167,5 @@ export default function EditNewsArticlePage() {
         </div>
     );
 }
+
+    

@@ -35,6 +35,7 @@ export type Collection = {
   imageId: string;
 };
 
+// This is a legacy type, prefer NewsArticle
 export type Article = {
   id: string;
   slug: string;
@@ -110,3 +111,5 @@ export type InventoryItem = {
     unit: 'g' | 'kg' | 'ml' | 'l' | 'units';
     parLevel: number;
 };
+
+    
