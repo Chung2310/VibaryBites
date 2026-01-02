@@ -35,7 +35,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { NewsArticle, initialArticles, ArticleStatus, ArticleCategory } from './data';
+import { initialArticles, ArticleStatus, ArticleCategory } from './data';
+import type { NewsArticle } from './data';
 import { NewsDataTable } from './news-data-table';
 import { NewsForm } from './news-form';
 
@@ -96,7 +97,6 @@ export default function NewsPage() {
                 description: `Bài viết "${deletingArticle.title}" đã được xóa.`,
             });
             setDeletingArticle(null);
-            setIsDeleteConfirmOpen(false);
         }, 500);
     };
 
@@ -224,7 +224,16 @@ export default function NewsPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDeletingArticle(null)}>Hủy</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
+                <AlertDialogAction 
+                    onClick={(e) => {
+                        e.preventDefault();
+                        handleDelete();
+                        setIsDeleteConfirmOpen(false);
+                    }} 
+                    className="bg-destructive hover:bg-destructive/90"
+                >
+                    Xóa
+                </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
