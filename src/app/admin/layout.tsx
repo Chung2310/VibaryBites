@@ -45,7 +45,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
-  { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '6' },
   { 
     label: 'Quản lý sản phẩm', 
     icon: Package,
@@ -55,10 +54,7 @@ const navLinks = [
     ]
   },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
-  { href: '/admin/customers', label: 'Khách hàng', icon: Users },
   { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
-  { href: '/admin/recipes', label: 'Công thức', icon: BookMarked },
-  { href: '/admin/reports', label: 'Báo cáo', icon: LineChart },
   { href: '/admin/promotions', label: 'Khuyến mãi', icon: Ticket },
 ];
 
