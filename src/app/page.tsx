@@ -177,43 +177,71 @@ function CategorySection() {
         { name: 'Bánh khác', description: 'Khám phá những hương vị mới', imageId: 'category-other-cakes' },
         { name: 'Đồ ăn khác', description: 'Nhiều lựa chọn hấp dẫn khác', imageId: 'category-other-food' },
     ];
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                duration: 0.5,
+            },
+        },
+    };
   
     return (
       <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             {categories.map((category) => {
               const image = PlaceHolderImages.find((p) => p.id === category.imageId);
               return (
-                  <Link
-                  href="/products"
-                  key={category.name}
-                  className="group relative block h-96 overflow-hidden rounded-3xl shadow-xl transition-transform duration-300 hover:scale-105"
-                  >
-                  {image && (
-                      <Image
-                          src={image.imageUrl}
-                          alt={category.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          priority={false}
-                          data-ai-hint={image.imageHint}
-                      />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 text-white">
-                      <h3 className="font-lexend text-[21px] font-normal tracking-wide">
-                          {category.name}
-                      </h3>
-                      <p className="mt-2 text-lg opacity-90 font-fraunces">{category.description}</p>
-                      <span className="mt-4 inline-flex items-center text-2xl font-light">
-                      →<span className="ml-2 text-sm uppercase tracking-wider opacity-80">Khám phá</span>
-                      </span>
-                  </div>
-                  </Link>
+                  <motion.div key={category.name} variants={itemVariants}>
+                    <Link
+                    href="/products"
+                    className="group relative block h-96 overflow-hidden rounded-3xl shadow-xl transition-transform duration-300 hover:scale-105"
+                    >
+                    {image && (
+                        <Image
+                            src={image.imageUrl}
+                            alt={category.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            priority={false}
+                            data-ai-hint={image.imageHint}
+                        />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 flex flex-col justify-end p-8 text-white">
+                        <h3 className="font-lexend text-[21px] font-normal tracking-wide">
+                            {category.name}
+                        </h3>
+                        <p className="mt-2 text-lg opacity-90 font-fraunces">{category.description}</p>
+                        <span className="mt-4 inline-flex items-center text-2xl font-light">
+                        →<span className="ml-2 text-sm uppercase tracking-wider opacity-80">Khám phá</span>
+                        </span>
+                    </div>
+                    </Link>
+                  </motion.div>
               )
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
     );
