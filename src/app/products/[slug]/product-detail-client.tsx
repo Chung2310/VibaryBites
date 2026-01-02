@@ -26,6 +26,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { cn } from '@/lib/utils';
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
@@ -97,42 +98,48 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                 <p className="text-sm uppercase tracking-widest text-muted-foreground">{collectionTitle}</p>
                 <h1 className="font-headline text-6xl mt-2">{product.name}</h1>
                 
-                {product.sizes && product.sizes.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="font-bold tracking-wider text-sm uppercase">Kích thước</h3>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {product.sizes.map((size) => (
-                        <Button
-                          key={size.name}
-                          variant={selectedSize === size.name ? 'default' : 'outline'}
-                          onClick={() => setSelectedSize(size.name)}
-                          className="rounded-full"
-                           disabled={isOutOfStock}
-                        >
-                          {size.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                {isOutOfStock ? (
+                    <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
+                ) : (
+                    <>
+                        {product.sizes && product.sizes.length > 0 && (
+                          <div className="mt-8">
+                            <h3 className="font-bold tracking-wider text-sm uppercase">Kích thước</h3>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {product.sizes.map((size) => (
+                                <Button
+                                  key={size.name}
+                                  variant={selectedSize === size.name ? 'default' : 'outline'}
+                                  onClick={() => setSelectedSize(size.name)}
+                                  className="rounded-full"
+                                >
+                                  {size.name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-8 flex items-center gap-4">
+                          <div className="flex items-center border rounded-md">
+                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}">
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
+                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Button size="lg" onClick={handleAddToCart} className="flex-1 bg-black text-white hover:bg-black/80 rounded-md">
+                             {`THÊM VÀO GIỎ • ${new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(priceToShow * quantity)}`}
+                          </Button>
+                        </div>
+                    </>
                 )}
 
-                <div className="mt-8 flex items-center gap-4">
-                  <div className="flex items-center border rounded-md">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}" disabled={isOutOfStock}>
-                        <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)}" disabled={isOutOfStock}>
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button size="lg" onClick={handleAddToCart} className="flex-1 bg-black text-white hover:bg-black/80 rounded-md" disabled={isOutOfStock}>
-                     {isOutOfStock ? "Hết hàng" : `THÊM VÀO GIỎ • ${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(priceToShow * quantity)}`}
-                  </Button>
-                </div>
 
                 <div className="mt-10 space-y-6 border-t pt-8">
                   {product.subtitle && detailedDescription?.flavor && (

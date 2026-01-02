@@ -292,7 +292,7 @@ function FeaturedProducts() {
                 dragConstraints={{ left: 0, right: 0 }}
              >
                 {featuredProducts.map((product, index) => (
-                    <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[80vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-[25vw] px-4">
+                    <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[90vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-1/4 px-4">
                         <ProductCard product={product} />
                     </div>
                 ))}
@@ -313,9 +313,11 @@ function NewArrivals() {
             Tươi mới từ bếp bánh của chúng tôi, hãy khám phá những sáng tạo mới nhất.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {newProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+             <div key={product.id} className="sm:px-8">
+                <ProductCard product={product} />
+            </div>
           ))}
         </div>
       </div>
