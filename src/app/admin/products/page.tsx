@@ -57,6 +57,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteImage } from '@/firebase/storage';
+import { Switch } from '@/components/ui/switch';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -210,6 +211,7 @@ export default function ProductsPage() {
                    ))}
                    {products && products.map(product => {
                      const imageUrls = product.imageUrls || [];
+                     const isAvailable = product.stock > 0;
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
@@ -227,11 +229,18 @@ export default function ProductsPage() {
                                 {product.name}
                             </TableCell>
                             <TableCell>
-                                <Badge variant={product.stock > 0 ? "outline" : "destructive"}
-                                 className={product.stock > 0 ? "bg-green-100 text-green-800" : ""}
-                                >
-                                    {product.stock > 0 ? "Còn hàng" : "Hết hàng"}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                     <Switch
+                                        checked={isAvailable}
+                                        onCheckedChange={() => handleToggleStock(product)}
+                                        aria-label="Toggle product availability"
+                                    />
+                                    <Badge variant={isAvailable ? "outline" : "destructive"}
+                                    className={isAvailable ? "bg-green-100 text-green-800" : ""}
+                                    >
+                                        {isAvailable ? "Còn hàng" : "Hết hàng"}
+                                    </Badge>
+                                </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 {new Intl.NumberFormat('vi-VN').format(product.price)}đ
@@ -243,9 +252,6 @@ export default function ProductsPage() {
                                 <div className="flex gap-2 justify-end">
                                     <Button variant="outline" size="sm" onClick={() => router.push(`/admin/products/edit/${product.id}`)}>
                                         Chỉnh sửa
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={() => handleToggleStock(product)}>
-                                        Trạng thái
                                     </Button>
                                     <Button variant="destructive" size="sm" onClick={() => openDeleteConfirm(product)}>
                                         Xóa
