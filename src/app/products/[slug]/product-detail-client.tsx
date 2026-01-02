@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -41,12 +42,14 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
     return <div>Đang tìm sản phẩm...</div>;
   }
 
+  const isOutOfStock = product.stock <= 0;
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
   
   const images = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls : [];
   const detailedDescription = product.detailedDescription || {};
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -104,6 +107,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                           variant={selectedSize === size.name ? 'default' : 'outline'}
                           onClick={() => setSelectedSize(size.name)}
                           className="rounded-full"
+                           disabled={isOutOfStock}
                         >
                           {size.name}
                         </Button>
@@ -114,19 +118,19 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
 
                 <div className="mt-8 flex items-center gap-4">
                   <div className="flex items-center border rounded-md">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}" disabled={isOutOfStock}>
                         <Minus className="h-4 w-4" />
                     </Button>
                     <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)}>
+                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)}" disabled={isOutOfStock}>
                         <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button size="lg" onClick={handleAddToCart} className="flex-1 bg-black text-white hover:bg-black/80 rounded-md">
-                    THÊM VÀO GIỎ • {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(priceToShow * quantity)}
+                  <Button size="lg" onClick={handleAddToCart} className="flex-1 bg-black text-white hover:bg-black/80 rounded-md" disabled={isOutOfStock}>
+                     {isOutOfStock ? "Hết hàng" : `THÊM VÀO GIỎ • ${new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(priceToShow * quantity)}`}
                   </Button>
                 </div>
 

@@ -31,11 +31,17 @@ export function ProductCard({ product }: ProductCardProps) {
   }, []);
 
   const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
+  const isOutOfStock = product.stock <= 0;
 
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden border-0 shadow-none bg-transparent rounded-none">
-      <Link href={`/products/${product.slug}`} className="flex flex-col h-full text-center">
+      <Link 
+        href={isOutOfStock ? '#' : `/products/${product.slug}`} 
+        className={cn("flex flex-col h-full text-center", isOutOfStock && "pointer-events-none cursor-not-allowed")}
+        aria-disabled={isOutOfStock}
+        tabIndex={isOutOfStock ? -1 : undefined}
+      >
         <div className="relative w-full overflow-hidden aspect-square flex-grow">
           {thumbnailUrl && (
             <Image
@@ -45,7 +51,12 @@ export function ProductCard({ product }: ProductCardProps) {
               className="object-contain transition-transform duration-300 ease-in-out group-hover:scale-105"
             />
           )}
-           {randomPositionClass && (
+           {isOutOfStock && (
+             <div className="absolute inset-0 bg-white/70 flex justify-center items-center z-10">
+                <span className="font-headline text-lg text-foreground border border-foreground px-4 py-2 rounded-full">Hết hàng</span>
+            </div>
+           )}
+           {randomPositionClass && !isOutOfStock && (
              <div className={cn(
                 "absolute inset-0 p-8 flex flex-col transition-opacity duration-300",
                 randomPositionClass
@@ -57,7 +68,9 @@ export function ProductCard({ product }: ProductCardProps) {
            )}
         </div>
         <div className="p-4 border-t border-transparent group-hover:border-foreground/20 transition-colors">
-            <span className="text-sm text-foreground group-hover:font-semibold">Xem chi tiết</span>
+            <span className={cn("text-sm text-foreground", isOutOfStock ? "text-muted-foreground" : "group-hover:font-semibold")}>
+              {isOutOfStock ? "Đã hết hàng" : "Xem chi tiết"}
+            </span>
         </div>
       </Link>
     </Card>
