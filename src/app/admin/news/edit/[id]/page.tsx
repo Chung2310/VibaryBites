@@ -43,7 +43,7 @@ export default function EditNewsArticlePage() {
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, existingImageUrl?: string) => {
+    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
         if (!firestore || !article) {
             toast({
                 variant: 'destructive',
@@ -54,23 +54,25 @@ export default function EditNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        let newImageUrl = existingImageUrl;
+        let newImageUrl = article.imageUrl;
 
         try {
-            // If there's a new image file, upload it and delete the old one if it exists
             if (imageFile) {
+                // If there's a new image, upload it
                 newImageUrl = await uploadImage(imageFile);
-                if (existingImageUrl && existingImageUrl !== newImageUrl) {
-                    await deleteImage(existingImageUrl);
-                }
-            } else if (!imagePreview && existingImageUrl) { // If the image was removed
-                 if (article.imageUrl) {
+                // If there was an old image and it's different from the new one, delete the old one
+                if (article.imageUrl && article.imageUrl !== newImageUrl) {
                     await deleteImage(article.imageUrl);
                 }
-                newImageUrl = '';
+            } else if (imageWasRemoved) {
+                // If the image was removed and no new one was uploaded
+                if (article.imageUrl) {
+                    await deleteImage(article.imageUrl);
+                }
+                newImageUrl = ''; // Set to empty
             }
 
-             if (!newImageUrl) {
+             if (!newImageUrl && !imageFile) { // Check if there's no image at all
                  toast({
                     variant: "destructive",
                     title: "Lỗi",
@@ -167,5 +169,3 @@ export default function EditNewsArticlePage() {
         </div>
     );
 }
-
-    

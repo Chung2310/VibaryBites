@@ -47,7 +47,7 @@ const articleCategories = [
 
 interface NewsFormProps {
   article?: NewsArticle;
-  onSubmit: (values: NewsFormValues, imageFile: File | null, existingImageUrl?: string) => Promise<void>;
+  onSubmit: (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -105,7 +105,8 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
   };
 
   const handleFormSubmit = async (values: NewsFormValues) => {
-    await onSubmit(values, imageFile, article?.imageUrl);
+    const imageWasRemoved = isEditMode && !!article?.imageUrl && !imagePreview;
+    await onSubmit(values, imageFile, imageWasRemoved);
   }
 
   return (
@@ -234,5 +235,3 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
     </Form>
   );
 }
-
-    
