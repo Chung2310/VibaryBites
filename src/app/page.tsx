@@ -350,38 +350,21 @@ function NewArrivals() {
 }
 
 function NewsArticleCard({ article }: { article: NewsArticle }) {
-  const formattedDate = article.publicationDate
-    ? new Date(article.publicationDate).toLocaleDateString('vi-VN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : 'No date';
-
   return (
-    <Link href={`/news/${article.slug}`} key={article.id}>
-      <Card className="h-full overflow-hidden transition-shadow hover:shadow-xl border-0 rounded-none bg-transparent">
-        {article.imageUrl && (
-          <div className="aspect-[4/3] relative">
-            <Image
-              src={article.imageUrl}
-              alt={article.title}
-              fill
-              className="object-cover rounded-lg"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-        )}
-        <CardHeader className="p-4">
-          <p className="text-sm text-muted-foreground">
-            {formattedDate} &bull; {article.category}
-          </p>
-          <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <p className="text-sm text-muted-foreground font-fraunces line-clamp-3">{article.excerpt}</p>
-        </CardContent>
-      </Card>
+    <Link href={`/news/${article.slug}`} className="flex-shrink-0 w-64 md:w-80 group">
+      <div className="overflow-hidden rounded-lg">
+        <Image
+          src={article.imageUrl}
+          alt={article.title}
+          width={320}
+          height={240}
+          className="w-full aspect-[4/3] object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+      <div className="mt-4">
+        <h3 className="text-lg font-medium leading-snug">{article.title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground font-fraunces line-clamp-2">{article.excerpt}</p>
+      </div>
     </Link>
   );
 }
@@ -394,7 +377,7 @@ function HotNews() {
     return query(
       collection(firestore, 'news_articles'),
       orderBy('publicationDate', 'desc'),
-      limit(3)
+      limit(4) // Fetch 4 articles
     );
   }, [firestore]);
 
@@ -403,25 +386,24 @@ function HotNews() {
   return (
     <section className="py-16 sm:py-24 bg-white">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-         <div className="text-center mb-12">
-            <h2 className="font-headline text-4xl md:text-5xl">Tin tức nóng hổi</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
-                Khám phá những câu chuyện, công thức và cảm hứng mới nhất từ bếp bánh của chúng tôi.
-            </p>
+         <div className="mb-8">
+            <h2 className="font-headline text-3xl md:text-4xl">Tin tức “nóng hổi”</h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {isLoading && Array.from({length: 3}).map((_, i) => (
-                <div key={i} className="space-y-4">
+        <div className="flex space-x-8 overflow-x-auto pb-4 -mx-4 px-4">
+            {isLoading && Array.from({length: 4}).map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-64 md:w-80 space-y-4">
                     <Skeleton className="w-full aspect-[4/3] rounded-lg" />
-                    <Skeleton className="h-5 w-1/2" />
-                    <Skeleton className="h-7 w-3/4" />
-                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
                 </div>
             ))}
             {latestArticles?.map((article) => (
               <NewsArticleCard key={article.id} article={article} />
             ))}
+             {/* Add an empty div for spacing at the end of the scroll */}
+            <div className="flex-shrink-0 w-1"></div>
         </div>
       </div>
     </section>
