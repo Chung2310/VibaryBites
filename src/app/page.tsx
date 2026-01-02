@@ -134,7 +134,7 @@ function Hero() {
                   priority={index === 0}
                   data-ai-hint={banner.imageHint}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />
+                
                 <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-20 text-left sm:px-6 lg:px-8">
                   <h2 className="font-body text-xl tracking-widest uppercase">{banner.title}</h2>
                   <h1 className="font-headline text-5xl leading-tight md:text-7xl mt-2">
