@@ -1,6 +1,6 @@
 
 
-import type { Product, Collection, Article, FaqItem, NavLink } from './types';
+import type { Product, Collection, Article, FaqItem, NavLink, ProductCategory } from './types';
 
 export const navLinks: NavLink[] = [
   { href: '/products', label: 'Sản Phẩm' },
@@ -8,6 +8,45 @@ export const navLinks: NavLink[] = [
   { href: '/faq', label: 'Hỏi đáp' },
   { href: '/news', label: 'Tin Tức' },
   { href: '/contact', label: 'Liên Hệ' },
+];
+
+export const productCategories: ProductCategory[] = [
+    { 
+        slug: 'banh-sinh-nhat', 
+        title: 'Bánh sinh nhật',
+        subtitle: 'DÀNH CHO 2-10 NGƯỜI',
+        description: 'Sản phẩm đặc trưng của VIBARY là bánh Entremet – dòng bánh lạnh cao cấp của Pháp. Dành cho tiệc sinh nhật, hoặc bất kỳ khoảnh khắc nào quan trọng của bạn.'
+    },
+    { 
+        slug: 'banh-ngot', 
+        title: 'Bánh ngọt',
+        subtitle: 'HƯƠNG VỊ NGỌT NGÀO',
+        description: 'Những chiếc bánh ngọt tinh tế, từ mousse mềm mịn đến tart giòn tan, hoàn hảo cho những giây phút thư giãn hay tụ họp bạn bè.'
+    },
+    { 
+        slug: 'banh-man', 
+        title: 'Bánh mặn',
+        subtitle: 'LỰA CHỌN ĐẬM ĐÀ',
+        description: 'Khám phá hương vị đậm đà và mới lạ với các loại bánh mặn được làm thủ công, lý tưởng cho bữa sáng hoặc bữa ăn nhẹ.'
+    },
+    { 
+        slug: 'do-uong', 
+        title: 'Đồ uống',
+        subtitle: 'GIẢI NHIỆT & THƯ GIÃN',
+        description: 'Kết hợp hoàn hảo với bánh, các loại đồ uống của chúng tôi được pha chế để mang lại sự sảng khoái và thư giãn.'
+    },
+    { 
+        slug: 'banh-khac', 
+        title: 'Bánh khác',
+        subtitle: 'KHÁM PHÁ HƯƠNG VỊ MỚI',
+        description: 'Dành cho những ai thích phiêu lưu, danh mục này bao gồm các sáng tạo độc đáo và các loại bánh đặc biệt theo mùa của chúng tôi.'
+    },
+    { 
+        slug: 'do-an-khac', 
+        title: 'Đồ ăn khác',
+        subtitle: 'LỰA CHỌN HẤP DẪN KHÁC',
+        description: 'Ngoài bánh ngọt, chúng tôi còn cung cấp các món ăn nhẹ và đồ ăn vặt hấp dẫn khác để hoàn thiện trải nghiệm của bạn.'
+    },
 ];
 
 export const collections: Collection[] = [

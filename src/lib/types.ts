@@ -112,4 +112,10 @@ export type InventoryItem = {
     parLevel: number;
 };
 
+export type ProductCategory = {
+  slug: string;
+  title: string;
+  subtitle: string;
+  description: string;
+}
     

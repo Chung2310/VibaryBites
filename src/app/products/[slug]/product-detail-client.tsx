@@ -2,7 +2,7 @@
 
 'use client';
 
-import { faqs } from '@/lib/data';
+import { faqs, productCategories } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -63,9 +63,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
     setQuantity(1);
   };
 
-  const collectionTitle = product.collection === 'half-entremet' ? 'BÁNH NỬA ENTREMET' : 
-                          product.collection === 'baby-collection' ? 'BÁNH PETIT' :
-                          'BÁNH ENTREMET';
+  const category = productCategories.find(cat => cat.slug === product.categorySlug);
                           
   return (
     <>
@@ -95,7 +93,9 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
           {/* Product Info */}
           <div className="relative row-start-1 md:row-start-auto">
               <div className="md:sticky md:top-24">
-                <p className="text-sm uppercase tracking-widest text-muted-foreground">{collectionTitle}</p>
+                {category && (
+                    <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.title}</p>
+                )}
                 <h1 className="font-headline text-6xl mt-2">{product.name}</h1>
                 
                 {isOutOfStock ? (
