@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Bell,
   Home,
   Package,
-  Package2,
   ShoppingCart,
   Users,
   LineChart,
@@ -17,7 +15,8 @@ import {
   Ticket,
   Warehouse,
   MoreHorizontal,
-  Newspaper
+  Newspaper,
+  BookMarked
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +36,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
@@ -47,10 +45,11 @@ const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '6' },
   { href: '/admin/products', label: 'Sản phẩm', icon: Package },
-  { href: '/admin/attributes', label: 'Thuộc tính sản phẩm', icon: Settings },
+  { href: '/admin/attributes', label: 'Thuộc tính', icon: Settings },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
   { href: '/admin/customers', label: 'Khách hàng', icon: Users },
-  { href: '/admin/news', label: 'Quản lý tin tức', icon: Newspaper },
+  { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
+  { href: '/admin/recipes', label: 'Công thức', icon: BookMarked },
   { href: '/admin/reports', label: 'Báo cáo', icon: LineChart },
   { href: '/admin/promotions', label: 'Khuyến mãi', icon: Ticket },
 ];
@@ -79,7 +78,7 @@ function AdminSidebar() {
                     <span className="sr-only">Toggle Sidebar</span>
                 </Button>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 overflow-y-auto">
                 <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isCollapsed && "px-2")}>
                     {navLinks.map((link) => {
                         const isActive = pathname === link.href;
@@ -142,7 +141,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
 
-  if (pathname === '/admin/login') {
+  if (pathname === '/admin/login' || pathname === '/login') {
     return <>{children}</>;
   }
   
