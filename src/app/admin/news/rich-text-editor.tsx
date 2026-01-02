@@ -6,14 +6,29 @@ import {
     Bold, Italic, Underline, Strikethrough,
     Heading1, Heading2, Heading3, Heading4,
     List, ListOrdered, Quote, Code, Pilcrow,
-    Undo, Redo, TableIcon, Link as LinkIcon
+    Undo, Redo, TableIcon, Link as LinkIcon, Image as ImageIcon
 } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { uploadImage } from '@/firebase/storage';
 
 interface RichTextEditorProps {
   value: string;
@@ -21,6 +36,12 @@ interface RichTextEditorProps {
 }
 
 const EditorToolbar = ({ editor }: { editor: any }) => {
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
+
   if (!editor) return null;
 
   const setLink = useCallback(() => {
@@ -34,44 +55,105 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
+  const handleImageInsert = async () => {
+    if (imageUrl) {
+      editor.chain().focus().setImage({ src: imageUrl }).run();
+    }
+    setIsImageModalOpen(false);
+    setImageUrl("");
+  };
+
+  const handleImageUpload = async () => {
+      if (!imageFile) {
+          toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
+          return;
+      }
+      setIsUploading(true);
+      try {
+          const downloadURL = await uploadImage(imageFile);
+          editor.chain().focus().setImage({ src: downloadURL }).run();
+          setIsImageModalOpen(false);
+          setImageFile(null);
+      } catch (error) {
+           toast({ variant: 'destructive', title: "Lỗi tải lên", description: "Đã có lỗi xảy ra khi tải ảnh lên."});
+      } finally {
+          setIsUploading(false);
+      }
+  }
+
+
   return (
-    <div className="border border-input rounded-t-md p-1 flex flex-wrap items-center gap-1 bg-muted/50">
-        <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold /></button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic /></button>
-        <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''}><Underline /></button>
-        <button onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''}><Strikethrough /></button>
-        
-        <div className="h-6 w-px bg-border mx-1"></div>
+    <>
+      <div className="border border-input rounded-t-md p-1 flex flex-wrap items-center gap-1 bg-muted/50">
+          <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''}><Underline /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''}><Strikethrough /></button>
+          
+          <div className="h-6 w-px bg-border mx-1"></div>
 
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}><Heading1 /></button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}><Heading2 /></button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}><Heading3 /></button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}><Heading4 /></button>
-        
-         <div className="h-6 w-px bg-border mx-1"></div>
+          <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}><Heading1 /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}><Heading2 /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}><Heading3 /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}><Heading4 /></button>
+          
+           <div className="h-6 w-px bg-border mx-1"></div>
 
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}><List /></button>
-        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}><ListOrdered /></button>
-        <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={editor.isActive('blockquote') ? 'is-active' : ''}><Quote /></button>
-        <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={editor.isActive('codeBlock') ? 'is-active' : ''}><Code /></button>
-        
-         <div className="h-6 w-px bg-border mx-1"></div>
+          <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}><List /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}><ListOrdered /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={editor.isActive('blockquote') ? 'is-active' : ''}><Quote /></button>
+          <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={editor.isActive('codeBlock') ? 'is-active' : ''}><Code /></button>
+          
+           <div className="h-6 w-px bg-border mx-1"></div>
 
-         <button
-            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-        >
-            <TableIcon />
-        </button>
+           <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} >
+              <TableIcon />
+          </button>
+          <button type="button" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}>
+             <LinkIcon />
+          </button>
+           <button type="button" onClick={() => setIsImageModalOpen(true)}>
+             <ImageIcon />
+          </button>
+          
+           <div className="h-6 w-px bg-border mx-1"></div>
 
-        <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}>
-           <LinkIcon />
-        </button>
-        
-         <div className="h-6 w-px bg-border mx-1"></div>
+          <button type="button" onClick={() => editor.chain().focus().undo().run()}><Undo /></button>
+          <button type="button" onClick={() => editor.chain().focus().redo().run()}><Redo /></button>
+      </div>
 
-        <button onClick={() => editor.chain().focus().undo().run()}><Undo /></button>
-        <button onClick={() => editor.chain().focus().redo().run()}><Redo /></button>
-    </div>
+       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chèn Ảnh</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="upload">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upload">Tải lên</TabsTrigger>
+              <TabsTrigger value="url">Từ URL</TabsTrigger>
+            </TabsList>
+            <TabsContent value="upload" className="py-4">
+                <DialogDescription>Chọn một ảnh từ máy tính của bạn để tải lên và chèn vào bài viết.</DialogDescription>
+                <div className="mt-4">
+                    <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                </div>
+            </TabsContent>
+            <TabsContent value="url" className="py-4">
+                 <DialogDescription>Dán đường dẫn URL của ảnh bạn muốn chèn vào.</DialogDescription>
+                 <div className="mt-4">
+                    <Input placeholder="https://example.com/image.jpg" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+                 </div>
+            </TabsContent>
+          </Tabs>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
+            <Button onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
+              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -79,7 +161,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-          underline: false, // Use custom Underline extension
+          underline: false,
       }),
       Table.configure({
         resizable: true,
@@ -90,7 +172,10 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       Link.configure({
         openOnClick: false,
       }),
-      
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+      })
     ],
     content: value,
     editorProps: {
@@ -122,6 +207,18 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
         }
         .ProseMirror:focus {
             outline: none;
+        }
+        .ProseMirror p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            float: left;
+            color: #adb5bd;
+            pointer-events: none;
+            height: 0;
+        }
+        .ProseMirror img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
         }
         .ProseMirror table {
             border-collapse: collapse;
