@@ -43,7 +43,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/1.png",
+    imageUrl: "/images/banner/1.webp",
     description: "Beautifully crafted entremet cake on a platter.",
     imageHint: "entremet cake"
   },
@@ -53,7 +53,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/2.png",
+    imageUrl: "/images/banner/2.webp",
     description: "Close up shot of a slice of layered mousse cake.",
     imageHint: "mousse cake"
   },
@@ -63,7 +63,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/3.png",
+    imageUrl: "/images/banner/3.webp",
     description: "A variety of colorful French pastries on display.",
     imageHint: "french pastry"
   },
@@ -73,7 +73,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/4.png",
+    imageUrl: "/images/banner/4.webp",
     description: "A baker decorating a modern cake with precision.",
     imageHint: "cake decorating"
   },
@@ -83,19 +83,9 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/5.png",
+    imageUrl: "/images/banner/5.webp",
     description: "Luxurious chocolate entremet with a glossy finish.",
     imageHint: "chocolate entremet"
-  },
-  {
-    id: "hero-banner-6",
-    title: "BST BÁNH ENTREMET DÀNH CHO",
-    subtitle: "Mọi dịp đặc biệt của bạn",
-    buttonText: "KHÁM PHÁ NGAY",
-    buttonLink: "/products?collection=special-occasions",
-    imageUrl: "/images/banner/6.png",
-    description: "A vibrant fruit-topped cake, perfect for summer.",
-    imageHint: "fruit cake"
   }
 ];
 
