@@ -23,6 +23,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import type { NewsArticle } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowRight } from 'lucide-react';
 
 
 const marqueeVariantsLR = {
@@ -170,9 +171,9 @@ function Hero() {
 
 function CategorySection() {
     const categories = [
+        { name: 'Bánh sinh nhật', description: 'Dành cho từ 2-10 người', imageId: 'category-birthday-cake' },
         { name: 'Bánh ngọt', description: 'Dành cho những tín đồ hảo ngọt', imageId: 'category-sweet-cake' },
         { name: 'Bánh mặn', description: 'Hương vị đậm đà khó cưỡng', imageId: 'category-salty-cake' },
-        { name: 'Bánh sinh nhật', description: 'Dành cho từ 2-10 người', imageId: 'category-birthday-cake' },
         { name: 'Đồ uống', description: 'Giải nhiệt và thư giãn', imageId: 'category-drinks' },
         { name: 'Bánh khác', description: 'Khám phá những hương vị mới', imageId: 'category-other-cakes' },
         { name: 'Đồ ăn khác', description: 'Nhiều lựa chọn hấp dẫn khác', imageId: 'category-other-food' },
@@ -214,29 +215,30 @@ function CategorySection() {
               return (
                   <motion.div key={category.name} variants={itemVariants}>
                     <Link
-                    href="/products"
-                    className="group relative block h-96 overflow-hidden rounded-3xl shadow-xl transition-transform duration-300 hover:scale-105"
+                      href="/products"
+                      className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
                     >
-                    {image && (
-                        <Image
-                            src={image.imageUrl}
-                            alt={category.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-110"
-                            priority={false}
-                            data-ai-hint={image.imageHint}
-                        />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute inset-0 flex flex-col justify-end p-8 text-white">
-                        <h3 className="font-lexend text-[21px] font-normal tracking-wide">
-                            {category.name}
-                        </h3>
-                        <p className="mt-2 text-lg opacity-90 font-fraunces">{category.description}</p>
-                        <span className="mt-4 inline-flex items-center text-2xl font-light">
-                        →<span className="ml-2 text-sm uppercase tracking-wider opacity-80">Khám phá</span>
-                        </span>
-                    </div>
+                      {image && (
+                          <Image
+                              src={image.imageUrl}
+                              alt={category.name}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-110"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              data-ai-hint={image.imageHint}
+                          />
+                      )}
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
+                          <div>
+                            <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
+                                {category.name}
+                            </h3>
+                            <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.description}</p>
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
                     </Link>
                   </motion.div>
               )
