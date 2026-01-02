@@ -4,6 +4,7 @@ import {
   File,
   MoreHorizontal,
   PlusCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,7 @@ import {
 
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -115,6 +116,30 @@ export default function ProductsPage() {
                 closeDeleteConfirm();
             });
     }
+
+    const handleToggleStock = async (product: Product) => {
+        if (!firestore) return;
+
+        const docRef = doc(firestore, 'cakes', product.id);
+        // If stock is > 0, set to 0. If stock is 0, set to 10 (a default in-stock value).
+        const newStock = product.stock > 0 ? 0 : 10; 
+        
+        try {
+            await setDoc(docRef, { stock: newStock }, { merge: true });
+            toast({
+                title: "Cập nhật thành công",
+                description: `Sản phẩm "${product.name}" đã được cập nhật thành ${newStock > 0 ? '"Còn hàng"' : '"Hết hàng"'}.`,
+            });
+        } catch (error) {
+            console.error("Error toggling stock:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Lỗi',
+                description: 'Không thể cập nhật trạng thái sản phẩm.'
+            });
+        }
+    }
+
 
     return (
         <>
@@ -229,6 +254,10 @@ export default function ProductsPage() {
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa</DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => handleToggleStock(product)}>
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        <span>Cập nhật trạng thái</span>
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className='text-destructive' onClick={() => openDeleteConfirm(product)}>Xóa</DropdownMenuItem>
                                 </DropdownMenuContent>
