@@ -4,8 +4,6 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { articles } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import React from 'react';
@@ -20,6 +18,11 @@ import Autoplay from "embla-carousel-autoplay";
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import type { NewsArticle } from '@/lib/types';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const marqueeVariantsLR = {
@@ -316,7 +319,18 @@ function NewArrivals() {
 }
 
 function HotNews() {
-  const latestArticles = articles.slice(0, 3);
+  const firestore = useFirestore();
+  const articlesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'news_articles'),
+      orderBy('publicationDate', 'desc'),
+      limit(3)
+    );
+  }, [firestore]);
+
+  const { data: latestArticles, isLoading } = useCollection<NewsArticle>(articlesQuery);
+
   return (
     <section className="py-16 sm:py-24 bg-white">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -324,29 +338,33 @@ function HotNews() {
           <h2 className="font-headline text-4xl md:text-5xl">Tin tức "nóng hổi"</h2>
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {latestArticles.map((article) => {
-            const image = PlaceHolderImages.find((p) => p.id === article.imageId);
-            return (
-              <Link href={`/news/${article.slug}`} key={article.id} className="group flex flex-col">
-                <div className="w-full overflow-hidden rounded-lg aspect-[4/3]">
-                  {image && (
-                    <Image
-                      src={image.imageUrl}
-                      alt={article.title}
-                      width={600}
-                      height={400}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      data-ai-hint={image.imageHint}
-                    />
-                   )}
-                </div>
-                <div className="mt-4 flex flex-grow flex-col">
-                    <h3 className="font-headline text-xl group-hover:underline flex-grow">{article.title}</h3>
-                    <p className="mt-2 text-sm font-fraunces text-muted-foreground">{article.excerpt}</p>
-                </div>
-              </Link>
-            );
-          })}
+          {isLoading && Array.from({length: 3}).map((_, i) => (
+            <div key={i} className="flex flex-col">
+              <Skeleton className="w-full aspect-[4/3] rounded-lg" />
+              <Skeleton className="h-6 w-3/4 mt-4" />
+              <Skeleton className="h-4 w-full mt-2" />
+              <Skeleton className="h-4 w-5/6 mt-2" />
+            </div>
+          ))}
+          {latestArticles?.map((article) => (
+            <Link href={`/news/${article.slug}`} key={article.id} className="group flex flex-col">
+              <div className="w-full overflow-hidden rounded-lg aspect-[4/3]">
+                {article.imageUrl && (
+                  <Image
+                    src={article.imageUrl}
+                    alt={article.title}
+                    width={600}
+                    height={400}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+              </div>
+              <div className="mt-4 flex flex-grow flex-col">
+                  <h3 className="font-headline text-xl group-hover:underline flex-grow">{article.title}</h3>
+                  <p className="mt-2 text-sm font-fraunces text-muted-foreground line-clamp-2">{article.excerpt}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
