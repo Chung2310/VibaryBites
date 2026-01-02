@@ -122,7 +122,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
 
                         <div className="mt-8 flex items-center gap-4">
                           <div className="flex items-center border rounded-md">
-                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}">
+                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
                                 <Minus className="h-4 w-4" />
                             </Button>
                             <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
