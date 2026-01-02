@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
@@ -42,9 +43,8 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  if (!editor) return null;
-
   const setLink = useCallback(() => {
+    if (!editor) return;
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('URL', previousUrl);
     if (url === null) return;
@@ -81,6 +81,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       }
   }
 
+  if (!editor) return null;
 
   return (
     <>
