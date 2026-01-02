@@ -24,6 +24,7 @@ import type { NewsArticle } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 const marqueeVariantsLR = {
@@ -348,6 +349,44 @@ function NewArrivals() {
   );
 }
 
+function NewsArticleCard({ article }: { article: NewsArticle }) {
+  const formattedDate = article.publicationDate
+    ? new Date(article.publicationDate).toLocaleDateString('vi-VN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'No date';
+
+  return (
+    <Link href={`/news/${article.slug}`} key={article.id}>
+      <Card className="h-full overflow-hidden transition-shadow hover:shadow-xl border-0 rounded-none bg-transparent">
+        {article.imageUrl && (
+          <div className="aspect-[4/3] relative">
+            <Image
+              src={article.imageUrl}
+              alt={article.title}
+              fill
+              className="object-cover rounded-lg"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        )}
+        <CardHeader className="p-4">
+          <p className="text-sm text-muted-foreground">
+            {formattedDate} &bull; {article.category}
+          </p>
+          <CardTitle className="font-headline text-xl">{article.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <p className="text-sm text-muted-foreground font-fraunces line-clamp-3">{article.excerpt}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+
 function HotNews() {
   const firestore = useFirestore();
   const articlesQuery = useMemoFirebase(() => {
@@ -355,82 +394,35 @@ function HotNews() {
     return query(
       collection(firestore, 'news_articles'),
       orderBy('publicationDate', 'desc'),
-      limit(3) // Fetch 3 latest articles
+      limit(3)
     );
   }, [firestore]);
 
   const { data: latestArticles, isLoading } = useCollection<NewsArticle>(articlesQuery);
 
-  const featuredArticle = latestArticles?.[0];
-  const otherArticles = latestArticles?.slice(1) || [];
-
   return (
     <section className="py-16 sm:py-24 bg-white">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <Skeleton className="w-full aspect-[4/3] rounded-lg" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-10 w-3/4" />
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-5/6" />
-              <Skeleton className="h-12 w-32" />
-            </div>
-          </div>
-        )}
+         <div className="text-center mb-12">
+            <h2 className="font-headline text-4xl md:text-5xl">Tin tức nóng hổi</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
+                Khám phá những câu chuyện, công thức và cảm hứng mới nhất từ bếp bánh của chúng tôi.
+            </p>
+        </div>
 
-        {featuredArticle && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-            <Link href={`/news/${featuredArticle.slug}`} className="group">
-              <div className="w-full overflow-hidden rounded-lg aspect-[4/3]">
-                {featuredArticle.imageUrl && (
-                  <Image
-                    src={featuredArticle.imageUrl}
-                    alt={featuredArticle.title}
-                    width={800}
-                    height={600}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                )}
-              </div>
-            </Link>
-            <div className="text-left">
-              <span className="inline-block rounded-full border px-3 py-1 text-sm font-semibold">ĐỪNG BỎ LỠ</span>
-              <h2 className="font-headline text-4xl md:text-5xl mt-4">
-                <Link href={`/news/${featuredArticle.slug}`} className="hover:underline">{featuredArticle.title}</Link>
-              </h2>
-              <p className="mt-4 text-muted-foreground font-fraunces line-clamp-3">{featuredArticle.excerpt}</p>
-              <Button asChild className="mt-6 bg-black text-white hover:bg-black/80 rounded-md font-bold" size="lg">
-                <Link href={`/news/${featuredArticle.slug}`}>XEM NGAY</Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {otherArticles.length > 0 && (
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2">
-            {otherArticles.map((article) => (
-              <Link href={`/news/${article.slug}`} key={article.id} className="group flex flex-col">
-                <div className="w-full overflow-hidden rounded-lg aspect-[4/3]">
-                  {article.imageUrl && (
-                    <Image
-                      src={article.imageUrl}
-                      alt={article.title}
-                      width={600}
-                      height={400}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  )}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {isLoading && Array.from({length: 3}).map((_, i) => (
+                <div key={i} className="space-y-4">
+                    <Skeleton className="w-full aspect-[4/3] rounded-lg" />
+                    <Skeleton className="h-5 w-1/2" />
+                    <Skeleton className="h-7 w-3/4" />
+                    <Skeleton className="h-5 w-full" />
                 </div>
-                <div className="mt-4 flex flex-grow flex-col">
-                    <h3 className="font-headline text-xl group-hover:underline flex-grow">{article.title}</h3>
-                    <p className="mt-2 text-sm font-fraunces text-muted-foreground line-clamp-2">{article.excerpt}</p>
-                </div>
-              </Link>
             ))}
-          </div>
-        )}
+            {latestArticles?.map((article) => (
+              <NewsArticleCard key={article.id} article={article} />
+            ))}
+        </div>
       </div>
     </section>
   );
