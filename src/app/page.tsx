@@ -397,10 +397,10 @@ function HotNews() {
             </Link>
             <div className="text-left">
               <span className="inline-block rounded-full border px-3 py-1 text-sm font-semibold">ĐỪNG BỎ LỠ</span>
-              <h2 className="font-headline text-4xl md:text-5xl mt-4 group-hover:underline">
-                <Link href={`/news/${featuredArticle.slug}`}>{featuredArticle.title}</Link>
+              <h2 className="font-headline text-4xl md:text-5xl mt-4">
+                <Link href={`/news/${featuredArticle.slug}`} className="hover:underline">{featuredArticle.title}</Link>
               </h2>
-              <p className="mt-4 text-muted-foreground font-fraunces">{featuredArticle.excerpt}</p>
+              <p className="mt-4 text-muted-foreground font-fraunces line-clamp-3">{featuredArticle.excerpt}</p>
               <Button asChild className="mt-6 bg-black text-white hover:bg-black/80 rounded-md font-bold" size="lg">
                 <Link href={`/news/${featuredArticle.slug}`}>XEM NGAY</Link>
               </Button>
