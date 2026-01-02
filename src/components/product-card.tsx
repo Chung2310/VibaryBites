@@ -11,15 +11,16 @@ import React, { useState, useEffect } from 'react';
 
 type ProductCardProps = {
   product: Product;
+  hideStockStatus?: boolean; // Add this prop
 };
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, hideStockStatus = false }: ProductCardProps) {
   const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
   const isOutOfStock = product.stock <= 0;
 
   return (
     <Card className="group relative flex h-full flex-col overflow-hidden border-0 shadow-none bg-transparent rounded-none">
-      {isOutOfStock && (
+      {!hideStockStatus && isOutOfStock && (
          <div className="absolute top-0 right-0 bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-4 z-10 text-center leading-tight">
             TẠM<br/>HẾT<br/>HÀNG
         </div>

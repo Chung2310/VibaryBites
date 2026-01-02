@@ -293,7 +293,7 @@ function FeaturedProducts() {
              >
                 {featuredProducts.map((product, index) => (
                     <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[90vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-1/4 px-4">
-                        <ProductCard product={product} />
+                        <ProductCard product={product} hideStockStatus={true} />
                     </div>
                 ))}
             </motion.div>
