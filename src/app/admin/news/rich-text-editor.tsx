@@ -54,6 +54,10 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
     }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
+  
+  if (!editor) {
+    return null;
+  }
 
   const handleImageInsert = async () => {
     if (imageUrl) {
@@ -79,10 +83,6 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       } finally {
           setIsUploading(false);
       }
-  }
-
-  if (!editor) {
-    return null;
   }
 
   return (
@@ -149,8 +149,8 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
             </TabsContent>
           </Tabs>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
-            <Button onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
+            <Button type="button" variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
+            <Button type="button" onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
               {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
             </Button>
           </DialogFooter>
@@ -208,6 +208,13 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     return null;
   }
 
+  const openImageDialog = () => {
+    const toolbar = document.querySelector('[data-testid="toolbar-image-button"]');
+    if (toolbar) {
+      (toolbar as HTMLButtonElement).click();
+    }
+  }
+
   return (
     <div className="border border-input rounded-b-md">
       <EditorToolbar editor={editor} />
@@ -217,9 +224,9 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
         tippyOptions={{ duration: 100 }}
         className="flex items-center space-x-1 rounded-md border bg-background p-1 shadow-md"
       >
-        <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold className="h-4 w-4" /></button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic className="h-4 w-4" /></button>
-        <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}><LinkIcon className="h-4 w-4"/></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold className="h-4 w-4" /></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic className="h-4 w-4" /></button>
+        <button type="button" onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}><LinkIcon className="h-4 w-4"/></button>
       </BubbleMenu>
 
       <FloatingMenu
@@ -228,6 +235,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
         className="flex flex-col space-y-1 rounded-md border bg-background p-2 shadow-md"
       >
         <button
+          type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
         >
@@ -235,6 +243,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <span>Tiêu đề 2</span>
         </button>
         <button
+          type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
         >
@@ -242,6 +251,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <span>Tiêu đề 3</span>
         </button>
         <button
+          type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('bulletList') ? 'is-active' : ''}`}
         >
@@ -249,6 +259,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <span>Danh sách</span>
         </button>
         <button
+          type="button"
           onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
           className="flex items-center gap-2 p-1 rounded-sm hover:bg-muted"
         >
@@ -256,7 +267,8 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <span>Bảng</span>
         </button>
         <button
-          onClick={() => (document.querySelector('button[aria-label="Chèn ảnh"]') as HTMLButtonElement)?.click()}
+          type="button"
+          onClick={openImageDialog}
           className="flex items-center gap-2 p-1 rounded-sm hover:bg-muted"
         >
           <ImageIcon className="h-4 w-4" />
@@ -345,3 +357,4 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     </div>
   );
 }
+`
