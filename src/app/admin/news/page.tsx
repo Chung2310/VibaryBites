@@ -80,7 +80,11 @@ export default function NewsPage() {
         const deletePromises: Promise<any>[] = [];
 
         if (selectedArticle.imageUrl) {
-            deletePromises.push(deleteImage(selectedArticle.imageUrl));
+            // It's possible the imageUrl is not a Firebase Storage URL if it's from old data.
+            // A robust implementation would check if the URL contains 'firebasestorage.googleapis.com'
+            if (selectedArticle.imageUrl.includes('firebasestorage.googleapis.com')) {
+                deletePromises.push(deleteImage(selectedArticle.imageUrl));
+            }
         }
 
         deletePromises.push(deleteDoc(docRef));
@@ -99,7 +103,6 @@ export default function NewsPage() {
                     toast({
                         title: "Xóa thành công",
                         description: `Bài viết "${selectedArticle.title}" đã được xóa.`,
-                        variant: 'destructive',
                     });
                 }
             })
@@ -206,7 +209,7 @@ export default function NewsPage() {
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => router.push(`/admin/news/edit/${article.id}`)}>Chỉnh sửa</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.push(`/news/${article.slug}`)} target="_blank">Xem trước</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => window.open(`/news/${article.slug}`, '_blank')}>Xem trước</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className='text-destructive' onClick={() => openDeleteConfirm(article)}>Xóa</DropdownMenuItem>
                                 </DropdownMenuContent>
