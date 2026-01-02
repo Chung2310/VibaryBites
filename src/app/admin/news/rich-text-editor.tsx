@@ -81,7 +81,9 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       }
   }
 
-  if (!editor) return null;
+  if (!editor) {
+    return null;
+  }
 
   return (
     <>
@@ -172,6 +174,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       TableCell,
       Link.configure({
         openOnClick: false,
+        autolink: true,
       }),
       Image.configure({
         inline: true,
@@ -181,7 +184,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     content: value,
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none min-h-[250px]',
+        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none min-h-[250px] p-4',
       },
     },
     onUpdate: ({ editor }) => {
@@ -189,22 +192,83 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     },
   });
 
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+    if (url === null) return;
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
+  if (!editor) {
+    return null;
+  }
+
   return (
     <div className="border border-input rounded-b-md">
       <EditorToolbar editor={editor} />
+      
+      <BubbleMenu
+        editor={editor}
+        tippyOptions={{ duration: 100 }}
+        className="flex items-center space-x-1 rounded-md border bg-background p-1 shadow-md"
+      >
+        <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}><Bold className="h-4 w-4" /></button>
+        <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}><Italic className="h-4 w-4" /></button>
+        <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}><LinkIcon className="h-4 w-4"/></button>
+      </BubbleMenu>
+
+      <FloatingMenu
+        editor={editor}
+        tippyOptions={{ duration: 100 }}
+        className="flex flex-col space-y-1 rounded-md border bg-background p-2 shadow-md"
+      >
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}`}
+        >
+          <Heading2 className="h-4 w-4" />
+          <span>Tiêu đề 2</span>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}`}
+        >
+          <Heading3 className="h-4 w-4" />
+          <span>Tiêu đề 3</span>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`flex items-center gap-2 p-1 rounded-sm hover:bg-muted ${editor.isActive('bulletList') ? 'is-active' : ''}`}
+        >
+          <List className="h-4 w-4" />
+          <span>Danh sách</span>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          className="flex items-center gap-2 p-1 rounded-sm hover:bg-muted"
+        >
+          <TableIcon className="h-4 w-4" />
+          <span>Bảng</span>
+        </button>
+        <button
+          onClick={() => (document.querySelector('button[aria-label="Chèn ảnh"]') as HTMLButtonElement)?.click()}
+          className="flex items-center gap-2 p-1 rounded-sm hover:bg-muted"
+        >
+          <ImageIcon className="h-4 w-4" />
+          <span>Ảnh</span>
+        </button>
+      </FloatingMenu>
+
       <EditorContent editor={editor} />
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="bubble-menu">
-          <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}>Bold</button>
-          <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active' : ''}>Italic</button>
-          <button onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active' : ''}>Strike</button>
-        </BubbleMenu>
-      )}
 
       <style jsx global>{`
         .ProseMirror {
             min-height: 250px;
-            padding: 0.75rem;
         }
         .ProseMirror:focus {
             outline: none;
@@ -261,31 +325,9 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
             top: 0;
             width: 4px;
         }
-        .tiptap button {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            transition: background-color 0.2s;
-        }
-        .tiptap button.is-active {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-        }
-        .bubble-menu {
-            display: flex;
-            background-color: black;
-            padding: 0.2rem;
-            border-radius: 0.5rem;
-        }
-        .bubble-menu button {
-            border: none;
-            background: none;
-            color: #FFF;
-            font-size: 0.85rem;
-            font-weight: 500;
-            padding: 0 0.2rem;
-        }
-        .bubble-menu button.is-active {
-            color: #818cf8;
+        button.is-active {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
         }
         .EditorToolbar button {
              padding: 0.25rem;
