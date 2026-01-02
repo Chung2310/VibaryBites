@@ -188,8 +188,8 @@ export default function ProductsPage() {
                       <TableHead className="hidden md:table-cell">
                         Tồn kho
                       </TableHead>
-                      <TableHead>
-                        <span className="sr-only">Actions</span>
+                      <TableHead className="text-right">
+                        Hành động
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -204,7 +204,7 @@ export default function ProductsPage() {
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
                             <TableCell>
-                                <Skeleton className="h-8 w-8" />
+                                <Skeleton className="h-8 w-24" />
                             </TableCell>
                         </TableRow>
                    ))}
@@ -239,29 +239,18 @@ export default function ProductsPage() {
                             <TableCell className="hidden md:table-cell">
                                 {product.stock}
                             </TableCell>
-                            <TableCell>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                    aria-haspopup="true"
-                                    size="icon"
-                                    variant="ghost"
-                                    >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
+                            <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                    <Button variant="outline" size="sm" onClick={() => router.push(`/admin/products/edit/${product.id}`)}>
+                                        Chỉnh sửa
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa</DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => handleToggleStock(product)}>
-                                        <RefreshCw className="mr-2 h-4 w-4" />
-                                        <span>Cập nhật trạng thái</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className='text-destructive' onClick={() => openDeleteConfirm(product)}>Xóa</DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
+                                    <Button variant="outline" size="sm" onClick={() => handleToggleStock(product)}>
+                                        Trạng thái
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={() => openDeleteConfirm(product)}>
+                                        Xóa
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                      )
