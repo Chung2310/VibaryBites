@@ -98,7 +98,7 @@ function AdminSidebar() {
                             link.subLinks ? (
                                 <AccordionItem value={link.label} key={link.label} className="border-b-0">
                                     <AccordionTrigger className={cn(
-                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:no-underline",
+                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:text-primary hover:no-underline",
                                         link.subLinks.some(sub => pathname.startsWith(sub.href)) && "text-primary"
                                     )}>
                                          <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ function AdminSidebar() {
                                                 key={subLink.href}
                                                 href={subLink.href}
                                                 className={cn(
-                                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:text-primary',
                                                     pathname.startsWith(subLink.href) && 'bg-muted text-primary',
                                                     isCollapsed && "justify-center"
                                                 )}
@@ -128,7 +128,7 @@ function AdminSidebar() {
                                     key={link.href}
                                     href={link.href}
                                     className={cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:text-primary',
                                         pathname === link.href && 'bg-muted text-primary',
                                         isCollapsed && "justify-center"
                                     )}
@@ -216,7 +216,7 @@ export default function AdminLayout({
                     link.subLinks ? (
                         <Accordion type="single" collapsible key={link.label}>
                             <AccordionItem value={link.label} className="border-b-0">
-                                <AccordionTrigger className="text-lg font-medium text-muted-foreground transition-colors hover:text-foreground hover:no-underline">
+                                <AccordionTrigger className="text-lg font-medium text-foreground transition-colors hover:text-primary hover:no-underline">
                                     <div className="flex items-center gap-4">
                                         <link.icon className="h-5 w-5" />
                                         {link.label}
@@ -239,7 +239,7 @@ export default function AdminLayout({
                         <Link
                             key={link.href}
                             href={link.href}
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-foreground hover:text-primary"
                         >
                             <link.icon className="h-5 w-5" />
                             {link.label}
