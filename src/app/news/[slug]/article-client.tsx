@@ -59,9 +59,11 @@ export default function ArticleClient({ slug }: { slug: string }) {
              <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
                 <Skeleton className="h-6 w-1/4 mb-4" />
                 <Skeleton className="h-12 w-3/4 mb-8" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full mt-2" />
-                <Skeleton className="h-4 w-5/6 mt-2" />
+                <div className="space-y-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                </div>
              </div>
         </article>
     );
@@ -100,9 +102,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
         </div>
       </header>
 
-      <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div
-          className="prose prose-lg max-w-none prose-h2:font-headline prose-p:text-muted-foreground"
+          className="prose prose-lg mx-auto max-w-none prose-h2:font-headline prose-p:text-muted-foreground prose-blockquote:border-accent prose-blockquote:text-accent prose-blockquote:font-headline prose-a:text-accent hover:prose-a:text-accent/80 prose-img:rounded-lg prose-img:shadow-md"
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
       </div>
