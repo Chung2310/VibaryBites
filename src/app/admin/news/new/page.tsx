@@ -48,7 +48,7 @@ export default function NewNewsArticlePage() {
             const docRef = doc(firestore, 'news_articles', id);
             
             const newArticle: Omit<NewsArticle, 'id'> = {
-                slug: values.title.toLowerCase().replace(/\s+/g, '-').replace(/[?]/g, ''),
+                slug: values.title.toLowerCase().replace(/\s+/g, '-'),
                 title: values.title,
                 author: values.author,
                 category: values.category,

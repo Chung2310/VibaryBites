@@ -77,7 +77,7 @@ export default function EditNewsArticlePage() {
                 excerpt: values.excerpt,
                 content: values.content,
                 imageUrl: newImageUrl,
-                slug: values.title.toLowerCase().replace(/\s+/g, '-').replace(/[?]/g, ''),
+                slug: values.title.toLowerCase().replace(/\s+/g, '-'),
             };
 
             await setDoc(docRef, updatedArticleData, { merge: true });
