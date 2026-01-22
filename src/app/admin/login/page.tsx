@@ -141,9 +141,6 @@ export default function AdminLoginPage() {
             </span>
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
-          <CardDescription>
-            Email: <span className="font-mono">{DEFAULT_ADMIN_EMAIL}</span> / Mật khẩu: <span className="font-mono">{DEFAULT_ADMIN_PASSWORD}</span>
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
