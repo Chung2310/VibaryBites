@@ -14,13 +14,14 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -67,14 +68,16 @@ export default function AdminLoginPage() {
     if (auth) {
         const createDefaultUser = async () => {
             try {
+                // This is a 'safe' operation. If the user already exists, it will fail
+                // with a specific error code which we can ignore.
                 await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
+                // If creation was successful, immediately sign out so the user has to log in.
                 if (auth.currentUser) {
                   await auth.signOut();
                 }
             } catch (error: any) {
-                if (error.code === 'auth/email-already-in-use') {
-                    // This is fine, the user already exists.
-                } else {
+                // It's okay if the user already exists. We can ignore this error.
+                if (error.code !== 'auth/email-already-in-use') {
                    console.error("Error creating default admin user:", error);
                 }
             }
@@ -195,7 +198,7 @@ export default function AdminLoginPage() {
                 control={form.control}
                 name="rememberMe"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -206,6 +209,9 @@ export default function AdminLoginPage() {
                         <FormLabel className="font-normal">
                             Lưu tài khoản
                         </FormLabel>
+                        <FormDescription>
+                          Lưu lại địa chỉ email cho lần đăng nhập sau.
+                        </FormDescription>
                     </div>
                   </FormItem>
                 )}
