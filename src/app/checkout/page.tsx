@@ -48,9 +48,8 @@ export default function CheckoutPage() {
   async function onSubmit(values: z.infer<typeof checkoutSchema>) {
     setIsSubmitting(true);
     
-    // BƯỚC 4: DÁN URL CỦA BẠN VÀO ĐÂY
-    // THAY THẾ 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE' BẰNG URL BẠN SAO CHÉP TỪ GOOGLE APPS SCRIPT
-    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+    // URL Google Apps Script đã được cập nhật
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1OG0fhORLrMGqcdUgujK08PY3nalyWZQzkir4U1c70_5M4E2Ac99CbreIatAMBgzu0Q/exec';
 
     const orderId = `VBR-${Date.now().toString().slice(-6)}`;
     const orderTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -67,12 +66,6 @@ export default function CheckoutPage() {
     payload.append('notes', values.notes || '');
     payload.append('products', productsString);
     payload.append('totalPrice', new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ');
-
-    if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-      alert("Vui lòng cấu hình URL Google Apps Script trong file src/app/checkout/page.tsx trước khi gửi đơn hàng.");
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
         await fetch(SCRIPT_URL, {
