@@ -34,7 +34,6 @@ const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
     subtitle: z.string().optional(),
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
-    stock: z.coerce.number().int().min(0, { message: "Tồn kho phải là số nguyên dương." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
 });
@@ -60,14 +59,12 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         name: product.name,
         subtitle: product.subtitle || "",
         price: product.price,
-        stock: product.stock,
         categorySlug: product.categorySlug,
         description: product.description,
     } : {
         name: "",
         subtitle: "",
         price: 0,
-        stock: 0,
         categorySlug: "",
         description: "",
     },
@@ -134,34 +131,19 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Giá</FormLabel>
-                    <FormControl>
-                        <Input type="number" placeholder="650000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            <FormField
-                control={form.control}
-                name="stock"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Tồn kho</FormLabel>
-                    <FormControl>
-                        <Input type="number" placeholder="15" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
+        <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Giá</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="650000" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
         <FormField
             control={form.control}
             name="categorySlug"
@@ -248,3 +230,4 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     </Form>
   );
 }
+

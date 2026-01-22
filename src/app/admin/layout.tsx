@@ -19,6 +19,7 @@ import {
   BookMarked,
   List,
   Loader2,
+  Book,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +55,7 @@ const navLinks = [
     subLinks: [
         { href: '/admin/products', label: 'Danh sách sản phẩm', icon: List },
         { href: '/admin/attributes', label: 'Thuộc tính', icon: Settings },
+        { href: '/admin/recipes', label: 'Công thức', icon: Book },
     ]
   },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
@@ -315,3 +317,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

@@ -42,6 +42,27 @@
         "flavorProfile": {
           "type": "string",
           "description": "General flavor profile of the cake. e.g. fruity, sweet, etc."
+        },
+        "recipe": {
+          "type": "array",
+          "description": "The recipe for the cake, listing ingredients and quantities.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ingredientId": {
+                "type": "string",
+                "description": "Reference to an Ingredient ID."
+              },
+              "quantity": {
+                "type": "number",
+                "description": "The amount of the ingredient required."
+              }
+            },
+            "required": [
+              "ingredientId",
+              "quantity"
+            ]
+          }
         }
       },
       "required": [
@@ -334,6 +355,40 @@
         "questionText",
         "answerOptions"
       ]
+    },
+    "Ingredient": {
+      "title": "Ingredient",
+      "type": "object",
+      "description": "Represents a raw material used in cake production.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ingredient."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the ingredient."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Current quantity in stock."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (e.g., g, ml, units)."
+        },
+        "parLevel": {
+          "type": "number",
+          "description": "The low-stock threshold."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "stock",
+        "unit",
+        "parLevel"
+      ]
     }
   },
   "auth": {
@@ -484,6 +539,22 @@
             {
               "name": "quizQuestionId",
               "description": "The unique identifier of the quiz question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/ingredients/{ingredientId}",
+        "definition": {
+          "entityName": "Ingredient",
+          "schema": {
+            "$ref": "#/backend/entities/Ingredient"
+          },
+          "description": "Stores raw material inventory data. Requires admin access.",
+          "params": [
+            {
+              "name": "ingredientId",
+              "description": "The unique identifier for the ingredient."
             }
           ]
         }

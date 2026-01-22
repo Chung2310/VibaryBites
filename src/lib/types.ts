@@ -1,5 +1,10 @@
 
 
+export type RecipeItem = {
+  ingredientId: string;
+  quantity: number;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -24,7 +29,7 @@ export type Product = {
   categorySlug: string;
   flavorProfile?: string[];
   structure?: string[];
-  stock: number; // Added for inventory
+  recipe?: RecipeItem[];
 };
 
 export type Collection = {
@@ -104,7 +109,7 @@ export type Customer = {
   joinedDate: string;
 };
 
-export type InventoryItem = {
+export type Ingredient = {
     id: string;
     name: string;
     stock: number;
@@ -119,3 +124,4 @@ export type ProductCategory = {
   description: string;
 }
     
+

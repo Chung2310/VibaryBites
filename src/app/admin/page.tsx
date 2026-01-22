@@ -52,9 +52,11 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { kpiData, revenueData, productProportions, topSellingProducts, recentOrders, inventory } from '@/lib/admin-data';
-import type { OrderStatus } from '@/lib/types';
+import { kpiData, revenueData, productProportions, topSellingProducts, recentOrders } from '@/lib/admin-data';
+import type { Ingredient, OrderStatus } from '@/lib/types';
 import Link from 'next/link';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
     new: { text: 'Mới', className: 'bg-blue-100 text-blue-800' },
@@ -66,8 +68,11 @@ const statusMapping: Record<OrderStatus, { text: string; className: string }> = 
 
 
 export default function Dashboard() {
+  const firestore = useFirestore();
+  const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
+  const { data: ingredients, isLoading } = useCollection<Ingredient>(ingredientsCollection);
 
-  const lowStockAlerts = inventory.filter(item => item.stock < item.parLevel);
+  const lowStockAlerts = ingredients?.filter(item => item.stock < item.parLevel) || [];
 
   return (
     <>
@@ -123,7 +128,7 @@ export default function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.lowStockItems}</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : lowStockAlerts.length}</div>
             <p className="text-xs text-muted-foreground">
               Nguyên liệu sắp hết
             </p>
@@ -249,7 +254,7 @@ export default function Dashboard() {
             <div>
               <h3 className="font-semibold mb-2">Nguyên liệu sắp hết</h3>
               <div className="grid gap-2 text-sm">
-                {lowStockAlerts.length > 0 ? lowStockAlerts.map(item => (
+                {isLoading ? <p className="text-muted-foreground">Đang tải...</p> : lowStockAlerts.length > 0 ? lowStockAlerts.map(item => (
                    <div key={item.id} className="flex justify-between items-center">
                      <span>{item.name}</span>
                      <span className="font-mono text-destructive">{item.stock}{item.unit}</span>
@@ -273,3 +278,4 @@ export default function Dashboard() {
   );
 
     
+

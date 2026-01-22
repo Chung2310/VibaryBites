@@ -1,4 +1,4 @@
-import type { Order, Customer, InventoryItem } from './types';
+import type { Order, Customer } from './types';
 import { products } from './data';
 import { subDays } from 'date-fns';
 
@@ -57,11 +57,3 @@ export const customers: Customer[] = [
     { id: 'cus-003', name: 'Lê Hoàng', email: 'hoang.le@example.com', phone: '0912345678', totalOrders: 2, totalSpent: 1280000, joinedDate: createRecentDate(15), avatar: 'https://i.pravatar.cc/40?u=a042581f4e29026706d' }
 ]
 
-export const inventory: InventoryItem[] = [
-    { id: 'inv-001', name: 'Kem tươi (Whipping Cream)', stock: 5000, unit: 'ml', parLevel: 10000 },
-    { id: 'inv-002', name: 'Sô cô la đen 70%', stock: 2000, unit: 'g', parLevel: 5000 },
-    { id: 'inv-003', name: 'Dâu tây tươi', stock: 800, unit: 'g', parLevel: 2000 },
-    { id: 'inv-004', name: 'Bột hạnh nhân', stock: 15000, unit: 'g', parLevel: 10000 },
-    { id: 'inv-005', name: 'Chanh dây puree', stock: 3000, unit: 'ml', parLevel: 5000 },
-    { id: 'inv-006', name: 'Hộp bánh 16cm', stock: 50, unit: 'units', parLevel: 100 },
-];

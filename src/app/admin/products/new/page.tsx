@@ -55,7 +55,6 @@ export default function NewProductPage() {
                 subtitle: values.subtitle,
                 description: values.description,
                 price: Number(values.price),
-                stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedUrls,
                 // Initialize detailed fields as empty
@@ -70,6 +69,7 @@ export default function NewProductPage() {
                 flavorProfile: [],
                 structure: [],
                 collection: 'special-occasions', // Default collection
+                recipe: [],
             };
 
             await setDoc(docRef, newProduct);
@@ -79,7 +79,7 @@ export default function NewProductPage() {
                 description: `Sản phẩm "${values.name}" đã được thêm. Bạn có thể chỉnh sửa chi tiết ngay bây giờ.`,
             });
             
-            router.push(`/admin/attributes`);
+            router.push(`/admin/recipes?productId=${id}`);
 
         } catch (error) {
             console.error("Error creating product: ", error);
@@ -109,7 +109,7 @@ export default function NewProductPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Thông tin cơ bản</CardTitle>
-                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm các chi tiết khác ở trang "Thuộc tính sản phẩm".</CardDescription>
+                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm công thức và các chi tiết khác ở các trang quản lý khác.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
@@ -123,3 +123,4 @@ export default function NewProductPage() {
         </div>
     );
 }
+

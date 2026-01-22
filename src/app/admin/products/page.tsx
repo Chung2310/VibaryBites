@@ -118,30 +118,6 @@ export default function ProductsPage() {
             });
     }
 
-    const handleToggleStock = async (product: Product) => {
-        if (!firestore) return;
-
-        const docRef = doc(firestore, 'cakes', product.id);
-        // If stock is > 0, set to 0. If stock is 0, set to 10 (a default in-stock value).
-        const newStock = product.stock > 0 ? 0 : 10; 
-        
-        try {
-            await setDoc(docRef, { stock: newStock }, { merge: true });
-            toast({
-                title: "Cập nhật thành công",
-                description: `Sản phẩm "${product.name}" đã được cập nhật thành ${newStock > 0 ? '"Còn hàng"' : '"Hết hàng"'}.`,
-            });
-        } catch (error) {
-            console.error("Error toggling stock:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Không thể cập nhật trạng thái sản phẩm.'
-            });
-        }
-    }
-
-
     return (
         <>
         <Tabs defaultValue="all">
@@ -182,12 +158,9 @@ export default function ProductsPage() {
                         <span className="sr-only">Ảnh</span>
                       </TableHead>
                       <TableHead>Tên sản phẩm</TableHead>
-                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Danh mục</TableHead>
                       <TableHead className="hidden md:table-cell">
                         Giá
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Tồn kho
                       </TableHead>
                       <TableHead className="text-right">
                         Hành động
@@ -201,17 +174,15 @@ export default function ProductsPage() {
                                 <Skeleton className="h-16 w-16 rounded-md" />
                             </TableCell>
                             <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">
                                 <Skeleton className="h-8 w-24" />
                             </TableCell>
                         </TableRow>
                    ))}
                    {products && products.map(product => {
                      const imageUrls = product.imageUrls || [];
-                     const isAvailable = product.stock > 0;
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
@@ -229,24 +200,10 @@ export default function ProductsPage() {
                                 {product.name}
                             </TableCell>
                             <TableCell>
-                                <div className="flex items-center gap-2">
-                                     <Switch
-                                        checked={isAvailable}
-                                        onCheckedChange={() => handleToggleStock(product)}
-                                        aria-label="Toggle product availability"
-                                    />
-                                    <Badge variant={isAvailable ? "outline" : "destructive"}
-                                    className={isAvailable ? "bg-green-100 text-green-800" : ""}
-                                    >
-                                        {isAvailable ? "Còn hàng" : "Hết hàng"}
-                                    </Badge>
-                                </div>
+                                <Badge variant="outline">{product.categorySlug}</Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 {new Intl.NumberFormat('vi-VN').format(product.price)}đ
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                                {product.stock}
                             </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex gap-2 justify-end">
@@ -293,3 +250,4 @@ export default function ProductsPage() {
         </>
     )
 }
+

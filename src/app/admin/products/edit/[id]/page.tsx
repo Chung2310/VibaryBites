@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -44,7 +45,7 @@ export default function EditProductPage() {
 
         try {
             // Identify URLs to delete
-            const urlsToDelete = product.imageUrls.filter(url => !existingImageUrls.includes(url));
+            const urlsToDelete = (product.imageUrls || []).filter(url => !existingImageUrls.includes(url));
 
             // Upload new images
             const uploadPromises = imageFiles.map(file => uploadImage(file));
@@ -75,7 +76,6 @@ export default function EditProductPage() {
                 subtitle: values.subtitle,
                 description: values.description,
                 price: Number(values.price),
-                stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: finalImageUrls,
                 slug: values.name.toLowerCase().replace(/\s+/g, '-'),
@@ -156,3 +156,4 @@ export default function EditProductPage() {
         </div>
     );
 }
+
