@@ -7,8 +7,7 @@
  * 
  * 1. MỞ GOOGLE SHEET:
  *    - Mở Google Sheet của bạn: https://docs.google.com/spreadsheets/d/1ykIza10WFpDRGDiEifTuMI3PyZNHMtpDnK8XWd028UY/
- *    - **QUAN TRỌNG:** Tên trang tính (sheet tab) nên là "Bảng_1". Nếu không, script sẽ tự động ghi vào trang tính đầu tiên nó tìm thấy.
- *    - Đảm bảo các cột sau có ở hàng đầu tiên (hàng 1):
+ *    - Đảm bảo các cột sau có ở hàng đầu tiên (hàng 1) của trang tính ĐẦU TIÊN:
  *      A: Số thứ tự đơn hàng
  *      B: Thời gian đặt hàng
  *      C: Họ và tên
@@ -36,7 +35,6 @@
  */
 
 const SHEET_ID = '1ykIza10WFpDRGDiEifTuMI3PyZNHMtpDnK8XWd028UY';
-const SHEET_NAME = 'Bảng_1';
 
 // This function handles POST requests from your web app.
 function doPost(e) {
@@ -45,13 +43,8 @@ function doPost(e) {
 
   try {
     const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-
-    // If the target sheet doesn't exist, try to fall back to the first sheet.
-    if (!sheet) {
-      console.warn(`Sheet "${SHEET_NAME}" not found. Falling back to the first available sheet.`);
-      sheet = spreadsheet.getSheets()[0];
-    }
+    // Get the first sheet in the spreadsheet. This is safer than using a specific name.
+    const sheet = spreadsheet.getSheets()[0];
     
     // If there are still no sheets, throw an error.
     if (!sheet) {
