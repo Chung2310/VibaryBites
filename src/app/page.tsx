@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -172,12 +171,10 @@ function Hero() {
 
 function CategorySection() {
     const categories = [
-        { name: 'Bánh sinh nhật', description: 'Dành cho từ 2-10 người', imageId: 'category-birthday-cake' },
-        { name: 'Bánh ngọt', description: 'Dành cho những tín đồ hảo ngọt', imageId: 'category-sweet-cake' },
-        { name: 'Bánh mặn', description: 'Hương vị đậm đà khó cưỡng', imageId: 'category-salty-cake' },
-        { name: 'Đồ uống', description: 'Giải nhiệt và thư giãn', imageId: 'category-drinks' },
-        { name: 'Bánh khác', description: 'Khám phá những hương vị mới', imageId: 'category-other-cakes' },
-        { name: 'Đồ ăn khác', description: 'Nhiều lựa chọn hấp dẫn khác', imageId: 'category-other-food' },
+        { name: 'Bánh sinh nhật', description: 'Những chiếc bánh cho ngày đặc biệt', imageId: 'category-birthday-cake' },
+        { name: 'Bánh lẻ', description: 'Thưởng thức hương vị mỗi ngày', imageId: 'category-sweet-cake' },
+        { name: 'Bánh nướng', description: 'Giòn tan, thơm lừng từ lò nướng', imageId: 'category-other-cakes' },
+        { name: 'Bánh Tea-Break', description: 'Set bánh cho tiệc trà & sự kiện', imageId: 'category-drinks' },
     ];
 
     const containerVariants = {
@@ -205,7 +202,7 @@ function CategorySection() {
       <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -225,7 +222,7 @@ function CategorySection() {
                               alt={category.name}
                               fill
                               className="object-cover transition-transform duration-500 group-hover:scale-110"
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                               data-ai-hint={image.imageHint}
                           />
                       )}
@@ -362,7 +359,7 @@ function NewsArticleCard({ article }: { article: NewsArticle }) {
         />
       </div>
       <div className="mt-4">
-        <h3 className="text-lg font-medium leading-snug">{article.title}</h3>
+        <h3 className="text-lg leading-snug">{article.title}</h3>
         <p className="mt-1 text-sm text-muted-foreground font-fraunces line-clamp-2">{article.excerpt}</p>
       </div>
     </Link>
