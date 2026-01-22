@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -55,6 +56,7 @@ export default function NewProductPage() {
                 subtitle: values.subtitle,
                 description: values.description,
                 price: Number(values.price),
+                stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedUrls,
                 // Initialize detailed fields as empty

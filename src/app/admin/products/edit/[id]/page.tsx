@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -76,6 +77,7 @@ export default function EditProductPage() {
                 subtitle: values.subtitle,
                 description: values.description,
                 price: Number(values.price),
+                stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: finalImageUrls,
                 slug: values.name.toLowerCase().replace(/\s+/g, '-'),
@@ -156,4 +158,3 @@ export default function EditProductPage() {
         </div>
     );
 }
-

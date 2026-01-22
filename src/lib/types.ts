@@ -30,6 +30,7 @@ export type Product = {
   flavorProfile?: string[];
   structure?: string[];
   recipe?: RecipeItem[];
+  stock?: number;
 };
 
 export type Collection = {
@@ -124,4 +125,3 @@ export type ProductCategory = {
   description: string;
 }
     
-

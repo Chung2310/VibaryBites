@@ -43,7 +43,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
     return <div>Đang tìm sản phẩm...</div>;
   }
 
-  const isOutOfStock = product.stock <= 0;
+  const isOutOfStock = product.stock !== undefined && product.stock <= 0;
   const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
   
   const images = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls : [];

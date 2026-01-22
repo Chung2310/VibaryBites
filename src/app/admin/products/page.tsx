@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   File,
@@ -58,6 +59,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteImage } from '@/firebase/storage';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -162,6 +164,9 @@ export default function ProductsPage() {
                       <TableHead className="hidden md:table-cell">
                         Giá
                       </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Tồn kho
+                      </TableHead>
                       <TableHead className="text-right">
                         Hành động
                       </TableHead>
@@ -176,6 +181,7 @@ export default function ProductsPage() {
                             <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
                             <TableCell className="text-right">
                                 <Skeleton className="h-8 w-24" />
                             </TableCell>
@@ -183,6 +189,7 @@ export default function ProductsPage() {
                    ))}
                    {products && products.map(product => {
                      const imageUrls = product.imageUrls || [];
+                     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
@@ -204,6 +211,9 @@ export default function ProductsPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 {new Intl.NumberFormat('vi-VN').format(product.price)}đ
+                            </TableCell>
+                             <TableCell className={cn("hidden md:table-cell", isOutOfStock && "text-destructive")}>
+                                {product.stock ?? 'N/A'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex gap-2 justify-end">
@@ -250,4 +260,3 @@ export default function ProductsPage() {
         </>
     )
 }
-
