@@ -27,9 +27,27 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+const generateSlug = (title: string) => {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
-  const product = products.find((p) => p.slug === slug);
+  const product = products.find((p) => {
+    if (generateSlug(p.name) === slug) return true; // Check against generated slug
+    if (p.slug === slug) return true; // Fallback to existing slug
+    return false;
+  });
+
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
     product?.sizes?.[0]?.name

@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import Image from "next/image";
@@ -14,9 +12,23 @@ type ProductCardProps = {
   hideStockStatus?: boolean; // Add this prop
 };
 
+const generateSlug = (title: string) => {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 export function ProductCard({ product, hideStockStatus = false }: ProductCardProps) {
   const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
   const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+  const sanitizedSlug = generateSlug(product.name);
 
   return (
     <Card className="group relative flex h-full flex-col overflow-hidden border-0 shadow-none bg-transparent rounded-none">
@@ -26,7 +38,7 @@ export function ProductCard({ product, hideStockStatus = false }: ProductCardPro
         </div>
       )}
       <Link 
-        href={`/products/${product.slug}`} 
+        href={`/products/${sanitizedSlug}`} 
         className="flex flex-col h-full text-left"
       >
         <div className="p-4">
