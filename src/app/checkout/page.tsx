@@ -68,11 +68,22 @@ export default function CheckoutPage() {
     payload.append('totalPrice', new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ');
 
     try {
-        await fetch(SCRIPT_URL, {
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: payload,
-            mode: 'no-cors' // 'no-cors' is often needed for simple Apps Script web apps
         });
+
+        if (!response.ok) {
+           // Handle non-2xx responses (like 4xx, 5xx)
+           throw new Error(`Lỗi từ máy chủ: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.result !== 'success') {
+            // The script ran but reported an error.
+            throw new Error(result.error || 'Lỗi không xác định từ Google Script.');
+        }
 
         toast({
             title: "Đặt hàng thành công!",
@@ -85,8 +96,8 @@ export default function CheckoutPage() {
         console.error('Error submitting order:', error);
         toast({
             variant: "destructive",
-            title: "Ôi, đã có lỗi kết nối!",
-            description: "Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau."
+            title: "Ôi, đã có lỗi xảy ra!",
+            description: `Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau. Lỗi: ${(error as Error).message}`
         });
     } finally {
         setIsSubmitting(false);
