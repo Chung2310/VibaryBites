@@ -4,7 +4,7 @@ import { faqs, productCategories } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
 import { notFound } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
@@ -23,6 +23,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +42,21 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
   );
   const { toast } = useToast();
   
+  const [api, setApi] = useState<CarouselApi>()
+  const [current, setCurrent] = useState(0)
+ 
+  useEffect(() => {
+    if (!api) {
+      return
+    }
+ 
+    setCurrent(api.selectedScrollSnap())
+ 
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap())
+    })
+  }, [api])
+
   if (!product) {
     if (products.length > 0) {
       notFound();
@@ -91,21 +107,51 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
       </div>
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
-          {/* Image Gallery - Sticky Scroll */}
+          {/* Image Gallery */}
           <div className="relative h-fit">
             <div className="space-y-4">
-              {images.map((url, index) => (
-                <div key={index} className="aspect-square w-full overflow-hidden rounded-lg">
-                  <Image
-                    src={url}
-                    alt={`${product.name} - image ${index + 1}`}
-                    width={800}
-                    height={800}
-                    className="h-full w-full object-cover"
-                    priority={index === 0}
-                  />
+              <Carousel setApi={setApi} className="w-full">
+                <CarouselContent>
+                  {images.map((url, index) => (
+                    <CarouselItem key={index}>
+                      <div className="aspect-square w-full overflow-hidden rounded-lg">
+                        <Image
+                          src={url}
+                          alt={`${product.name} - image ${index + 1}`}
+                          width={800}
+                          height={800}
+                          className="h-full w-full object-cover"
+                          priority={index === 0}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-4" />
+                <CarouselNext className="right-4" />
+              </Carousel>
+              {images.length > 1 && (
+                <div className="grid grid-cols-5 gap-2">
+                  {images.map((url, index) => (
+                    <button
+                      key={`thumb-${index}`}
+                      onClick={() => api?.scrollTo(index)}
+                      className={cn(
+                        'aspect-square w-full overflow-hidden rounded-md border-2 transition-all',
+                        current === index ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+                      )}
+                    >
+                      <Image
+                        src={url}
+                        alt={`${product.name} - thumbnail ${index + 1}`}
+                        width={200}
+                        height={200}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
           
