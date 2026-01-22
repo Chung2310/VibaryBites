@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
@@ -28,7 +28,8 @@ const generateSlug = (title: string) => {
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
-    const { id: articleId } = useParams<{ id: string }>();
+    const params = useParams();
+    const articleId = params.id as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -52,25 +53,23 @@ export default function EditNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        let newImageUrl = article.imageUrl;
+        let finalImageUrl = article.imageUrl;
 
         try {
             if (imageFile) {
-                // If there's a new image, upload it
-                newImageUrl = await uploadImage(imageFile);
-                // If there was an old image and it's different from the new one, delete the old one
-                if (article.imageUrl && article.imageUrl !== newImageUrl) {
-                    await deleteImage(article.imageUrl);
+                const newUrl = await uploadImage(imageFile);
+                if (article.imageUrl && article.imageUrl !== newUrl) {
+                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                 }
+                finalImageUrl = newUrl;
             } else if (imageWasRemoved) {
-                // If the image was removed and no new one was uploaded
                 if (article.imageUrl) {
-                    await deleteImage(article.imageUrl);
+                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
                 }
-                newImageUrl = ''; // Set to empty
+                finalImageUrl = '';
             }
 
-             if (!newImageUrl && !imageFile) { // Check if there's no image at all
+             if (!finalImageUrl) {
                  toast({
                     variant: "destructive",
                     title: "Lỗi",
@@ -88,7 +87,7 @@ export default function EditNewsArticlePage() {
                 category: values.category,
                 excerpt: values.excerpt,
                 content: values.content,
-                imageUrl: newImageUrl,
+                imageUrl: finalImageUrl,
                 slug: generateSlug(values.title),
             };
 

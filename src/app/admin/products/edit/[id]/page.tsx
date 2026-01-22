@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/firebase/storage';
+import { uploadImage, deleteImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,8 @@ import Link from 'next/link';
 
 export default function EditProductPage() {
     const router = useRouter();
-    const { id: productId } = useParams<{ id: string }>();
+    const params = useParams();
+    const productId = params.id as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -42,8 +43,18 @@ export default function EditProductPage() {
         setIsSubmitting(true);
 
         try {
+            // Identify URLs to delete
+            const urlsToDelete = product.imageUrls.filter(url => !existingImageUrls.includes(url));
+
+            // Upload new images
             const uploadPromises = imageFiles.map(file => uploadImage(file));
             const newUploadedUrls = await Promise.all(uploadPromises);
+
+            // Once uploads are successful, delete the old images
+            if (urlsToDelete.length > 0) {
+                const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
+                await Promise.all(deletePromises);
+            }
 
             const finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
             
