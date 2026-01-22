@@ -72,10 +72,6 @@ export default function ProductsPage() {
         {productCategories.map((category, index) => {
           const categoryProducts = products.filter(p => p.categorySlug === category.slug);
 
-          if (categoryProducts.length === 0) {
-            return null;
-          }
-
           return (
             <section 
                 key={category.slug} 
@@ -95,14 +91,20 @@ export default function ProductsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
-                {categoryProducts.map((product) => (
-                  <div key={product.id} className="sm:px-8">
-                    <ProductCard product={product} />
-                  </div>
-                ))}
+                {categoryProducts.length > 0 ? (
+                    categoryProducts.map((product) => (
+                        <div key={product.id} className="sm:px-8">
+                            <ProductCard product={product} />
+                        </div>
+                    ))
+                ) : (
+                    <div className="sm:col-span-3 text-center text-muted-foreground py-8">
+                        Chưa có sản phẩm nào trong danh mục này.
+                    </div>
+                )}
               </div>
 
-              {index < productCategories.filter(c => products.some(p => p.categorySlug === c.slug)).length - 1 && (
+              {index < productCategories.length - 1 && (
                 <Separator className="my-16 sm:my-24" />
               )}
             </section>

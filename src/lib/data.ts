@@ -18,34 +18,22 @@ export const productCategories: ProductCategory[] = [
         description: 'Sản phẩm đặc trưng của VIBARY là bánh Entremet – dòng bánh lạnh cao cấp của Pháp. Dành cho tiệc sinh nhật, hoặc bất kỳ khoảnh khắc nào quan trọng của bạn.'
     },
     { 
-        slug: 'banh-ngot', 
-        title: 'Bánh ngọt',
-        subtitle: 'HƯƠNG VỊ NGỌT NGÀO',
-        description: 'Những chiếc bánh ngọt tinh tế, từ mousse mềm mịn đến tart giòn tan, hoàn hảo cho những giây phút thư giãn hay tụ họp bạn bè.'
+        slug: 'banh-le', 
+        title: 'Bánh lẻ',
+        subtitle: 'THƯỞNG THỨC HƯƠNG VỊ',
+        description: 'Những chiếc bánh ngọt tinh tế, từ mousse mềm mịn đến tart giòn tan, hoàn hảo cho những giây phút thưởng thức cá nhân.'
     },
     { 
-        slug: 'banh-man', 
-        title: 'Bánh mặn',
-        subtitle: 'LỰA CHỌN ĐẬM ĐÀ',
-        description: 'Khám phá hương vị đậm đà và mới lạ với các loại bánh mặn được làm thủ công, lý tưởng cho bữa sáng hoặc bữa ăn nhẹ.'
+        slug: 'banh-nuong', 
+        title: 'Bánh nướng',
+        subtitle: 'GIÒN TAN, THƠM LỪNG',
+        description: 'Các loại bánh nướng giòn tan, thơm lừng từ lò, mang lại hương vị ấm áp và quen thuộc.'
     },
     { 
-        slug: 'do-uong', 
-        title: 'Đồ uống',
-        subtitle: 'GIẢI NHIỆT & THƯ GIÃN',
-        description: 'Kết hợp hoàn hảo với bánh, các loại đồ uống của chúng tôi được pha chế để mang lại sự sảng khoái và thư giãn.'
-    },
-    { 
-        slug: 'banh-khac', 
-        title: 'Bánh khác',
-        subtitle: 'KHÁM PHÁ HƯƠNG VỊ MỚI',
-        description: 'Dành cho những ai thích phiêu lưu, danh mục này bao gồm các sáng tạo độc đáo và các loại bánh đặc biệt theo mùa của chúng tôi.'
-    },
-    { 
-        slug: 'do-an-khac', 
-        title: 'Đồ ăn khác',
-        subtitle: 'LỰA CHỌN HẤP DẪN KHÁC',
-        description: 'Ngoài bánh ngọt, chúng tôi còn cung cấp các món ăn nhẹ và đồ ăn vặt hấp dẫn khác để hoàn thiện trải nghiệm của bạn.'
+        slug: 'banh-tea-break', 
+        title: 'Bánh Tea-Break',
+        subtitle: 'CHO TIỆC TRÀ & SỰ KIỆN',
+        description: 'Những set bánh nhỏ xinh, đa dạng được thiết kế riêng cho các buổi tiệc trà, hội nghị và sự kiện đặc biệt.'
     },
 ];
 
@@ -174,7 +162,7 @@ export const products: Product[] = [
     price: 380000,
     imageUrls: ['/images/product/ALittleGrace2.avif'],
     collection: 'half-entremet',
-    categorySlug: 'banh-ngot',
+    categorySlug: 'banh-le',
     flavorProfile: ['Đậm vị trà', 'Chua nhẹ', 'Thanh lịch'],
      structure: [
         'Phủ bột matcha',
@@ -242,7 +230,7 @@ export const products: Product[] = [
     price: 680000,
     imageUrls: ['/images/product/SecretGarden2.avif'],
     collection: 'heart-shaped',
-    categorySlug: 'banh-ngot',
+    categorySlug: 'banh-le',
      flavorProfile: ['Ngọt ngào', 'Kinh điển', 'Trái cây tươi'],
      structure: [
         'Trang trí dâu tươi',
@@ -274,7 +262,7 @@ export const products: Product[] = [
     price: 250000,
     imageUrls: ['/images/product/baby-mango-bliss.png'],
     collection: 'baby-collection',
-    categorySlug: 'banh-man',
+    categorySlug: 'banh-le',
      flavorProfile: ['Nhiệt đới', 'Ngọt dịu', 'Dễ thương'],
      structure: [
         'Phun phủ màu vàng',
@@ -306,7 +294,7 @@ export const products: Product[] = [
     price: 420000,
     imageUrls: ['/images/product/raspberry-pistachio-half.png'],
     collection: 'half-entremet',
-    categorySlug: 'do-uong',
+    categorySlug: 'banh-le',
     flavorProfile: ['Bùi', 'Chua thanh', 'Độc đáo'],
     structure: [
         'Phủ men trắng',
@@ -338,7 +326,7 @@ export const products: Product[] = [
     price: 640000,
     imageUrls: ['/images/product/summer-berry-cheesecake.png'],
     collection: 'special-occasions',
-    categorySlug: 'banh-khac',
+    categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Béo ngậy', 'Tươi mát', 'Kinh điển'],
     structure: [
         'Trang trí dâu rừng tươi',
