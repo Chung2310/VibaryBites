@@ -111,6 +111,16 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
+    /**
+     * @description Stores raw material inventory. Access is restricted to signed-in users.
+     * @path /ingredients/{ingredientId}
+     * @allow (read, write) Only signed-in users can access inventory (Temporary).
+     * @principle Admin-only data, temporarily gated by signed-in status.
+     */
+    match /ingredients/{ingredientId} {
+      allow read, write: if isSignedIn();
+    }
+
     // --------------------------------
     // User-Generated Content
     // --------------------------------
