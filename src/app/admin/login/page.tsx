@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
   // Effect to create a default admin user if it doesn't exist.
   // This is for demo purposes to ensure `admin@vibary.com` is always available.
   useEffect(() => {
-    if (auth && process.env.NODE_ENV === 'development') {
+    if (auth) {
         const createDefaultUser = async () => {
             try {
                 // Attempt to create the user. If the user already exists, this will fail
