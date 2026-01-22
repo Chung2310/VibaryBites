@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useAppStore } from "@/hooks/use-app-store";
@@ -25,8 +23,6 @@ const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
   phone: z.string().min(10, { message: "Vui lòng nhập số điện thoại hợp lệ." }),
   address: z.string().min(5, { message: "Vui lòng nhập địa chỉ hợp lệ tại Bắc Ninh." }),
-  deliveryDate: z.string().min(1, { message: "Vui lòng chọn ngày giao hàng." }),
-  deliveryTime: z.string().min(1, { message: "Vui lòng chọn thời gian giao hàng." }),
   notes: z.string().optional(),
 });
 
@@ -40,8 +36,6 @@ export default function CheckoutPage() {
       name: "",
       phone: "",
       address: "",
-      deliveryDate: "",
-      deliveryTime: "",
       notes: "",
     },
   });
@@ -98,24 +92,6 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                     <FormField control={form.control} name="deliveryDate" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ngày giao hàng</FormLabel>
-                            <FormControl><Input type="date" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                     <FormField control={form.control} name="deliveryTime" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Thời gian giao hàng</FormLabel>
-                            <FormControl><Input type="time" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                  </div>
                   <FormField control={form.control} name="notes" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ghi chú</FormLabel>
