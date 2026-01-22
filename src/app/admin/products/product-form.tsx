@@ -28,6 +28,7 @@ import {
 import Image from "next/image";
 import React, { useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
+import { productCategories } from "@/lib/data";
 
 const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
@@ -40,15 +41,6 @@ const productSchema = z.object({
 
 
 export type ProductFormValues = z.infer<typeof productSchema>;
-
-const productCategories = [
-    { slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật' },
-    { slug: 'banh-ngot', title: 'Bánh ngọt' },
-    { slug: 'banh-man', title: 'Bánh mặn' },
-    { slug: 'do-uong', title: 'Đồ uống' },
-    { slug: 'banh-khac', title: 'Bánh khác' },
-    { slug: 'do-an-khac', title: 'Đồ ăn khác' },
-];
 
 interface ProductFormProps {
   product?: Product;
@@ -201,7 +193,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                     {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative aspect-square">
-                            <Image src={preview} alt={`Xem trước ảnh ${index + 1}`} fill className="rounded-md object-cover" />
+                            <Image src={preview} alt={`Xem trước ảnh ${'${index + 1}'}`} fill className="rounded-md object-cover" />
                             <Button
                                 type="button"
                                 variant="destructive"
