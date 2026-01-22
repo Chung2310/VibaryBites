@@ -16,8 +16,9 @@ service firebase.storage {
       allow read: if true;
     }
 
-    // Restrict write access (create, update, delete) to signed-in users only for the products folder (Temporary)
+    // Allow public read on product images, but restrict writes to signed-in users.
     match /products/{allPaths=**} {
+      allow read: if true;
       allow write: if isSignedIn();
     }
   }
