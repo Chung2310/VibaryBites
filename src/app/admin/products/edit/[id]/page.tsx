@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -14,9 +14,10 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage() {
     const router = useRouter();
-    const productId = params.id;
+    const params = useParams();
+    const productId = params.id as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
