@@ -19,8 +19,6 @@
  * 2. TẠO GOOGLE APPS SCRIPT:
  *    - Trong Google Sheet, đi tới "Tiện ích mở rộng" > "Apps Script".
  *    - Xóa mã mặc định trong tệp `Code.gs` và dán toàn bộ mã nguồn bên dưới vào.
- *    - Thay thế 'YOUR_SHEET_ID_HERE' bằng ID của Google Sheet của bạn.
- *      (Bạn có thể tìm thấy ID trong URL của sheet, ví dụ: https://docs.google.com/spreadsheets/d/SHEET_ID_IS_HERE/edit)
  *    - Lưu dự án.
  *
  * 3. TRIỂN KHAI WEB APP:
@@ -39,8 +37,8 @@
  * ---- MÃ NGUỒN GOOGLE APPS SCRIPT ----
  */
 
-// Thay thế ID của Google Sheet của bạn vào đây.
-const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+// ID của Google Sheet của bạn đã được cập nhật.
+const SHEET_ID = '1ykIza10WFpDRGDiEifTuMI3PyZNHMtpDnK8XWd028UY';
 const SHEET_NAME = 'Bảng_1'; // Tên trang tính trong Google Sheet của bạn.
 
 function doPost(e) {
