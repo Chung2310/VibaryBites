@@ -34,7 +34,6 @@ const checkoutSchema = z.object({
   address: z.string().min(5, { message: "Vui lòng nhập địa chỉ hợp lệ tại Bắc Ninh." }),
   deliveryDate: z.string().min(1, { message: "Vui lòng chọn ngày giao hàng." }),
   deliveryTime: z.string().min(1, { message: "Vui lòng chọn thời gian giao hàng." }),
-  paymentMethod: z.enum(["momo", "zalopay", "bank"], { required_error: "Vui lòng chọn phương thức thanh toán." }),
 }).refine(data => {
     if (data.isGift) {
         return !!data.recipientName && data.recipientName.length >= 2;
@@ -94,7 +93,7 @@ export default function CheckoutPage() {
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <h1 className="font-headline text-3xl mb-8">Thanh Toán</h1>
+          <h1 className="font-headline text-3xl mb-8">Thông Tin Đặt Hàng</h1>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Card>
@@ -205,29 +204,8 @@ export default function CheckoutPage() {
                   </div>
                 </CardContent>
               </Card>
-              
-               <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline">Phương Thức Thanh Toán</CardTitle>
-                </CardHeader>
-                <CardContent>
-                   <FormField control={form.control} name="paymentMethod" render={({ field }) => (
-                        <FormItem>
-                            <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2">
-                                    <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="momo" id="momo" /><Label htmlFor="momo">Momo</Label></div>
-                                    <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="zalopay" id="zalopay" /><Label htmlFor="zalopay">ZaloPay</Label></div>
-                                    <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="bank" id="bank" /><Label htmlFor="bank">Chuyển khoản</Label></div>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage className="pt-2"/>
-                        </FormItem>
-                        )}
-                    />
-                </CardContent>
-              </Card>
 
-              <Button type="submit" size="lg" className="w-full">Đặt Hàng</Button>
+              <Button type="submit" size="lg" className="w-full">Gửi Đơn Hàng</Button>
             </form>
           </Form>
         </div>
