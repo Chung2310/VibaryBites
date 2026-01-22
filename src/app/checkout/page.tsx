@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAppStore } from "@/hooks/use-app-store";
@@ -22,6 +23,10 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+import { useFirestore } from "@/firebase";
+import { runTransaction, doc } from "firebase/firestore";
+import type { Product } from "@/lib/types";
+
 const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
   phone: z.string().min(10, { message: "Vui lòng nhập số điện thoại hợp lệ." }),
@@ -34,6 +39,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -48,6 +54,69 @@ export default function CheckoutPage() {
   async function onSubmit(values: z.infer<typeof checkoutSchema>) {
     setIsSubmitting(true);
     
+    if (!firestore) {
+        toast({
+            variant: "destructive",
+            title: "Lỗi",
+            description: "Không thể kết nối đến cơ sở dữ liệu để cập nhật kho."
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const stockIssues: string[] = [];
+
+            const productRefsAndQuantities = cartItems.map(item => ({
+                ref: doc(firestore, 'cakes', item.id),
+                quantity: item.quantity,
+                name: item.name
+            }));
+            
+            const productDocs = await Promise.all(
+                productRefsAndQuantities.map(pq => transaction.get(pq.ref))
+            );
+
+            for (let i = 0; i < productDocs.length; i++) {
+                const productDoc = productDocs[i];
+                const cartItemInfo = productRefsAndQuantities[i];
+
+                if (!productDoc.exists()) {
+                    throw new Error(`Sản phẩm "${cartItemInfo.name}" không tìm thấy trong cơ sở dữ liệu.`);
+                }
+
+                const productData = productDoc.data() as Product;
+                const currentStock = productData.stock ?? 0;
+                
+                if (currentStock < cartItemInfo.quantity) {
+                    stockIssues.push(`${cartItemInfo.name} (chỉ còn ${currentStock} sản phẩm)`);
+                }
+            }
+
+            if (stockIssues.length > 0) {
+                throw new Error(`Không đủ hàng cho: ${stockIssues.join(', ')}.`);
+            }
+
+            // If all stock checks pass, perform the updates
+            for (let i = 0; i < productDocs.length; i++) {
+                const cartItemInfo = productRefsAndQuantities[i];
+                const productData = productDocs[i].data() as Product;
+                const newStock = (productData.stock ?? 0) - cartItemInfo.quantity;
+                transaction.update(cartItemInfo.ref, { stock: newStock });
+            }
+        });
+    } catch (error: any) {
+        console.error("Transaction failed: ", error);
+        toast({
+            variant: "destructive",
+            title: "Lỗi đặt hàng",
+            description: error.message || "Không thể cập nhật số lượng tồn kho. Vui lòng thử lại.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1OG0fhORLrMGqcdUgujK08PY3nalyWZQzkir4U1c70_5M4E2Ac99CbreIatAMBgzu0Q/exec';
 
     const orderId = `VBR-${Date.now().toString().slice(-6)}`;
@@ -209,3 +278,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
