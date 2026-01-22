@@ -42,6 +42,11 @@ function doPost(e) {
   lock.waitLock(30000); // Wait up to 30 seconds for other processes to finish.
 
   try {
+    // This check prevents errors when running the script manually from the editor.
+    if (!e || !e.parameter) {
+        throw new Error("This script is triggered by the web app. Please test by submitting the order form, not by running it directly in the editor.");
+    }
+
     const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
     // Get the first sheet in the spreadsheet. This is safer than using a specific name.
     const sheet = spreadsheet.getSheets()[0];
@@ -52,11 +57,6 @@ function doPost(e) {
     }
 
     const data = e.parameter;
-
-    // A simple check to see if we received any data.
-    if (!data.orderId) {
-      throw new Error("No data received. The request may have been empty.");
-    }
     
     // The columns in your Google Sheet must be in this exact order.
     const newRow = [
