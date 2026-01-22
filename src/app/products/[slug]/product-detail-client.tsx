@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { faqs, productCategories } from '@/lib/data';
@@ -27,6 +25,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProductDetailClient({ slug }: { slug: string }) {
   const { products, addToCart } = useAppStore();
@@ -35,6 +34,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
   const [selectedSize, setSelectedSize] = useState<string | undefined>(
     product?.sizes?.[0]?.name
   );
+  const { toast } = useToast();
   
   if (!product) {
     if (products.length > 0) {
@@ -60,9 +60,23 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
       quantity: quantity,
       size: selectedSize,
     });
-    setQuantity(1);
+    // Do not reset quantity here, user might want to add more later.
   };
 
+  const handleIncreaseQuantity = () => {
+    if (product && product.stock !== undefined) {
+      if (quantity >= product.stock) {
+        toast({
+          variant: "destructive",
+          title: "Số lượng tồn kho không đủ",
+          description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
+        });
+        return;
+      }
+    }
+    setQuantity((q) => q + 1);
+  };
+  
   const category = productCategories.find(cat => cat.slug === product.categorySlug);
                           
   return (
@@ -126,7 +140,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                                 <Minus className="h-4 w-4" />
                             </Button>
                             <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
-                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} >
+                            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={handleIncreaseQuantity} >
                                 <Plus className="h-4 w-4" />
                             </Button>
                           </div>

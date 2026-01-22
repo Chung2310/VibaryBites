@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useAppStore } from "@/hooks/use-app-store";
@@ -11,7 +9,7 @@ import { Minus, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, totalPrice, cartCount } = useAppStore();
+  const { cartItems, updateQuantity, removeFromCart, totalPrice, cartCount, products } = useAppStore();
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -27,7 +25,12 @@ export default function CartPage() {
         <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ul role="list" className="divide-y divide-border">
-              {cartItems.map((item) => (
+              {cartItems.map((item) => {
+                const productInStock = products.find(p => p.id === item.id);
+                const stockAvailable = productInStock?.stock ?? 0;
+                const hasStockIssue = productInStock ? item.quantity > stockAvailable : false;
+
+                return (
                   <li key={`${item.id}-${item.size}`} className="flex py-6">
                     <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border">
                       {item.imageUrl && (
@@ -68,10 +71,15 @@ export default function CartPage() {
                           </Button>
                         </div>
                       </div>
+                       {hasStockIssue && (
+                        <p className="mt-2 text-sm text-destructive">
+                          Số lượng vượt quá tồn kho (chỉ còn {stockAvailable}). Vui lòng giảm số lượng.
+                        </p>
+                      )}
                     </div>
                   </li>
                 )
-              )}
+              })}
             </ul>
           </div>
 
@@ -95,7 +103,10 @@ export default function CartPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button asChild className="w-full" size="lg">
+                    <Button asChild className="w-full" size="lg" disabled={cartItems.some(item => {
+                        const product = products.find(p => p.id === item.id);
+                        return product ? item.quantity > (product.stock ?? 0) : true;
+                    })}>
                         <Link href="/checkout">Tiến hành thanh toán</Link>
                     </Button>
                 </CardFooter>

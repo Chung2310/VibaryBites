@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import type { CartItem, Product } from "@/lib/types";
@@ -70,20 +68,39 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const quantityToAdd = item.quantity || 1;
-    
-    const productInStore = products.find(p => p.id === item.id) as Product | undefined;
-    const imageUrl = item.imageUrl || (productInStore?.imageUrls && productInStore.imageUrls[0]) || '';
+    const product = products.find(p => p.id === item.id);
 
+    if (!product || product.stock === undefined) {
+      toast({
+        variant: "destructive",
+        title: "Không thể thêm sản phẩm",
+        description: "Thông tin tồn kho của sản phẩm này không có sẵn.",
+      });
+      return;
+    }
+    
+    const existingItem = cartItems.find(
+      (i) => i.id === item.id && i.size === item.size
+    );
+    const newQuantity = (existingItem?.quantity || 0) + quantityToAdd;
+
+    if (product.stock < newQuantity) {
+      toast({
+        variant: "destructive",
+        title: "Số lượng tồn kho không đủ",
+        description: `Rất tiếc, chỉ còn ${product.stock} sản phẩm "${product.name}" trong kho.`,
+      });
+      return;
+    }
+    
+    const imageUrl = item.imageUrl || (product.imageUrls && product.imageUrls[0]) || '';
     const itemToAdd = { ...item, imageUrl, quantity: quantityToAdd };
 
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find(
-        (i) => i.id === item.id && i.size === item.size
-      );
       if (existingItem) {
         return prevItems.map((i) =>
           i.id === item.id && i.size === item.size
-            ? { ...i, quantity: i.quantity + quantityToAdd }
+            ? { ...i, quantity: newQuantity }
             : i
         );
       }
@@ -106,6 +123,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateQuantity = (id: string, quantity: number, size?: string) => {
+    const product = products.find(p => p.id === id);
+    if (product && product.stock !== undefined && quantity > product.stock) {
+      toast({
+        variant: "destructive",
+        title: "Số lượng tồn kho không đủ",
+        description: `Chỉ còn ${product.stock} sản phẩm "${product.name}" trong kho.`,
+      });
+      return;
+    }
+
     if (quantity < 1) {
       removeFromCart(id, size);
       return;
