@@ -1,13 +1,14 @@
-
 'use client';
 
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
+import { getAuth } from 'firebase/auth';
 
 // Initialize Firebase and get storage instance
 const { firebaseApp } = initializeFirebase();
 const storage = getStorage(firebaseApp);
+const auth = getAuth(firebaseApp);
 
 /**
  * Uploads an image file to Firebase Storage.
@@ -18,6 +19,18 @@ export const uploadImage = async (file: File): Promise<string> => {
   if (!file) {
     throw new Error("No file provided for upload.");
   }
+  
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+      // This should theoretically not happen if the admin pages are protected,
+      // but it's a good safeguard.
+      throw new Error("User not authenticated. Cannot upload image.");
+  }
+
+  // Force refresh the user's ID token. This can help resolve intermittent
+  // auth issues where the token passed to Storage is stale.
+  await currentUser.getIdToken(true);
+
 
   // Create a unique filename using UUID to avoid overwrites
   const fileExtension = file.name.split('.').pop();
