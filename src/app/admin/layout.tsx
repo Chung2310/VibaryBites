@@ -17,7 +17,8 @@ import {
   MoreHorizontal,
   Newspaper,
   BookMarked,
-  List
+  List,
+  Loader2,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -39,9 +40,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
-import React from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useAuth, useUser } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
@@ -61,6 +64,15 @@ const navLinks = [
 function AdminSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const auth = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    if (auth) {
+      await auth.signOut();
+      toast({ title: 'Đã đăng xuất' });
+    }
+  };
 
   function toggleSidebar() {
     setIsCollapsed(!isCollapsed);
@@ -161,7 +173,7 @@ function AdminSidebar() {
                     <Button variant="ghost" size="icon" className="rounded-full">
                         <Settings className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
                         <LogOut className="h-5 w-5" />
                     </Button>
                 </div>
@@ -178,6 +190,32 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isUserLoading) return;
+    if (!user && pathname !== '/admin/login' && pathname !== '/login') {
+      router.replace('/admin/login');
+    }
+  }, [user, isUserLoading, pathname, router]);
+
+  const handleLogout = async () => {
+    if (auth) {
+      await auth.signOut();
+      toast({ title: 'Đã đăng xuất' });
+    }
+  };
+  
+  if (isUserLoading || (!user && pathname !== '/admin/login' && pathname !== '/login')) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (pathname === '/admin/login' || pathname === '/login') {
     return <>{children}</>;
@@ -266,7 +304,7 @@ export default function AdminLayout({
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuItem>Hỗ trợ</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout}>Đăng xuất</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
