@@ -69,29 +69,33 @@ export default function CheckoutPage() {
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // Important for Apps Script to avoid CORS issues in some browsers
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: payload.toString(),
+            body: payload,
         });
-
-        // Because of 'no-cors', we can't inspect the response.
-        // We will assume success and proceed. The Apps Script has error logging.
         
-        toast({
-            title: "Đơn hàng đã được gửi!",
-            description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
-        });
-        clearCart();
-        router.push('/');
+        if (response.ok) {
+            const responseData = await response.json();
+            if (responseData.result === 'success') {
+                toast({
+                    title: "Đơn hàng đã được gửi!",
+                    description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
+                });
+                clearCart();
+                router.push('/');
+            } else {
+                 // The script returned a custom error message
+                 throw new Error(responseData.error || 'Google Script báo lỗi không xác định.');
+            }
+        } else {
+            // Handle HTTP errors like 404, 500, or CORS issues that made it through
+             throw new Error(`Lỗi kết nối: ${response.status} ${response.statusText}. Vui lòng kiểm tra lại URL và cài đặt của Google Script.`);
+        }
 
     } catch (error) {
         console.error('Error submitting order:', error);
         toast({
             variant: "destructive",
             title: "Ôi, đã có lỗi xảy ra!",
-            description: `Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau hoặc liên hệ hotline. Lỗi: ${(error as Error).message}`
+            description: `Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau hoặc liên hệ hotline. Chi tiết lỗi: ${(error as Error).message}`
         });
     } finally {
         setIsSubmitting(false);
