@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -27,10 +26,9 @@ const generateSlug = (title: string) => {
     .replace(/-+/g, "-");
 };
 
-export default function EditNewsArticlePage() {
+export default function EditNewsArticlePage({ params }: { params: { id: string } }) {
     const router = useRouter();
-    const params = useParams();
-    const articleId = params.id as string;
+    const articleId = params.id;
     
     const firestore = useFirestore();
     const { toast } = useToast();
