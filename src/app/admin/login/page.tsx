@@ -54,12 +54,16 @@ export default function AdminLoginPage() {
     },
   });
 
-  // Effect to load remembered email
+  // Effect to load remembered credentials
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    if (rememberedEmail) {
-      form.setValue('email', rememberedEmail);
-      form.setValue('rememberMe', true);
+    if (typeof window !== 'undefined') {
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      const rememberedPassword = localStorage.getItem('rememberedPassword');
+      if (rememberedEmail && rememberedPassword) {
+        form.setValue('email', rememberedEmail);
+        form.setValue('password', rememberedPassword);
+        form.setValue('rememberMe', true);
+      }
     }
   }, [form]);
 
@@ -101,10 +105,14 @@ export default function AdminLoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     
-    if (data.rememberMe) {
-        localStorage.setItem('rememberedEmail', data.email);
-    } else {
-        localStorage.removeItem('rememberedEmail');
+    if (typeof window !== 'undefined') {
+      if (data.rememberMe) {
+          localStorage.setItem('rememberedEmail', data.email);
+          localStorage.setItem('rememberedPassword', data.password);
+      } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+      }
     }
 
     if (!auth) {
@@ -210,7 +218,7 @@ export default function AdminLoginPage() {
                             Lưu tài khoản
                         </FormLabel>
                         <FormDescription>
-                          Lưu lại địa chỉ email cho lần đăng nhập sau.
+                          Lưu lại email và mật khẩu cho lần đăng nhập sau.
                         </FormDescription>
                     </div>
                   </FormItem>
