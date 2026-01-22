@@ -5,10 +5,10 @@ import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import { getAuth } from 'firebase/auth';
 
-// Initialize Firebase and get storage instance
+// Initialize Firebase and get storage instance.
+// We get the firebaseApp instance here, which is a singleton.
 const { firebaseApp } = initializeFirebase();
 const storage = getStorage(firebaseApp);
-const auth = getAuth(firebaseApp);
 
 /**
  * Uploads an image file to Firebase Storage.
@@ -20,17 +20,17 @@ export const uploadImage = async (file: File): Promise<string> => {
     throw new Error("No file provided for upload.");
   }
   
+  // Get a fresh auth instance right before the operation.
+  // This ensures we have the most up-to-date user status.
+  const auth = getAuth(firebaseApp);
   const currentUser = auth.currentUser;
+
   if (!currentUser) {
-      // This should theoretically not happen if the admin pages are protected,
-      // but it's a good safeguard.
       throw new Error("User not authenticated. Cannot upload image.");
   }
 
-  // Force refresh the user's ID token. This can help resolve intermittent
-  // auth issues where the token passed to Storage is stale.
+  // Force refresh the user's ID token to prevent issues with stale tokens.
   await currentUser.getIdToken(true);
-
 
   // Create a unique filename using UUID to avoid overwrites
   const fileExtension = file.name.split('.').pop();
@@ -64,6 +64,14 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
     console.warn("No image URL provided for deletion.");
     return;
   }
+  
+  // Also get a fresh auth instance here for consistency.
+  const auth = getAuth(firebaseApp);
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+      throw new Error("User not authenticated. Cannot delete image.");
+  }
 
   try {
     // Create a reference from the HTTPS URL
@@ -72,13 +80,10 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
     // Delete the file
     await deleteObject(storageRef);
   } catch (error: any) {
-    // It's common to encounter 'object-not-found' if the file is already deleted
-    // or if the URL is incorrect. We can choose to log this as a warning instead of an error.
     if (error.code === 'storage/object-not-found') {
       console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
     } else {
       console.error("Error deleting image from Firebase Storage:", error);
-      // Re-throw the error to be handled by the calling function if it's not a 'not-found' error
       throw error;
     }
   }
