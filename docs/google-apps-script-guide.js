@@ -5,9 +5,9 @@
  * Vui lòng làm theo các bước sau, KỂ CẢ KHI BẠN ĐÃ LÀM TRƯỚC ĐÓ.
  * Việc triển khai lại là rất quan trọng.
  * 
- * 1. TẠO GOOGLE SHEET:
- *    - Mở Google Sheet: https://docs.google.com/spreadsheets/d/1ykIza10WFpDRGDiEifTuMI3PyZNHMtpDnK8XWd028UY/
- *    - Đảm bảo tên trang tính (sheet tab) ở dưới cùng là "Bảng_1".
+ * 1. MỞ GOOGLE SHEET:
+ *    - Mở Google Sheet của bạn: https://docs.google.com/spreadsheets/d/1ykIza10WFpDRGDiEifTuMI3PyZNHMtpDnK8XWd028UY/
+ *    - **QUAN TRỌNG:** Tên trang tính (sheet tab) nên là "Bảng_1". Nếu không, script sẽ tự động ghi vào trang tính đầu tiên nó tìm thấy.
  *    - Đảm bảo các cột sau có ở hàng đầu tiên (hàng 1):
  *      A: Số thứ tự đơn hàng
  *      B: Thời gian đặt hàng
@@ -30,7 +30,7 @@
  *    - Nhấp vào biểu tượng cây bút chì ("Chỉnh sửa").
  *    - Trong mục "Phiên bản", chọn "Phiên bản mới".
  *    - Nhấp vào "Triển khai".
- *    - **QUAN TRỌNG:** URL ứng dụng web của bạn sẽ KHÔNG THAY ĐỔI nếu bạn chỉnh sửa bản triển khai hiện có. Điều này đảm bảo ứng dụng của bạn tiếp tục hoạt động.
+ *    - **LƯU Ý:** URL ứng dụng web của bạn sẽ KHÔNG THAY ĐỔI nếu bạn chỉnh sửa bản triển khai hiện có. Điều này đảm bảo ứng dụng của bạn tiếp tục hoạt động.
  *
  * ---- MÃ NGUỒN GOOGLE APPS SCRIPT MỚI ----
  */
@@ -44,9 +44,18 @@ function doPost(e) {
   lock.waitLock(30000); // Wait up to 30 seconds for other processes to finish.
 
   try {
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
+
+    // If the target sheet doesn't exist, try to fall back to the first sheet.
     if (!sheet) {
-      throw new Error(`Sheet with name "${SHEET_NAME}" not found. Please check the sheet name.`);
+      console.warn(`Sheet "${SHEET_NAME}" not found. Falling back to the first available sheet.`);
+      sheet = spreadsheet.getSheets()[0];
+    }
+    
+    // If there are still no sheets, throw an error.
+    if (!sheet) {
+      throw new Error('No sheets found in the spreadsheet document. Please create at least one sheet.');
     }
 
     const data = e.parameter;
