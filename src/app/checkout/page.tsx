@@ -34,7 +34,7 @@ const checkoutSchema = z.object({
   address: z.string().min(5, { message: "Vui lòng nhập địa chỉ hợp lệ tại Bắc Ninh." }),
   deliveryDate: z.string().min(1, { message: "Vui lòng chọn ngày giao hàng." }),
   deliveryTime: z.string().min(1, { message: "Vui lòng chọn thời gian giao hàng." }),
-  paymentMethod: z.enum(["momo", "zalopay", "bank", "cod"], { required_error: "Vui lòng chọn phương thức thanh toán." }),
+  paymentMethod: z.enum(["momo", "zalopay", "bank"], { required_error: "Vui lòng chọn phương thức thanh toán." }),
 }).refine(data => {
     if (data.isGift) {
         return !!data.recipientName && data.recipientName.length >= 2;
@@ -218,7 +218,6 @@ export default function CheckoutPage() {
                                     <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="momo" id="momo" /><Label htmlFor="momo">Momo</Label></div>
                                     <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="zalopay" id="zalopay" /><Label htmlFor="zalopay">ZaloPay</Label></div>
                                     <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="bank" id="bank" /><Label htmlFor="bank">Chuyển khoản</Label></div>
-                                    <div className="flex items-center space-x-2 rounded-md border p-4"><RadioGroupItem value="cod" id="cod" /><Label htmlFor="cod">Thanh toán khi nhận hàng (COD)</Label></div>
                                 </RadioGroup>
                             </FormControl>
                             <FormMessage className="pt-2"/>
