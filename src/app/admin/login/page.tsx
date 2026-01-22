@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -31,8 +32,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const DEFAULT_ADMIN_EMAIL = 'admin@vibary.com';
-const DEFAULT_ADMIN_PASSWORD = 'password';
+const DEFAULT_ADMIN_EMAIL = 'manager@vibary.com';
+const DEFAULT_ADMIN_PASSWORD = 'newpassword123';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -141,7 +142,7 @@ export default function AdminLoginPage() {
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
           <CardDescription>
-            Email: <span className="font-mono">admin@vibary.com</span> / Mật khẩu: <span className="font-mono">password</span>
+            Email: <span className="font-mono">{DEFAULT_ADMIN_EMAIL}</span> / Mật khẩu: <span className="font-mono">{DEFAULT_ADMIN_PASSWORD}</span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -156,7 +157,7 @@ export default function AdminLoginPage() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="admin@vibary.com"
+                        placeholder="manager@vibary.com"
                         {...field}
                         autoComplete="email"
                       />
