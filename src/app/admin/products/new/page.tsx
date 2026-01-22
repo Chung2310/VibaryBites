@@ -15,6 +15,18 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+const generateSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
@@ -51,7 +63,7 @@ export default function NewProductPage() {
 
             const newProduct: Product = {
                 id,
-                slug: values.name.toLowerCase().replace(/\s+/g, '-'),
+                slug: generateSlug(values.name),
                 name: values.name,
                 subtitle: values.subtitle,
                 description: values.description,
@@ -125,4 +137,3 @@ export default function NewProductPage() {
         </div>
     );
 }
-

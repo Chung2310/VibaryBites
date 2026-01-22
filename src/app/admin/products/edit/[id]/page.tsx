@@ -16,6 +16,18 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+const generateSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
 export default function EditProductPage() {
     const router = useRouter();
     const params = useParams();
@@ -80,7 +92,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: finalImageUrls,
-                slug: values.name.toLowerCase().replace(/\s+/g, '-'),
+                slug: generateSlug(values.name),
             };
 
             await setDoc(docRef, updatedProductData, { merge: true });

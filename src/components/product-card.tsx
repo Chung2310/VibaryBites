@@ -31,7 +31,7 @@ export function ProductCard({ product, hideStockStatus = false }: ProductCardPro
       >
         <div className="p-4">
             <h3 className="font-headline text-2xl uppercase">{product.name}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{product.subtitle}</p>
+            <p className="text-sm text-muted-foreground mt-1 font-fraunces line-clamp-2">{product.description}</p>
             <p className="text-base font-medium mt-2">
                 {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
             </p>
