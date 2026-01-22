@@ -16,8 +16,7 @@ import Link from 'next/link';
 
 export default function EditProductPage() {
     const router = useRouter();
-    const params = useParams();
-    const productId = params.id as string;
+    const { id: productId } = useParams<{ id: string }>();
     
     const firestore = useFirestore();
     const { toast } = useToast();

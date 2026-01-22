@@ -28,8 +28,7 @@ const generateSlug = (title: string) => {
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
-    const params = useParams();
-    const articleId = params.id as string;
+    const { id: articleId } = useParams<{ id: string }>();
     
     const firestore = useFirestore();
     const { toast } = useToast();
