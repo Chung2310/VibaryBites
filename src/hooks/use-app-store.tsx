@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { useToast } from "./use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { signInAnonymously } from "firebase/auth";
 
 interface AppContextType {
   // Cart
@@ -40,11 +41,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
 
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
   const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
 
   const products = productsData || [];
+
+  useEffect(() => {
+    // When auth is initialized and we confirm there's no logged-in user,
+    // sign them in anonymously. This is crucial for operations that require
+    // a user to be signed in, like updating stock during checkout.
+    if (auth && !isUserLoading && !user) {
+      signInAnonymously(auth).catch((error) => {
+        console.error("Anonymous sign-in failed:", error);
+        toast({
+          variant: "destructive",
+          title: "Lỗi xác thực",
+          description: "Không thể bắt đầu phiên truy cập. Một số tính năng có thể không hoạt động.",
+        });
+      });
+    }
+  }, [auth, isUserLoading, user, toast]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
