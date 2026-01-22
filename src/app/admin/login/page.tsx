@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -33,7 +32,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const DEFAULT_ADMIN_EMAIL = 'admin@vibary.com';
-const DEFAULT_ADMIN_PASSWORD = 'password'; // For demo purposes
+const DEFAULT_ADMIN_PASSWORD = 'password';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -52,7 +51,6 @@ export default function AdminLoginPage() {
   });
 
   // Effect to create a default admin user if it doesn't exist.
-  // This is for demo purposes to ensure `admin@vibary.com` is always available.
   useEffect(() => {
     if (auth) {
         const createDefaultUser = async () => {
@@ -62,7 +60,9 @@ export default function AdminLoginPage() {
                 await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
                 // If creation is successful, it means this is the first time. Sign out immediately
                 // so the admin has to log in manually.
-                await auth.signOut();
+                if (auth.currentUser) {
+                  await auth.signOut();
+                }
             } catch (error: any) {
                 if (error.code === 'auth/email-already-in-use') {
                     // This is fine, the user already exists. We can proceed.
@@ -102,10 +102,10 @@ export default function AdminLoginPage() {
         title: 'Đăng nhập thành công',
         description: 'Chào mừng trở lại, quản trị viên!',
       });
-      // The redirect will be handled by the useEffect above
+      // The redirect will be handled by the useEffect that watches for the user object.
     } catch (error: any) {
         let description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
             description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
         } else if (error.code === 'auth/too-many-requests') {
             description = 'Tài khoản đã bị tạm khóa do quá nhiều lần thử. Vui lòng thử lại sau.'
@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
     }
   }
 
-  if (isInitializing) {
+  if (isInitializing || isUserLoading) {
      return (
         <div className="flex min-h-screen items-center justify-center bg-muted/40">
             <Loader2 className="h-8 w-8 animate-spin" />
