@@ -55,24 +55,24 @@ export default function AdminLoginPage() {
   // This is for demo purposes to ensure `admin@vibary.com` is always available.
   useEffect(() => {
     if (auth && process.env.NODE_ENV === 'development') {
-        const checkAndCreateUser = async () => {
+        const createDefaultUser = async () => {
             try {
-                // Try to sign in to see if user exists
-                await signInWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
-                auth.signOut(); // Sign out immediately after check
+                // Attempt to create the user. If the user already exists, this will fail
+                // with 'auth/email-already-in-use', which is an expected and safe error to ignore.
+                await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
+                // If creation is successful, it means this is the first time. Sign out immediately
+                // so the admin has to log in manually.
+                await auth.signOut();
             } catch (error: any) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    // User not found, so create it
-                    try {
-                        await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
-                        auth.signOut(); // Sign out after creation
-                    } catch (creationError) {
-                       // Ignore creation errors, might be race condition
-                    }
+                if (error.code === 'auth/email-already-in-use') {
+                    // This is fine, the user already exists. We can proceed.
+                } else {
+                   // For other errors (e.g., network), log them.
+                   console.error("Error creating default admin user:", error);
                 }
             }
         };
-        checkAndCreateUser();
+        createDefaultUser();
     }
   }, [auth]);
 
