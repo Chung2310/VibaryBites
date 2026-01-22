@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -24,10 +23,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ.' }),
   password: z.string().min(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự.' }),
+  rememberMe: z.boolean().default(false),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -48,27 +49,32 @@ export default function AdminLoginPage() {
     defaultValues: {
       email: '',
       password: '',
+      rememberMe: false,
     },
   });
+
+  // Effect to load remembered email
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      form.setValue('email', rememberedEmail);
+      form.setValue('rememberMe', true);
+    }
+  }, [form]);
 
   // Effect to create a default admin user if it doesn't exist.
   useEffect(() => {
     if (auth) {
         const createDefaultUser = async () => {
             try {
-                // Attempt to create the user. If the user already exists, this will fail
-                // with 'auth/email-already-in-use', which is an expected and safe error to ignore.
                 await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
-                // If creation is successful, it means this is the first time. Sign out immediately
-                // so the admin has to log in manually.
                 if (auth.currentUser) {
                   await auth.signOut();
                 }
             } catch (error: any) {
                 if (error.code === 'auth/email-already-in-use') {
-                    // This is fine, the user already exists. We can proceed.
+                    // This is fine, the user already exists.
                 } else {
-                   // For other errors (e.g., network), log them.
                    console.error("Error creating default admin user:", error);
                 }
             }
@@ -91,6 +97,13 @@ export default function AdminLoginPage() {
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
+    
+    if (data.rememberMe) {
+        localStorage.setItem('rememberedEmail', data.email);
+    } else {
+        localStorage.removeItem('rememberedEmail');
+    }
+
     if (!auth) {
         toast({ variant: "destructive", title: "Lỗi", description: "Dịch vụ xác thực chưa sẵn sàng."});
         setIsLoading(false);
@@ -103,7 +116,6 @@ export default function AdminLoginPage() {
         title: 'Đăng nhập thành công',
         description: 'Chào mừng trở lại, quản trị viên!',
       });
-      // The redirect will be handled by the useEffect that watches for the user object.
     } catch (error: any) {
         let description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -141,6 +153,7 @@ export default function AdminLoginPage() {
             </span>
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
+          
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -175,6 +188,25 @@ export default function AdminLoginPage() {
                       <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="rememberMe"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                        <FormLabel className="font-normal">
+                            Lưu tài khoản
+                        </FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />
