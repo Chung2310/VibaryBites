@@ -26,9 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { productCategories } from "@/lib/data";
+import { useDropzone } from 'react-dropzone';
+import { cn } from "@/lib/utils";
 
 const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
@@ -51,8 +53,8 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>(product?.imageUrls || []);
+  // This state holds both existing image URLs (string) and new image files (File)
+  const [images, setImages] = useState<(File | string)[]>(product?.imageUrls || []);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -73,37 +75,43 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const files = Array.from(event.target.files);
-      setImageFiles(prev => [...prev, ...files]);
-      
-      const newPreviews = files.map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...newPreviews]);
-    }
-  };
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setImages(prev => [...prev, ...acceptedFiles]);
+  }, []);
 
-  const removeImage = (index: number) => {
-    const newPreviews = [...imagePreviews];
-    const newFiles = [...imageFiles];
-    
-    const removedPreview = newPreviews[index];
-    newPreviews.splice(index, 1);
-    setImagePreviews(newPreviews);
-    
-    // If the removed preview was from a newly selected file, remove the file too
-    const fileIndex = imageFiles.findIndex(file => URL.createObjectURL(file) === removedPreview);
-    if(fileIndex > -1){
-        newFiles.splice(fileIndex, 1);
-        setImageFiles(newFiles);
-    }
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
+  });
 
+  const removeImage = (indexToRemove: number) => {
+    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    const existingImageUrls = imagePreviews.filter(p => p.startsWith('http'));
+    const existingImageUrls = images.filter((img): img is string => typeof img === 'string');
+    const imageFiles = images.filter((img): img is File => img instanceof File);
     await onSubmit(values, imageFiles, existingImageUrls);
-  }
+  };
+  
+  // Memoize preview URLs to avoid re-creating them on every render
+  const imagePreviews = useMemo(() => {
+    return images.map(image => ({
+      key: image instanceof File ? `${image.name}-${image.lastModified}-${image.size}` : image,
+      url: image instanceof File ? URL.createObjectURL(image) : image
+    }));
+  }, [images]);
+
+  // Effect to revoke object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(p => {
+        if (p.url.startsWith('blob:')) {
+          URL.revokeObjectURL(p.url);
+        }
+      });
+    };
+  }, [imagePreviews]);
 
   return (
     <Form {...form}>
@@ -186,14 +194,24 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         />
         <FormItem>
             <FormLabel>Ảnh sản phẩm</FormLabel>
-            <FormControl>
-                <Input type="file" accept="image/*" multiple onChange={handleImageChange} />
-            </FormControl>
+            <div
+                {...getRootProps()}
+                className={cn(
+                    'w-full p-6 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
+                    isDragActive && 'border-primary bg-primary/10'
+                )}
+            >
+                <input {...getInputProps()} />
+                <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">Kéo thả ảnh vào đây, hoặc <span className="text-primary">bấm để chọn file</span></p>
+                <p className="text-xs text-muted-foreground/80">Bạn có thể chọn nhiều ảnh cùng lúc.</p>
+            </div>
+
             {imagePreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                     {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative aspect-square">
-                            <Image src={preview} alt={`Xem trước ảnh ${'${index + 1}'}`} fill className="rounded-md object-cover" />
+                        <div key={preview.key} className="relative aspect-square">
+                            <Image src={preview.url} alt={`Xem trước ảnh ${index + 1}`} fill className="rounded-md object-cover" />
                             <Button
                                 type="button"
                                 variant="destructive"
