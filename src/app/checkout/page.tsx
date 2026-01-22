@@ -18,6 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
@@ -29,6 +32,8 @@ const checkoutSchema = z.object({
 export default function CheckoutPage() {
   const { cartItems, totalPrice, clearCart } = useAppStore();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -40,12 +45,59 @@ export default function CheckoutPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof checkoutSchema>) {
-    console.log(values);
-    // Here you would typically process the payment and create the order
-    alert("Đặt hàng thành công! (Đây là bản demo)");
-    clearCart();
-    router.push("/");
+  async function onSubmit(values: z.infer<typeof checkoutSchema>) {
+    setIsSubmitting(true);
+    
+    // BƯỚC 4: DÁN URL CỦA BẠN VÀO ĐÂY
+    // THAY THẾ 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE' BẰNG URL BẠN SAO CHÉP TỪ GOOGLE APPS SCRIPT
+    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+    const orderId = `VBR-${Date.now().toString().slice(-6)}`;
+    const orderTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const productsString = cartItems
+        .map(item => `${item.name}${item.size ? ` (${item.size})` : ''} (x${item.quantity})`)
+        .join('; ');
+
+    const payload = new FormData();
+    payload.append('orderId', orderId);
+    payload.append('orderTime', orderTime);
+    payload.append('customerName', values.name);
+    payload.append('phone', values.phone);
+    payload.append('address', values.address);
+    payload.append('notes', values.notes || '');
+    payload.append('products', productsString);
+    payload.append('totalPrice', new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ');
+
+    if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+      alert("Vui lòng cấu hình URL Google Apps Script trong file src/app/checkout/page.tsx trước khi gửi đơn hàng.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: payload,
+            mode: 'no-cors' // 'no-cors' is often needed for simple Apps Script web apps
+        });
+
+        toast({
+            title: "Đặt hàng thành công!",
+            description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
+        });
+        clearCart();
+        router.push('/');
+
+    } catch (error) {
+        console.error('Error submitting order:', error);
+        toast({
+            variant: "destructive",
+            title: "Ôi, đã có lỗi kết nối!",
+            description: "Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   if (cartItems.length === 0) {
@@ -103,7 +155,14 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              <Button type="submit" size="lg" className="w-full">Hoàn tất đơn hàng</Button>
+              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Đang gửi đơn hàng...
+                    </>
+                ) : 'Hoàn tất đơn hàng'}
+            </Button>
             </form>
           </Form>
         </div>
