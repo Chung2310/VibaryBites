@@ -244,7 +244,7 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 divide-y">
                      {cartItems.map(item => (
-                            <div key={`${'${item.id}'}-{'${item.size}'}`} className="flex items-center pt-4">
+                            <div key={`${item.id}-${item.size}`} className="flex items-center pt-4">
                                 <div className="relative h-16 w-16 rounded-md overflow-hidden border">
                                     {item.imageUrl && <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />}
                                     <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">{item.quantity}</span>
@@ -278,5 +278,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-    
