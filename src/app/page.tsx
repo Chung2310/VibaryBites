@@ -7,13 +7,6 @@ import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import React from 'react';
 import { motion } from 'framer-motion';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
@@ -24,7 +17,12 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 
 const heroBanners = [
   {
@@ -85,10 +83,6 @@ function Hero() {
   const [current, setCurrent] = React.useState(0)
   const [count, setCount] = React.useState(0)
 
-  const plugin = React.useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
-  );
-  
   React.useEffect(() => {
     if (!api) {
       return
@@ -107,10 +101,7 @@ function Hero() {
     <section className="relative h-screen w-full text-white">
       <Carousel
         setApi={setApi}
-        plugins={[plugin.current]}
         className="w-full h-full"
-        onMouseEnter={plugin.current.stop}
-        onMouseLeave={plugin.current.reset}
       >
         <CarouselContent className="h-screen">
           {heroBanners.map((banner, index) => (
@@ -276,21 +267,31 @@ function WorkshopSection() {
 function FeaturedProducts() {
     const { products } = useAppStore();
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    
-    let featuredProducts = [...birthdayCakes];
-    if (birthdayCakes.length > 0 && birthdayCakes.length < 5) {
-        while (featuredProducts.length < 5) {
-            featuredProducts = [...featuredProducts, ...birthdayCakes];
-        }
-    }
 
-    const plugin = React.useRef(
-      Autoplay({ delay: 2500, stopOnInteraction: true, stopOnMouseEnter: true })
-    );
-
-    if (featuredProducts.length === 0) {
+    if (birthdayCakes.length === 0) {
         return null;
     }
+    
+    // For a smooth marquee, we need enough items to fill the screen more than twice.
+    let baseProducts = [...birthdayCakes];
+    while (baseProducts.length < 8 && birthdayCakes.length > 0) {
+        baseProducts = [...baseProducts, ...birthdayCakes];
+    }
+    const duplicatedProducts = [...baseProducts, ...baseProducts];
+
+    const marqueeVariants = {
+        animate: {
+            x: ['-50%', '0%'], // Left-to-right animation
+            transition: {
+                x: {
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    duration: 150, // Adjust for speed
+                    ease: "linear",
+                },
+            },
+        }
+    };
 
     return (
         <section className="py-12 sm:py-20 bg-white">
@@ -306,22 +307,19 @@ function FeaturedProducts() {
                 </div>
             </div>
             
-            <Carousel
-                plugins={[plugin.current]}
-                className="w-full"
-                opts={{
-                    align: "start",
-                    loop: true,
-                }}
-            >
-                <CarouselContent className="-ml-4">
-                    {featuredProducts.map((product, index) => (
-                        <CarouselItem key={`${product.id}-${index}`} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+            <div className="w-full overflow-hidden">
+                <motion.div 
+                    className="flex"
+                    variants={marqueeVariants}
+                    animate="animate"
+                >
+                    {duplicatedProducts.map((product, index) => (
+                        <div key={`${product.id}-${index}`} className="flex-shrink-0 w-64 md:w-72 px-2">
                             <ProductCard product={product} hideStockStatus={true} />
-                        </CarouselItem>
+                        </div>
                     ))}
-                </CarouselContent>
-            </Carousel>
+                </motion.div>
+            </div>
         </section>
     );
 }
