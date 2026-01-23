@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -189,7 +188,6 @@ export default function AdminLayout({
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -201,11 +199,8 @@ export default function AdminLayout({
       if (pathname !== '/admin/login') {
         router.replace('/admin/login');
       }
-      setIsAdmin(false); // Explicitly set admin status to false
     } else {
-      // If there is a user, grant access
-      setIsAdmin(true);
-      // If the user is somehow on the login page while logged in, redirect to admin dashboard
+      // If the user is on the login page while logged in, redirect to admin dashboard
       if (pathname === '/admin/login') {
         router.replace('/admin');
       }
@@ -219,9 +214,8 @@ export default function AdminLayout({
     }
   };
   
-  const showLoader = isUserLoading || isAdmin === null;
-
-  if (showLoader && pathname !== '/admin/login') {
+  // Show a loader while user status is being determined, but not on the login page itself.
+  if (isUserLoading && pathname !== '/admin/login') {
      return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -229,11 +223,14 @@ export default function AdminLayout({
     );
   }
 
+  // If on the login page, just render the children (the login form)
   if (pathname === '/admin/login') {
     return <>{children}</>;
   }
   
-  if (!isAdmin) {
+  // If not loading and no user, show a loader while redirecting.
+  // This prevents the main layout from flashing before the redirect happens.
+  if (!user) {
       return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -241,6 +238,7 @@ export default function AdminLayout({
     );
   }
   
+  // At this point, we are on an admin page and the user is authenticated.
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr]">
       <AdminSidebar />
@@ -309,7 +307,7 @@ export default function AdminLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${user.uid}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
+                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${'${user.uid}'}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
