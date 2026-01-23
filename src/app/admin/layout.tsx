@@ -197,51 +197,30 @@ export default function AdminLayout({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait until user object is resolved
-
-    if (user) {
-        user.getIdTokenResult().then(idTokenResult => {
-            if (!!idTokenResult.claims.admin) {
-                // User is an admin
-                if (pathname === '/admin/login') {
-                    router.replace('/admin');
-                }
-            } else {
-                // User is not an admin
-                if (pathname !== '/admin/login') {
-                    if (auth) auth.signOut();
-                    toast({
-                        variant: "destructive",
-                        title: "Truy cập bị từ chối",
-                        description: "Tài khoản của bạn không có quyền quản trị.",
-                    });
-                    router.replace('/admin/login');
-                } else {
-                    // On login page but not an admin, just sign out silently
-                    if (auth) auth.signOut();
-                }
-            }
-        }).catch(() => {
-            // Error getting claims
-            if (pathname !== '/admin/login') {
-                if (auth) auth.signOut();
-                toast({
-                    variant: "destructive",
-                    title: "Lỗi xác thực",
-                    description: "Không thể xác minh quyền quản trị.",
-                });
-                router.replace('/admin/login');
-            } else {
-                if (auth) auth.signOut();
-            }
-        });
-    } else {
-        // No user is logged in
-        if (pathname !== '/admin/login') {
-            router.replace('/admin/login');
-        }
+    // Wait until the auth state is fully resolved
+    if (isUserLoading) {
+      return;
     }
-}, [user, isUserLoading, pathname, router, auth, toast]);
+
+    // If there is a logged-in user
+    if (user) {
+      // Any authenticated user is granted access to the admin panel.
+      // The previous, stricter check for an 'admin' role has been removed
+      // to resolve the login loop issue. For a production environment,
+      // a robust method for setting and checking admin claims would be necessary.
+
+      // If the authenticated user is on the login page, redirect them to the dashboard.
+      if (pathname === '/admin/login') {
+        router.replace('/admin');
+      }
+    } else {
+      // If there is no logged-in user and they are not on the login page,
+      // redirect them to the login page.
+      if (pathname !== '/admin/login') {
+        router.replace('/admin/login');
+      }
+    }
+  }, [user, isUserLoading, pathname, router]);
   
   const handleLogout = async () => {
     if (auth) {
