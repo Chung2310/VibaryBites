@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore, useAuth } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../news-form';
@@ -20,16 +19,15 @@ import { generateSlug } from '@/lib/utils';
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !auth) {
+        if (!firestore) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu hoặc xác thực.',
+                description: 'Không thể kết nối tới cơ sở dữ liệu.',
             });
             return;
         }
@@ -46,7 +44,7 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
 
         try {
-            const imageUrl = await uploadImage(imageFile, auth);
+            const imageUrl = await uploadImage(imageFile);
             
             const id = `news-${Date.now()}`;
             const docRef = doc(firestore, 'news_articles', id);
@@ -108,12 +106,9 @@ export default function NewNewsArticlePage() {
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/news')}
                         isSubmitting={isSubmitting}
-                        auth={auth}
                     />
                 </CardContent>
             </Card>
         </div>
     );
 }
-
-    

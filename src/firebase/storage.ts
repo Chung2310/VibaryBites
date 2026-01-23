@@ -2,20 +2,23 @@
 
 import { getApp } from 'firebase/app';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
-import type { Auth } from 'firebase/auth';
 
 /**
  * Uploads an image file to Firebase Storage.
+ * It internally gets the default Firebase App and its Auth/Storage services
+ * to ensure consistency.
  * @param file The image file to upload.
- * @param auth The Firebase Auth instance from the current user's session.
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
-export const uploadImage = async (file: File, auth: Auth): Promise<string> => {
+export const uploadImage = async (file: File): Promise<string> => {
   if (!file) {
     throw new Error("No file provided for upload.");
   }
   
+  const app = getApp();
+  const auth = getAuth(app);
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
@@ -23,9 +26,7 @@ export const uploadImage = async (file: File, auth: Auth): Promise<string> => {
     throw new Error("User not authenticated. Cannot upload image.");
   }
 
-  // Explicitly use the default Firebase App instance to get the Storage service.
-  // This avoids potential issues with stale app references.
-  const storage = getStorage(getApp());
+  const storage = getStorage(app);
 
   try {
     const fileExtension = file.name.split('.').pop();
@@ -49,15 +50,16 @@ export const uploadImage = async (file: File, auth: Auth): Promise<string> => {
 /**
  * Deletes an image from Firebase Storage using its public URL.
  * @param imageUrl The public download URL of the image to delete.
- * @param auth The Firebase Auth instance from the current user's session.
  * @returns A promise that resolves when the image is deleted.
  */
-export const deleteImage = async (imageUrl: string, auth: Auth): Promise<void> => {
+export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl) {
     console.warn("No image URL provided for deletion.");
     return;
   }
-
+  
+  const app = getApp();
+  const auth = getAuth(app);
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
@@ -65,8 +67,7 @@ export const deleteImage = async (imageUrl: string, auth: Auth): Promise<void> =
       throw new Error("User not authenticated. Cannot delete image.");
   }
   
-  // Explicitly use the default Firebase App instance to get the Storage service.
-  const storage = getStorage(getApp());
+  const storage = getStorage(app);
 
   try {
     const storageRef = ref(storage, imageUrl);

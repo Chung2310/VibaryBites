@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useAuth } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
@@ -17,17 +17,16 @@ import { generateSlug } from '@/lib/utils';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // The handler now accepts newImageFiles. The third argument (keptImageUrls) is ignored for new products.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
-        if (!firestore || !auth) {
+        if (!firestore) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu hoặc xác thực.',
+                description: 'Không thể kết nối tới cơ sở dữ liệu.',
             });
             return;
         }
@@ -45,7 +44,7 @@ export default function NewProductPage() {
 
         try {
             // Upload all new files
-            const uploadPromises = newImageFiles.map(file => uploadImage(file, auth));
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
             const id = `prod-${Date.now()}`;

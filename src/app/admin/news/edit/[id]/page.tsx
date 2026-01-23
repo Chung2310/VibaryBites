@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useAuth } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../../news-form';
@@ -21,7 +21,6 @@ export default function EditNewsArticlePage() {
     const articleId = params.id as string;
     
     const firestore = useFirestore();
-    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,11 +32,11 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article || !auth) {
+        if (!firestore || !article) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu, không tìm thấy bài viết hoặc chưa xác thực.',
+                description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy bài viết.',
             });
             return;
         }
@@ -47,14 +46,14 @@ export default function EditNewsArticlePage() {
 
         try {
             if (imageFile) {
-                const newUrl = await uploadImage(imageFile, auth);
+                const newUrl = await uploadImage(imageFile);
                 if (article.imageUrl && article.imageUrl !== newUrl) {
-                    await deleteImage(article.imageUrl, auth).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
+                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                 }
                 finalImageUrl = newUrl;
             } else if (imageWasRemoved) {
                 if (article.imageUrl) {
-                    await deleteImage(article.imageUrl, auth).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
+                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
                 }
                 finalImageUrl = '';
             }
@@ -150,7 +149,6 @@ export default function EditNewsArticlePage() {
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/news')}
                         isSubmitting={isSubmitting}
-                        auth={auth}
                     />
                 </CardContent>
             </Card>
