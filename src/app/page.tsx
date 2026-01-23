@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import React from 'react';
 import { motion } from 'framer-motion';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
@@ -189,7 +190,7 @@ function CategorySection() {
             viewport={{ once: true, amount: 0.2 }}
           >
             {categories.map((category) => {
-              const image = null; // PlaceholderImages is not available here.
+              const image = PlaceHolderImages.find(p => p.id === category.imageId);
               return (
                   <motion.div key={category.name} variants={itemVariants}>
                     <Link
@@ -273,12 +274,12 @@ function FeaturedProducts() {
 
     const marqueeVariants = {
         animate: {
-            x: ["0%", "-50%"],
+            x: ["-50%", "0%"],
             transition: {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 40,
+                    duration: 60,
                     ease: "linear",
                 },
             },
@@ -349,8 +350,9 @@ function FeaturedProducts() {
 }
 
 function NewsArticleCard({ article }: { article: NewsArticle }) {
+  const sanitizedSlug = article.slug || generateSlug(article.title);
   return (
-    <Link href={`/news/${article.slug}`} className="flex-shrink-0 w-64 md:w-80 group">
+    <Link href={`/news/${sanitizedSlug}`} className="flex-shrink-0 w-64 md:w-80 group">
       <div className="overflow-hidden rounded-lg">
         <Image
           src={article.imageUrl}
@@ -398,8 +400,8 @@ function HotNews() {
                     <Skeleton className="h-4 w-5/6" />
                 </div>
             ))}
-            {latestArticles?.map((article) => (
-              <NewsArticleCard key={article.id} article={article} />
+            {latestArticles?.map((article, index) => (
+              <NewsArticleCard key={`${article.id}-${index}`} article={article} />
             ))}
              {/* Add an empty div for spacing at the end of the scroll */}
             <div className="flex-shrink-0 w-1"></div>
