@@ -270,29 +270,20 @@ function WorkshopSection() {
 function FeaturedProducts() {
     const { products } = useAppStore();
 
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-
-    if (birthdayCakes.length === 0) {
-        return null;
-    }
-    
-    // Announcement bar scrolls right-to-left (x: ['0%', '-50%'])
-    // This makes the product marquee scroll left-to-right (opposite)
     const marqueeVariants = {
         animate: {
-            x: ['0%', '-50%'],
+            x: ['-50%', '0%'],
             transition: {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 120, // Increased duration for a slower, more elegant scroll
+                    duration: 60,
                     ease: "linear",
                 },
             },
         },
     };
     
-    // A simplified component for marquee items
     const ProductMarqueeItem = ({ product }: { product: Product }) => {
         const sanitizedSlug = product.slug || generateSlug(product.name);
         const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
@@ -317,9 +308,6 @@ function FeaturedProducts() {
                     <h3 className="mt-4 font-headline text-xl uppercase group-hover:text-primary transition-colors truncate">
                         {product.name}
                     </h3>
-                    {product.subtitle && (
-                        <p className="mt-1 font-fraunces text-sm uppercase tracking-wider text-muted-foreground truncate">{product.subtitle}</p>
-                    )}
                 </Link>
             </div>
         );
@@ -338,19 +326,19 @@ function FeaturedProducts() {
                     </Button>
                 </div>
             </div>
-            {/* The marquee container */}
-            <div className="w-full overflow-hidden mt-8">
-                <motion.div
-                    className="flex"
-                    variants={marqueeVariants}
-                    animate="animate"
-                >
-                    {/* Render items twice for seamless loop */}
-                    {[...products, ...products].map((product, index) => (
-                       <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
-                    ))}
-                </motion.div>
-            </div>
+            {products.length > 0 && (
+                <div className="w-full overflow-hidden mt-8">
+                    <motion.div
+                        className="flex"
+                        variants={marqueeVariants}
+                        animate="animate"
+                    >
+                        {[...products, ...products].map((product, index) => (
+                           <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
+                        ))}
+                    </motion.div>
+                </div>
+            )}
         </section>
     );
 }
@@ -405,8 +393,8 @@ function HotNews() {
                     <Skeleton className="h-4 w-5/6" />
                 </div>
             ))}
-            {latestArticles?.map((article, index) => (
-              <NewsArticleCard key={`${article.id}-${index}`} article={article} />
+            {latestArticles?.map((article) => (
+              <NewsArticleCard key={article.id} article={article} />
             ))}
              {/* Add an empty div for spacing at the end of the scroll */}
             <div className="flex-shrink-0 w-1"></div>
