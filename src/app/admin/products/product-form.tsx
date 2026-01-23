@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,8 +52,8 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
-  // This state holds both existing image URLs (string) and new image files (File)
-  const [images, setImages] = useState<(File | string)[]>(product?.imageUrls || []);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(product?.imageUrls || []);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -76,40 +75,51 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setImages(prev => [...prev, ...acceptedFiles]);
-  }, []);
+    const uniqueNewFiles = acceptedFiles.filter(
+      (file) => !newImageFiles.some(
+        (existingFile) => existingFile.name === file.name && existingFile.size === file.size && existingFile.lastModified === file.lastModified
+      )
+    );
+    setNewImageFiles(prev => [...prev, ...uniqueNewFiles]);
+  }, [newImageFiles]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
   });
 
-  const removeImage = (indexToRemove: number) => {
-    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
-  };
-
   const handleFormSubmit = async (values: ProductFormValues) => {
-    const existingImageUrls = images.filter((img): img is string => typeof img === 'string');
-    const imageFiles = images.filter((img): img is File => img instanceof File);
-    await onSubmit(values, imageFiles, existingImageUrls);
+    await onSubmit(values, newImageFiles, existingImageUrls);
   };
   
-  // Memoize preview URLs to avoid re-creating them on every render
   const imagePreviews = useMemo(() => {
-    return images.map(image => ({
-      key: image instanceof File ? `${image.name}-${image.lastModified}-${image.size}` : image,
-      url: image instanceof File ? URL.createObjectURL(image) : image
+    const existing = existingImageUrls.map(url => ({
+      key: url,
+      url: url,
+      isNew: false
     }));
-  }, [images]);
 
-  // Effect to revoke object URLs on unmount to prevent memory leaks
+    const news = newImageFiles.map(file => ({
+      key: `${file.name}-${file.lastModified}`,
+      url: URL.createObjectURL(file),
+      isNew: true
+    }));
+
+    return [...existing, ...news];
+  }, [existingImageUrls, newImageFiles]);
+
+  const removeImage = (imageToRemove: { key: string, isNew: boolean }) => {
+    if (imageToRemove.isNew) {
+      setNewImageFiles(prev => prev.filter(file => `${file.name}-${file.lastModified}` !== imageToRemove.key));
+    } else {
+      setExistingImageUrls(prev => prev.filter(url => url !== imageToRemove.key));
+    }
+  };
+
   useEffect(() => {
+    const newImageUrls = imagePreviews.filter(p => p.isNew).map(p => p.url);
     return () => {
-      imagePreviews.forEach(p => {
-        if (p.url.startsWith('blob:')) {
-          URL.revokeObjectURL(p.url);
-        }
-      });
+      newImageUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [imagePreviews]);
 
@@ -209,15 +219,15 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
 
             {imagePreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                    {imagePreviews.map((preview, index) => (
+                    {imagePreviews.map((preview) => (
                         <div key={preview.key} className="relative aspect-square">
-                            <Image src={preview.url} alt={`Xem trước ảnh ${index + 1}`} fill className="rounded-md object-cover" />
+                            <Image src={preview.url} alt={`Xem trước ảnh`} fill className="rounded-md object-cover" />
                             <Button
                                 type="button"
                                 variant="destructive"
                                 size="icon"
                                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                onClick={() => removeImage(index)}
+                                onClick={() => removeImage(preview)}
                             >
                                 <Trash2 className="h-3 w-3" />
                             </Button>
@@ -225,12 +235,11 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                     ))}
                 </div>
             )}
-            {imagePreviews.length === 0 && (
+            {(imagePreviews.length === 0) && (
                 <FormDescription>
                     Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.
                 </FormDescription>
             )}
-            <FormMessage />
         </FormItem>
 
         <FormField
