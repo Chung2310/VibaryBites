@@ -279,22 +279,6 @@ function FeaturedProducts() {
         return null;
     }
 
-    const marqueeProducts = [...birthdayCakes, ...birthdayCakes];
-
-    const marqueeVariants = {
-        animate: {
-            x: ['-50%', '0%'],
-            transition: {
-                x: {
-                    repeat: Infinity,
-                    repeatType: 'loop',
-                    duration: 80,
-                    ease: 'linear',
-                },
-            },
-        },
-    };
-
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -307,23 +291,29 @@ function FeaturedProducts() {
                         <Link href="/products">ĐẶT BÁNH NGAY</Link>
                     </Button>
                 </div>
-                 <div className="w-full overflow-hidden">
-                    <motion.div
-                        className="flex"
-                        variants={marqueeVariants}
-                        animate="animate"
-                    >
-                        {marqueeProducts.map((product, index) => (
-                            <div key={`${product.id}-${index}`} className="flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-2">
+                 <Carousel
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    plugins={[
+                        Autoplay({
+                            delay: 5000,
+                            stopOnInteraction: true,
+                        })
+                    ]}
+                    className="w-full"
+                >
+                    <CarouselContent className="-ml-4">
+                        {birthdayCakes.map((product, index) => (
+                            <CarouselItem key={`${product.id}-${index}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <ProductCard 
-                                    product={product} 
-                                    hideDescription={true}
-                                    hidePrice={true}
+                                    product={product}
                                 />
-                            </div>
+                            </CarouselItem>
                         ))}
-                    </motion.div>
-                </div>
+                    </CarouselContent>
+                </Carousel>
             </div>
         </section>
     );
