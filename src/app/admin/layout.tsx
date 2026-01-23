@@ -208,32 +208,13 @@ export default function AdminLayout({
         router.replace('/admin/login');
       }
     } else {
-      // User is logged in, check for admin role.
-      user.getIdTokenResult().then((idTokenResult) => {
-        const isAdmin = idTokenResult.claims.admin === true;
-
-        if (isAdmin) {
-          // User is an admin.
-          // If they are on the login page, redirect to the dashboard.
-          if (pathname === '/admin/login') {
-            router.replace('/admin');
-          }
-        } else {
-          // User is not an admin.
-          // Sign them out and show a notification if they aren't on the login page.
-          if (pathname !== '/admin/login') {
-              toast({
-                variant: 'destructive',
-                title: 'Truy cập bị từ chối',
-                description: 'Tài khoản của bạn không có quyền quản trị.',
-              });
-          }
-          auth?.signOut();
-          // The effect will re-run after sign-out, and the `!user` block will handle redirecting to /admin/login.
-        }
-      });
+      // User is logged in. For now, any logged in user can access admin.
+      // If they are on the login page, redirect to the dashboard.
+      if (pathname === '/admin/login') {
+        router.replace('/admin');
+      }
     }
-  }, [user, isUserLoading, pathname, router, auth, toast]);
+  }, [user, isUserLoading, pathname, router]);
   
   const handleLogout = async () => {
     if (auth) {
