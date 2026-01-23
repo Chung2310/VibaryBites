@@ -70,7 +70,7 @@ export default function NewProductPage() {
                 flavorProfile: [],
                 structure: [],
                 collection: 'special-occasions',
-                recipe: [],
+                recipe: "",
             };
 
             await setDoc(docRef, newProduct);
@@ -124,3 +124,5 @@ export default function NewProductPage() {
         </div>
     );
 }
+
+    

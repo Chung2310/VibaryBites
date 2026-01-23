@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import type { Product, Ingredient } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -27,10 +27,6 @@ export default function RecipesPage() {
     // Fetch Products (Cakes)
     const productsCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'cakes'), orderBy('name')) : null, [firestore]);
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
-
-    // Fetch Ingredients
-    const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
-    const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -102,10 +98,8 @@ export default function RecipesPage() {
                 <div className="lg:col-span-2">
                     {selectedProduct ? (
                          <RecipeEditor 
-                            key={selectedProduct.id} // Add key to force re-render on product change
+                            key={selectedProduct.id}
                             product={selectedProduct} 
-                            allIngredients={ingredients || []}
-                            isLoadingIngredients={isLoadingIngredients}
                          />
                     ) : (
                         <Card className="flex items-center justify-center h-full min-h-[400px]">
@@ -121,3 +115,4 @@ export default function RecipesPage() {
     );
 }
 
+    
