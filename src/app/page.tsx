@@ -312,6 +312,7 @@ function FeaturedProducts() {
                 opts={{
                     align: "start",
                     loop: true,
+                    direction: 'rtl',
                 }}
             >
                 <CarouselContent className="-ml-4">

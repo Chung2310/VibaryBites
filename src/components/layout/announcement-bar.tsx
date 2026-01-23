@@ -6,7 +6,7 @@ import { Phone } from 'lucide-react';
 
 const marqueeVariants = {
   animate: {
-    x: ['-50%', '0%'],
+    x: ['0%', '-50%'],
     transition: {
       x: {
         repeat: Infinity,
