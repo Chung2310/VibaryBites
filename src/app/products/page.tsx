@@ -94,7 +94,7 @@ export default function ProductsPage() {
                 {categoryProducts.length > 0 ? (
                     categoryProducts.map((product) => (
                         <div key={product.id} className="sm:px-8">
-                            <ProductCard product={product} />
+                            <ProductCard product={product} hideDescription={true} />
                         </div>
                     ))
                 ) : (
