@@ -277,7 +277,6 @@ function FeaturedProducts() {
     const { products } = useAppStore();
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
     
-    // Duplicate products if there are too few for the loop to work effectively across all screen sizes.
     let featuredProducts = [...birthdayCakes];
     if (birthdayCakes.length > 0 && birthdayCakes.length < 5) {
         while (featuredProducts.length < 5) {
@@ -286,7 +285,7 @@ function FeaturedProducts() {
     }
 
     const plugin = React.useRef(
-      Autoplay({ delay: 2500, stopOnInteraction: true })
+      Autoplay({ delay: 2500, stopOnInteraction: true, stopOnMouseEnter: true })
     );
 
     if (featuredProducts.length === 0) {
@@ -310,8 +309,6 @@ function FeaturedProducts() {
             <Carousel
                 plugins={[plugin.current]}
                 className="w-full"
-                onMouseEnter={plugin.current.stop}
-                onMouseLeave={plugin.current.reset}
                 opts={{
                     align: "start",
                     loop: true,
