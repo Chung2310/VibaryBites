@@ -23,6 +23,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 const heroBanners = [
   {
@@ -102,6 +103,12 @@ function Hero() {
       <Carousel
         setApi={setApi}
         className="w-full h-full"
+        plugins={[
+          Autoplay({
+            delay: 5000,
+            stopOnInteraction: false,
+          }),
+        ]}
       >
         <CarouselContent className="h-screen">
           {heroBanners.map((banner, index) => (
@@ -286,12 +293,13 @@ function FeaturedProducts() {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 40,
+                    duration: 60,
                     ease: "linear",
                 },
             },
         },
     };
+    
 
     return (
         <section className="py-12 sm:py-20 bg-white">
@@ -307,7 +315,7 @@ function FeaturedProducts() {
                 </div>
             </div>
             
-            <div className="w-full overflow-hidden">
+            <div className="w-full overflow-x-hidden">
                 <motion.div 
                     className="flex"
                     variants={marqueeVariants}
@@ -318,8 +326,6 @@ function FeaturedProducts() {
                             <ProductCard 
                                 product={product} 
                                 hideStockStatus={true} 
-                                hideDescription={true} 
-                                hidePrice={true} 
                             />
                         </div>
                     ))}
