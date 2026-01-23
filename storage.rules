@@ -1,12 +1,17 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Allow public read access for all files.
+    // This allows anyone to view images, which is common for a public website.
     match /{allPaths=**} {
-      // Public read access for all files is allowed.
       allow read;
-      // Allow writes only for authenticated users.
-      // This is a more secure rule and helps ensure auth state is respected.
+    }
+
+    // Secure the 'uploads' folder.
+    // Only authenticated users are allowed to upload files into this folder.
+    match /uploads/{allPaths=**} {
       allow write: if request.auth != null;
     }
   }

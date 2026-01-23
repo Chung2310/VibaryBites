@@ -1,11 +1,9 @@
 
-
 'use client';
 import {
   File,
   MoreHorizontal,
   PlusCircle,
-  RefreshCw,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,18 +50,16 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteImage } from '@/firebase/storage';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
-    const auth = useAuth();
     const router = useRouter();
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
@@ -82,43 +78,32 @@ export default function ProductsPage() {
         setSelectedProduct(undefined);
     }
     
-    const handleDelete = () => {
-        if (!selectedProduct || !firestore || !auth) return;
+    const handleDelete = async () => {
+        if (!selectedProduct || !firestore) return;
 
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
-        const deletePromises: Promise<any>[] = [];
-
-        // Add image deletion promises
-        if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-            selectedProduct.imageUrls.forEach(url => deletePromises.push(deleteImage(url, auth)));
-        }
-
-        // Add Firestore document deletion promise
-        deletePromises.push(deleteDoc(docRef));
-
-        Promise.allSettled(deletePromises)
-            .then(results => {
-                const errors = results.filter(r => r.status === 'rejected');
-                if (errors.length > 0) {
-                    console.error("Some deletions failed:", errors);
-                    toast({
-                        variant: "destructive",
-                        title: "Uh oh! Something went wrong.",
-                        description: `Could not delete all parts of the product. Check console for details.`,
-                    });
-                } else {
-                    toast({
-                        title: "Xóa thành công",
-                        description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
-                        variant: 'destructive',
-                    });
-                }
-            })
-            .finally(() => {
-                // This ensures the dialog closes only after all async operations are done.
-                closeDeleteConfirm();
+        try {
+            if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
+                const deletePromises = selectedProduct.imageUrls.map(url => deleteImage(url));
+                await Promise.all(deletePromises);
+            }
+            await deleteDoc(docRef);
+            toast({
+                title: "Xóa thành công",
+                description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
+                variant: 'destructive',
             });
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast({
+                variant: "destructive",
+                title: "Uh oh! Something went wrong.",
+                description: (error as Error).message || "Could not delete product.",
+            });
+        } finally {
+            closeDeleteConfirm();
+        }
     }
 
     return (
@@ -168,8 +153,8 @@ export default function ProductsPage() {
                       <TableHead className="hidden md:table-cell">
                         Tồn kho
                       </TableHead>
-                      <TableHead className="text-right">
-                        Hành động
+                      <TableHead>
+                        <span className="sr-only">Hành động</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -184,7 +169,7 @@ export default function ProductsPage() {
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                             <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
                             <TableCell className="text-right">
-                                <Skeleton className="h-8 w-24" />
+                                <Skeleton className="h-8 w-8" />
                             </TableCell>
                         </TableRow>
                    ))}
@@ -194,7 +179,7 @@ export default function ProductsPage() {
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {imageUrls.length > 0 && (
+                                {imageUrls.length > 0 ? (
                                     <Image
                                         alt={product.name}
                                         className="aspect-square rounded-md object-cover"
@@ -202,7 +187,7 @@ export default function ProductsPage() {
                                         src={imageUrls[0]}
                                         width="64"
                                     />
-                                )}
+                                ) : <div className="h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">No Image</div>}
                             </TableCell>
                             <TableCell className="font-medium">
                                 {product.name}
@@ -213,18 +198,32 @@ export default function ProductsPage() {
                             <TableCell className="hidden md:table-cell">
                                 {new Intl.NumberFormat('vi-VN').format(product.price)}đ
                             </TableCell>
-                             <TableCell className={cn("hidden md:table-cell", isOutOfStock && "text-destructive")}>
+                             <TableCell className={cn("hidden md:table-cell", isOutOfStock && "text-destructive font-bold")}>
                                 {product.stock ?? 'N/A'}
                             </TableCell>
                             <TableCell className="text-right">
-                                <div className="flex gap-2 justify-end">
-                                    <Button variant="outline" size="sm" onClick={() => router.push(`/admin/products/edit/${product.id}`)}>
-                                        Chỉnh sửa
+                               <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                    aria-haspopup="true"
+                                    size="icon"
+                                    variant="ghost"
+                                    >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
                                     </Button>
-                                    <Button variant="destructive" size="sm" onClick={() => openDeleteConfirm(product)}>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => router.push(`/admin/attributes?productId=${product.id}`)}>Sửa thuộc tính</DropdownMenuItem>
+                                     <DropdownMenuItem onSelect={() => router.push(`/admin/recipes?productId=${product.id}`)}>Sửa công thức</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={() => openDeleteConfirm(product)} className="text-destructive">
                                         Xóa
-                                    </Button>
-                                </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
                      )
@@ -247,8 +246,8 @@ export default function ProductsPage() {
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
                 <AlertDialogDescription>
                     Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn sản phẩm
-                    <span className="font-semibold"> {selectedProduct?.name} </span>
-                    và các hình ảnh liên quan.
+                    <span className="font-semibold"> "{selectedProduct?.name}" </span>
+                    và tất cả các hình ảnh liên quan.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { CartItem, Product } from "@/lib/types";
@@ -9,9 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { useToast } from "./use-toast";
-import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { usePathname } from "next/navigation";
 
 interface AppContextType {
   // Cart
@@ -40,20 +40,18 @@ export const useAppStore = () => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
-  const pathname = usePathname();
-
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
   const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
 
   const products = productsData || [];
 
+  // Load cart from localStorage on initial render
   useEffect(() => {
     if (typeof window !== 'undefined') {
         try {
-            const storedCart = localStorage.getItem("cart");
+            const storedCart = localStorage.getItem("vibary-cart");
             if (storedCart) {
                 setCartItems(JSON.parse(storedCart));
             }
@@ -64,9 +62,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Save cart to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        localStorage.setItem("cart", JSON.stringify(cartItems));
+        localStorage.setItem("vibary-cart", JSON.stringify(cartItems));
     }
   }, [cartItems]);
 

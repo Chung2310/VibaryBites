@@ -1,28 +1,6 @@
 
-/**
- * Core Philosophy: This ruleset implements a hybrid security model designed for a pastry shop application.
- * It strictly separates public, read-only data from private, user-owned data. Publicly accessible
- * information like cakes, categories, and news articles can be read by anyone but cannot be modified by clients
- * unless they have an admin role. All customer-specific data, such as profiles and orders, is protected 
- * under a strict ownership model, ensuring users can only access their own information.
- *
- * Data Structure: The data is organized into two main types:
- * 1. Top-level public collections: /cakes, /categories, /news_articles, /quiz_questions. These are
- *    globally readable. Write access is restricted to admins.
- * 2. User-owned data trees: All private data is nested under /customers/{customerId}, where the document
- *    ID matches the user's authentication UID. This includes subcollections like /orders and /order_items.
- *
- * Key Security Decisions:
- * - Admin-Only Writes for Public Data: Writes to top-level collections are restricted to authenticated
- *   users with a custom claim `admin: true`. This prevents unauthorized clients from modifying the product catalog or content.
- * - Strict Path-Based Ownership: Security for customer data (/customers/{customerId}) and all its
- *   subcollections is enforced using the customerId from the document path. This is a highly performant
- *   and secure pattern that prevents users from accessing or manipulating each other's data.
- * - Denormalization for Authorization: Reviews contain a denormalized `customerId` field. This allows
- *   rules on the /reviews collection to grant update/delete permissions directly to the author without
- *   requiring slow or complex lookups to other documents.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -45,80 +23,30 @@ service cloud.firestore {
     }
 
     /**
-     * Checks for ownership on an existing document. Used for update and delete
-     * operations to prevent acting on non-existent data.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-    
-    /**
      * Checks if the user has admin privileges via custom claims.
+     * To make a user an admin, you must set a custom claim on their account.
+     * Example (using Firebase Admin SDK):
+     * admin.auth().setCustomUserClaims(uid, { admin: true });
      */
     function isAdmin() {
       return isSignedIn() && request.auth.token.admin == true;
     }
 
     // --------------------------------
-    // Public Collections
+    // Public Read / Admin Write Collections
     // --------------------------------
 
     /**
-     * @description Publicly readable cake information. Writes are restricted to admins.
-     * @path /cakes/{cakeId}
-     * @allow (get, list) Any user can read cake details.
-     * @allow (create, update, delete) Only signed-in users can modify cakes (Temporary).
-     * @principle Public read access for catalog data, with writes reserved for admin roles.
+     * @description Publicly readable collections. Writes are restricted to admins.
+     * @paths /cakes/{cakeId}, /categories/{categoryId}, /news_articles/{newsArticleId}, 
+     *        /quiz_questions/{quizQuestionId}, /ingredients/{ingredientId}
+     * @allow (read) Any user can read data.
+     * @allow (write) Only admin users can create, update, or delete data.
      */
-    match /cakes/{cakeId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
-    }
-
-    /**
-     * @description Publicly readable cake categories. Writes are restricted to admins.
-     * @path /categories/{categoryId}
-     * @allow (get, list) Any user can read category details.
-     * @allow (write) Only signed-in users can modify categories (Temporary).
-     * @principle Public read access for catalog data, with writes reserved for admin roles.
-     */
-    match /categories/{categoryId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
-    }
-
-    /**
-     * @description Publicly readable news articles. Writes are restricted to admins.
-     * @path /news_articles/{newsArticleId}
-     * @allow (get, list) Any user can read articles.
-     * @allow (write) Only signed-in users can modify articles (Temporary).
-     * @principle Public read access for content, with writes reserved for admin roles.
-     */
-    match /news_articles/{newsArticleId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
-    }
-
-    /**
-     * @description Publicly readable quiz questions. Writes are restricted to admins.
-     * @path /quiz_questions/{quizQuestionId}
-     * @allow (get, list) Any user can read quiz questions.
-     * @allow (write) Only signed-in users can modify quiz questions (Temporary).
-     * @principle Public read access for interactive content, with writes reserved for admin roles.
-     */
-    match /quiz_questions/{quizQuestionId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
-    }
-
-    /**
-     * @description Stores raw material inventory. Access is restricted to signed-in users.
-     * @path /ingredients/{ingredientId}
-     * @allow (read, write) Only signed-in users can access inventory (Temporary).
-     * @principle Admin-only data, temporarily gated by signed-in status.
-     */
-    match /ingredients/{ingredientId} {
-      allow read, write: if isSignedIn();
+    match /{collectionName}/{docId} 
+    where collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients'] {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // --------------------------------
@@ -127,63 +55,44 @@ service cloud.firestore {
 
     /**
      * @description Customer reviews for a specific cake. Reviews are publicly readable.
+     *              Users can only create, update, or delete their OWN reviews.
      * @path /cakes/{cakeId}/reviews/{reviewId}
-     * @allow (create) A signed-in user (auth.uid: 'user_abc') can create a review with `customerId: 'user_abc'`.
-     * @deny (update) A user (auth.uid: 'user_xyz') cannot update a review where `resource.data.customerId` is 'user_abc'.
-     * @principle Enforces document ownership for writes while allowing public reads. Validates relational integrity.
      */
     match /cakes/{cakeId}/reviews/{reviewId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.cakeId == cakeId;
-      allow update: if isExistingOwner(resource.data.customerId) && request.resource.data.customerId == resource.data.customerId && request.resource.data.cakeId == resource.data.cakeId;
-      allow delete: if isExistingOwner(resource.data.customerId);
+      allow read: if true;
+      // Allow create if user is signed in and the review's customerId matches their UID.
+      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      // Allow update/delete if the user is the owner of the existing review document.
+      allow update, delete: if isSignedIn() && resource.data.customerId == request.auth.uid;
     }
 
     // --------------------------------
-    // User-Owned Data
+    // User-Owned Private Data
     // --------------------------------
 
     /**
      * @description Customer profile data. A user can only access their own document.
      * @path /customers/{customerId}
-     * @allow (create) A new user (auth.uid: 'user_abc') can create their own profile at /customers/user_abc.
-     * @deny (get) A user (auth.uid: 'user_xyz') cannot get the document at /customers/user_abc.
-     * @principle Restricts access to a user's own data tree using path-based ownership.
      */
     match /customers/{customerId} {
-      allow get: if isOwner(customerId);
-      allow list: if isOwner(customerId); // Allows a user to check for their own document
-      allow create: if isOwner(customerId) && request.resource.data.id == customerId;
-      allow update: if isExistingOwner(customerId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(customerId);
+      // A user can only read, create, update, or delete their OWN customer document.
+      allow read, write: if isOwner(customerId);
 
       /**
        * @description A customer's orders. Access is inherited from the parent customer document.
        * @path /customers/{customerId}/orders/{orderId}
-       * @allow (list) A user (auth.uid: 'user_abc') can list all orders under /customers/user_abc/orders.
-       * @deny (get) A user (auth.uid: 'user_xyz') cannot get an order from /customers/user_abc/orders/{orderId}.
-       * @principle Path-based ownership ensures users can only access their own orders.
        */
       match /orders/{orderId} {
-        allow get: if isOwner(customerId);
-        allow list: if isOwner(customerId);
-        allow create: if isOwner(customerId) && request.resource.data.customerId == customerId;
-        allow update: if isExistingOwner(customerId) && request.resource.data.customerId == resource.data.customerId;
-        allow delete: if isExistingOwner(customerId);
+        // A user can only read and write their OWN orders.
+        allow read, write: if isOwner(customerId);
 
         /**
          * @description Items within a specific order. Access is inherited from the customer path.
          * @path /customers/{customerId}/orders/{orderId}/order_items/{orderItemId}
-         * @allow (create) A user (auth.uid: 'user_abc') can create an item in their own order.
-         * @deny (list) A user (auth.uid: 'user_xyz') cannot list items in another user's order.
-         * @principle Ensures deep path security and relational integrity with the parent order.
          */
         match /order_items/{orderItemId} {
-          allow get: if isOwner(customerId);
-          allow list: if isOwner(customerId);
-          allow create: if isOwner(customerId) && request.resource.data.orderId == orderId && get(/databases/$(database)/documents/customers/$(customerId)/orders/$(orderId)).data.customerId == customerId;
-          allow update: if isExistingOwner(customerId) && request.resource.data.orderId == resource.data.orderId;
-          allow delete: if isExistingOwner(customerId);
+          // A user can only read and write their OWN order items.
+          allow read, write: if isOwner(customerId);
         }
       }
     }

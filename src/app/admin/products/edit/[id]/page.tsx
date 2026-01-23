@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -31,7 +32,6 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    // The handler now accepts both new files to upload and a list of existing URLs to keep.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         if (!firestore || !product) {
             toast({
@@ -45,21 +45,17 @@ export default function EditProductPage() {
         setIsSubmitting(true);
 
         try {
-            // 1. Identify URLs to delete
             const originalUrls = product.imageUrls || [];
             const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
 
-            // 2. Upload new images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const newUploadedUrls = await Promise.all(uploadPromises);
 
-            // 3. Delete old images from storage
             if (urlsToDelete.length > 0) {
                 const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
                 await Promise.all(deletePromises);
             }
 
-            // 4. Combine kept URLs and new URLs for the final array
             const finalImageUrls = [...keptImageUrls, ...newUploadedUrls];
             
             if (finalImageUrls.length === 0) {
@@ -81,7 +77,7 @@ export default function EditProductPage() {
                 price: Number(values.price),
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
-                imageUrls: finalImageUrls, // Use the final combined array
+                imageUrls: finalImageUrls,
                 slug: generateSlug(values.name),
             };
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -7,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,14 +21,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ.' }),
   password: z.string().min(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự.' }),
-  rememberEmail: z.boolean().default(false),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -35,7 +34,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function AdminLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
-  const { isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -43,32 +41,12 @@ export default function AdminLoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      rememberEmail: false,
     },
   });
-
-  // Effect to load remembered email
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const rememberedEmail = localStorage.getItem('rememberedEmail');
-      if (rememberedEmail) {
-        form.setValue('email', rememberedEmail);
-        form.setValue('rememberEmail', true);
-      }
-    }
-  }, [form]);
 
   async function onSubmit(data: LoginFormValues) {
     setIsSubmitting(true);
     
-    if (typeof window !== 'undefined') {
-      if (data.rememberEmail) {
-          localStorage.setItem('rememberedEmail', data.email);
-      } else {
-          localStorage.removeItem('rememberedEmail');
-      }
-    }
-
     if (!auth) {
         toast({ variant: "destructive", title: "Lỗi", description: "Dịch vụ xác thực chưa sẵn sàng."});
         setIsSubmitting(false);
@@ -77,11 +55,11 @@ export default function AdminLoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // On successful sign-in, the layout's useEffect will handle redirection.
+      // On successful sign-in, the admin layout's useEffect will handle redirection.
     } catch (error: any) {
-        let description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
+        let description = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
+            description = 'Email hoặc mật khẩu không chính xác.';
         } else if (error.code === 'auth/too-many-requests') {
             description = 'Tài khoản đã bị tạm khóa do quá nhiều lần thử. Vui lòng thử lại sau.'
         }
@@ -107,7 +85,7 @@ export default function AdminLoginPage() {
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
           <CardDescription>
-            Sử dụng tài khoản được cấp để đăng nhập vào hệ thống.
+            Sử dụng tài khoản quản trị viên được cấp để đăng nhập.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -122,7 +100,7 @@ export default function AdminLoginPage() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="manager@vibary.com"
+                        placeholder="admin@vibary.com"
                         {...field}
                         autoComplete="email"
                       />
@@ -136,9 +114,7 @@ export default function AdminLoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center">
-                      <FormLabel>Mật khẩu</FormLabel>
-                    </div>
+                    <FormLabel>Mật khẩu</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
                     </FormControl>
@@ -146,27 +122,8 @@ export default function AdminLoginPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="rememberEmail"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                        <FormLabel className="font-normal">
-                            Lưu tài khoản email
-                        </FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isSubmitting || isUserLoading}>
-                {isSubmitting || isUserLoading ? <Loader2 className="animate-spin" /> : 'Đăng nhập'}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Đăng nhập'}
               </Button>
             </form>
           </Form>

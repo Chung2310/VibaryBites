@@ -1,3 +1,4 @@
+
 'use client';
 
 import { getApp } from 'firebase/app';
@@ -6,9 +7,9 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Awaits the definitive authentication state.
+ * Awaits for the user to be authenticated.
  * @returns A promise that resolves with the authenticated User object.
- * @rejects If the user is not authenticated.
+ * @rejects If the user is not authenticated after the initial check.
  */
 const getAuthenticatedUser = (): Promise<User> => {
   const auth = getAuth(getApp());
@@ -16,11 +17,11 @@ const getAuthenticatedUser = (): Promise<User> => {
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
-        unsubscribe(); // Unsubscribe after the first state change
+        unsubscribe(); // We only need the first result
         if (user) {
           resolve(user);
         } else {
-          reject(new Error("User not authenticated."));
+          reject(new Error("User is not authenticated. Cannot perform storage operations."));
         }
       },
       (error) => {
@@ -32,8 +33,7 @@ const getAuthenticatedUser = (): Promise<User> => {
 };
 
 /**
- * Uploads an image file to Firebase Storage.
- * It ensures the user is authenticated before proceeding.
+ * Uploads an image file to Firebase Storage, ensuring the user is authenticated.
  * @param file The image file to upload.
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
@@ -43,7 +43,8 @@ export const uploadImage = async (file: File): Promise<string> => {
   }
   
   try {
-    await getAuthenticatedUser(); // This ensures we have a valid, authenticated user.
+    // Ensure we have a valid, authenticated user before proceeding.
+    await getAuthenticatedUser(); 
     
     const storage = getStorage(getApp());
 
@@ -56,10 +57,9 @@ export const uploadImage = async (file: File): Promise<string> => {
     
     return downloadURL;
   } catch (error) {
-    console.error("--- Firebase Storage Upload Error ---", error);
-    // Re-throw for the calling component to handle.
-    // This will now include auth errors from getAuthenticatedUser.
-    throw error;
+    console.error("Firebase Storage Upload Error:", error);
+    // Re-throw a more user-friendly error.
+    throw new Error("Image upload failed. Please ensure you are logged in and have permissions.");
   }
 };
 
@@ -76,7 +76,7 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
   }
   
   try {
-    await getAuthenticatedUser(); // Ensures user is authenticated.
+    await getAuthenticatedUser();
     
     const storage = getStorage(getApp());
     const storageRef = ref(storage, imageUrl);
@@ -84,12 +84,12 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
     await deleteObject(storageRef);
   } catch (error: any) {
     if (error.code === 'storage/object-not-found') {
+      // This is not a critical failure, just a warning.
       console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
-      // Do not re-throw for this specific case, it's not a critical failure.
     } else {
-      console.error("Error deleting image from Firebase Storage:", error);
-      // Re-throw other errors (including auth errors)
-      throw error;
+      console.error("Firebase Storage Deletion Error:", error);
+      // Re-throw other errors for the calling component to handle.
+      throw new Error("Image deletion failed. Please ensure you are logged in and have permissions.");
     }
   }
 };

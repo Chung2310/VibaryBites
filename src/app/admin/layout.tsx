@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,10 +16,9 @@ import {
   Warehouse,
   MoreHorizontal,
   Newspaper,
-  BookMarked,
+  Book,
   List,
   Loader2,
-  Book,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +41,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +59,8 @@ const navLinks = [
   },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
   { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
+  { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart },
+  { href: '/admin/customers', label: 'Khách hàng', icon: Users },
   { href: '/admin/promotions', label: 'Khuyến mãi', icon: Ticket },
 ];
 
@@ -144,11 +146,6 @@ function AdminSidebar() {
                                 >
                                     <link.icon className="h-4 w-4" />
                                     {!isCollapsed && link.label}
-                                    {link.badge && !isCollapsed && (
-                                    <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                                        {link.badge}
-                                    </Badge>
-                                    )}
                                 </Link>
                             )
                         ))}
@@ -156,27 +153,23 @@ function AdminSidebar() {
                 </nav>
             </div>
             <div className="mt-auto p-4">
-                <Card className={cn(isCollapsed && "p-0 bg-transparent border-0")}>
-                    <CardHeader className={cn("p-2 pt-0 md:p-4", isCollapsed && "p-0")}>
-                         {!isCollapsed && <CardTitle>Cần giúp đỡ?</CardTitle>}
-                         {!isCollapsed && <CardDescription>
-                            Liên hệ hỗ trợ nếu bạn gặp vấn đề với hệ thống.
-                        </CardDescription>}
-                    </CardHeader>
-                    {!isCollapsed && <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                        <Button size="sm" className="w-full">
-                            Hỗ trợ
-                        </Button>
-                    </CardContent>}
-                </Card>
-
                  <div className={cn("flex items-center p-2 mt-4 border-t", isCollapsed && "flex-col gap-2")}>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <Settings className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
-                        <LogOut className="h-5 w-5" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="icon" className="rounded-full w-full justify-center">
+                                <Settings className="h-5 w-5" />
+                                {!isCollapsed && <span className='ml-2'>Cài đặt</span>}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isCollapsed ? 'end' : 'center'} className='w-56'>
+                            <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Đăng xuất</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </div>
@@ -195,26 +188,52 @@ export default function AdminLayout({
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Still loading, do nothing.
+      return; 
     }
 
     if (!user) {
-      // No user logged in.
-      // If not on the login page, redirect there.
       if (pathname !== '/admin/login') {
         router.replace('/admin/login');
       }
-    } else {
-      // User is logged in. For now, any logged in user can access admin.
-      // If they are on the login page, redirect to the dashboard.
-      if (pathname === '/admin/login') {
-        router.replace('/admin');
-      }
+      setIsAdmin(false);
+      return;
     }
-  }, [user, isUserLoading, pathname, router]);
+    
+    // User is logged in, check for admin claim
+    user.getIdTokenResult()
+      .then((idTokenResult) => {
+        const userIsAdmin = idTokenResult.claims.admin === true;
+        
+        if (userIsAdmin) {
+          setIsAdmin(true);
+          if (pathname === '/admin/login') {
+            router.replace('/admin');
+          }
+        } else {
+          setIsAdmin(false);
+          // Only show toast if they are trying to access a protected page
+          if (pathname !== '/admin/login') {
+             toast({
+                variant: 'destructive',
+                title: 'Truy cập bị từ chối',
+                description: 'Bạn không có quyền quản trị viên.',
+            });
+          }
+          auth?.signOut();
+          // The !user check above will handle the redirect
+        }
+      })
+      .catch(error => {
+        console.error("Error getting user claims:", error);
+        setIsAdmin(false);
+        auth?.signOut();
+      });
+
+  }, [user, isUserLoading, pathname, router, auth, toast]);
   
   const handleLogout = async () => {
     if (auth) {
@@ -223,8 +242,10 @@ export default function AdminLayout({
     }
   };
   
-  if (isUserLoading || (!user && pathname !== '/admin/login')) {
-    return (
+  const showLoader = isUserLoading || isAdmin === null;
+
+  if (showLoader && pathname !== '/admin/login') {
+     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
@@ -233,6 +254,14 @@ export default function AdminLayout({
 
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+  
+  if (!isAdmin) {
+      return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
   
   return (
@@ -247,7 +276,7 @@ export default function AdminLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <MoreHorizontal className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
@@ -291,11 +320,6 @@ export default function AdminLayout({
                         >
                             <link.icon className="h-5 w-5" />
                             {link.label}
-                            {link.badge && (
-                                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                                    {link.badge}
-                                </Badge>
-                            )}
                         </Link>
                     )
                 ))}
@@ -308,12 +332,12 @@ export default function AdminLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Image src="https://i.pravatar.cc/40" width={36} height={36} alt="Admin Avatar" className="rounded-full" />
+                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${user.uid}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+              <DropdownMenuLabel>{user.displayName || user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuItem>Hỗ trợ</DropdownMenuItem>

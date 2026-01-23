@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -46,11 +47,10 @@ export default function EditNewsArticlePage() {
 
         try {
             if (imageFile) {
-                const newUrl = await uploadImage(imageFile);
-                if (article.imageUrl && article.imageUrl !== newUrl) {
+                if (article.imageUrl) {
                     await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                 }
-                finalImageUrl = newUrl;
+                finalImageUrl = await uploadImage(imageFile);
             } else if (imageWasRemoved) {
                 if (article.imageUrl) {
                     await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));

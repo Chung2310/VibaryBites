@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,7 +21,6 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // The handler now accepts newImageFiles. The third argument (keptImageUrls) is ignored for new products.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
         if (!firestore) {
             toast({
@@ -43,7 +43,6 @@ export default function NewProductPage() {
         setIsSubmitting(true);
 
         try {
-            // Upload all new files
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
@@ -59,8 +58,7 @@ export default function NewProductPage() {
                 price: Number(values.price),
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
-                imageUrls: uploadedUrls, // Use the new URLs
-                // Initialize detailed fields as empty
+                imageUrls: uploadedUrls,
                 detailedDescription: {
                     flavor: "",
                     ingredients: "",
@@ -71,7 +69,7 @@ export default function NewProductPage() {
                 },
                 flavorProfile: [],
                 structure: [],
-                collection: 'special-occasions', // Default collection
+                collection: 'special-occasions',
                 recipe: [],
             };
 
