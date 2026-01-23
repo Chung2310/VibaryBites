@@ -7,14 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,9 +32,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-const DEFAULT_ADMIN_EMAIL = 'manager@vibary.com';
-const DEFAULT_ADMIN_PASSWORD = 'newpassword123';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -64,29 +60,6 @@ export default function AdminLoginPage() {
       }
     }
   }, [form]);
-
-  // Effect to create a default admin user if it doesn't exist.
-  useEffect(() => {
-    if (auth) {
-        const createDefaultUser = async () => {
-            try {
-                // This is a 'safe' operation. If the user already exists, it will fail
-                // with a specific error code which we can ignore.
-                await createUserWithEmailAndPassword(auth, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD);
-                // If creation was successful, immediately sign out so the user has to log in.
-                if (auth.currentUser) {
-                  await auth.signOut();
-                }
-            } catch (error: any) {
-                // It's okay if the user already exists. We can ignore this error.
-                if (error.code !== 'auth/email-already-in-use') {
-                   console.error("Error creating default admin user:", error);
-                }
-            }
-        };
-        createDefaultUser();
-    }
-  }, [auth]);
 
   // Effect to redirect if user is already logged in
    useEffect(() => {
@@ -181,9 +154,6 @@ export default function AdminLoginPage() {
                         autoComplete="email"
                       />
                     </FormControl>
-                     <FormDescription>
-                       Tài khoản mặc định: <span className="font-mono">{DEFAULT_ADMIN_EMAIL}</span>
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -199,9 +169,6 @@ export default function AdminLoginPage() {
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
                     </FormControl>
-                    <FormDescription>
-                       Mật khẩu mặc định: <span className="font-mono">{DEFAULT_ADMIN_PASSWORD}</span>
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
