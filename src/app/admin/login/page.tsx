@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,7 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 const loginSchema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ.' }),
   password: z.string().min(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự.' }),
-  rememberMe: z.boolean().default(false),
+  rememberEmail: z.boolean().default(false),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -50,19 +50,17 @@ export default function AdminLoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      rememberMe: false,
+      rememberEmail: false,
     },
   });
 
-  // Effect to load remembered credentials
+  // Effect to load remembered email
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const rememberedEmail = localStorage.getItem('rememberedEmail');
-      const rememberedPassword = localStorage.getItem('rememberedPassword');
-      if (rememberedEmail && rememberedPassword) {
+      if (rememberedEmail) {
         form.setValue('email', rememberedEmail);
-        form.setValue('password', rememberedPassword);
-        form.setValue('rememberMe', true);
+        form.setValue('rememberEmail', true);
       }
     }
   }, [form]);
@@ -106,12 +104,10 @@ export default function AdminLoginPage() {
     setIsLoading(true);
     
     if (typeof window !== 'undefined') {
-      if (data.rememberMe) {
+      if (data.rememberEmail) {
           localStorage.setItem('rememberedEmail', data.email);
-          localStorage.setItem('rememberedPassword', data.password);
       } else {
           localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
       }
     }
 
@@ -164,7 +160,9 @@ export default function AdminLoginPage() {
             </span>
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
-          
+          <CardDescription>
+            Sử dụng tài khoản được cấp để đăng nhập vào hệ thống.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -183,6 +181,9 @@ export default function AdminLoginPage() {
                         autoComplete="email"
                       />
                     </FormControl>
+                     <FormDescription>
+                       Tài khoản mặc định: <span className="font-mono">{DEFAULT_ADMIN_EMAIL}</span>
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -198,13 +199,16 @@ export default function AdminLoginPage() {
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
                     </FormControl>
+                    <FormDescription>
+                       Mật khẩu mặc định: <span className="font-mono">{DEFAULT_ADMIN_PASSWORD}</span>
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="rememberMe"
+                name="rememberEmail"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
@@ -215,11 +219,8 @@ export default function AdminLoginPage() {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                         <FormLabel className="font-normal">
-                            Lưu tài khoản
+                            Lưu tài khoản email
                         </FormLabel>
-                        <FormDescription>
-                          Lưu lại email và mật khẩu cho lần đăng nhập sau.
-                        </FormDescription>
                     </div>
                   </FormItem>
                 )}
