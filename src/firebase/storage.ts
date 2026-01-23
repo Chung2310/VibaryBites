@@ -5,56 +5,35 @@ import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import { getAuth } from 'firebase/auth';
 
-// Initialize Firebase and get storage instance.
-// We get the firebaseApp instance here, which is a singleton.
-const { firebaseApp } = initializeFirebase();
-const storage = getStorage(firebaseApp);
-
 /**
  * Uploads an image file to Firebase Storage.
+ * This function now initializes services on-demand to ensure auth state is fresh.
  * @param file The image file to upload.
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
 export const uploadImage = async (file: File): Promise<string> => {
-  console.log("--- Starting Image Upload ---");
   if (!file) {
-    console.error("Upload Error: No file provided.");
     throw new Error("No file provided for upload.");
   }
-  
-  // Get a fresh auth instance right before the operation.
-  // This ensures we have the most up-to-date user status.
+
+  // Initialize services inside the function to ensure freshness
+  const { firebaseApp } = initializeFirebase();
+  const storage = getStorage(firebaseApp);
   const auth = getAuth(firebaseApp);
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
-      console.error("Upload Error: User not authenticated. Cannot upload image.");
-      throw new Error("User not authenticated. Cannot upload image.");
+    console.error("Upload Error: User not authenticated. Cannot upload image.");
+    throw new Error("User not authenticated. Cannot upload image.");
   }
-  
-  console.log("Authenticated user found:", currentUser.uid);
-  
-  try {
-    // Force refresh the user's ID token to prevent issues with stale tokens.
-    const idToken = await currentUser.getIdToken(true);
-    console.log("Successfully refreshed ID token.");
 
-    // Create a unique filename using UUID to avoid overwrites
+  try {
     const fileExtension = file.name.split('.').pop();
     const fileName = `${uuidv4()}.${fileExtension}`;
-    
-    // Create a storage reference
     const storageRef = ref(storage, `products/${fileName}`);
-    console.log("Uploading to path:", storageRef.fullPath);
 
-    // Upload the file to the specified reference
     const snapshot = await uploadBytes(storageRef, file);
-    console.log("Upload successful. Snapshot:", snapshot);
-    
-    // Get the public download URL for the file
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log("Successfully retrieved download URL:", downloadURL);
-    console.log("--- Finished Image Upload ---");
     
     return downloadURL;
   } catch (error) {
@@ -62,8 +41,7 @@ export const uploadImage = async (file: File): Promise<string> => {
     console.error("Error Code:", (error as any).code);
     console.error("Error Message:", (error as any).message);
     console.error("Full Error Object:", error);
-    console.log("--- End of Error Report ---");
-    // Re-throw the error to be handled by the calling function
+    // Re-throw for the calling component to handle
     throw error;
   }
 };
@@ -78,8 +56,10 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
     console.warn("No image URL provided for deletion.");
     return;
   }
-  
-  // Also get a fresh auth instance here for consistency.
+
+  // Initialize services inside the function
+  const { firebaseApp } = initializeFirebase();
+  const storage = getStorage(firebaseApp);
   const auth = getAuth(firebaseApp);
   const currentUser = auth.currentUser;
 
@@ -89,12 +69,8 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
   }
 
   try {
-    // Create a reference from the HTTPS URL
     const storageRef = ref(storage, imageUrl);
-    
-    // Delete the file
     await deleteObject(storageRef);
-    console.log("Successfully deleted image:", imageUrl);
   } catch (error: any) {
     if (error.code === 'storage/object-not-found') {
       console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
