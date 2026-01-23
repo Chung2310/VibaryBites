@@ -88,7 +88,7 @@ export default function EditProductPage() {
                 description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
             
-            router.push('/admin/products');
+            router.push(`/admin/attributes?productId=${product.id}`);
 
         } catch (error) {
             console.error("Error updating product: ", error);

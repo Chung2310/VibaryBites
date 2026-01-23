@@ -77,10 +77,10 @@ export default function NewProductPage() {
             
             toast({
                 title: 'Thêm thành công!',
-                description: `Sản phẩm "${values.name}" đã được thêm. Bạn có thể chỉnh sửa chi tiết ngay bây giờ.`,
+                description: `Sản phẩm "${values.name}" đã được tạo. Giờ hãy thêm các thuộc tính cho sản phẩm.`,
             });
             
-            router.push(`/admin/recipes?productId=${id}`);
+            router.push(`/admin/attributes?productId=${id}`);
 
         } catch (error) {
             console.error("Error creating product: ", error);
@@ -124,5 +124,3 @@ export default function NewProductPage() {
         </div>
     );
 }
-
-    
