@@ -28,8 +28,7 @@ import {
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-    const { slug } = params;
+export default function ProductDetailPage({ params: { slug } }: { params: { slug: string } }) {
     const { products, addToCart } = useAppStore();
     const product = products.find((p) => {
         if (generateSlug(p.name) === slug) return true; // Check against generated slug
