@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,7 +28,9 @@ import {
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-export default function ProductDetailPage({ params: { slug } }: { params: { slug: string } }) {
+export default function ProductDetailPage() {
+    const params = useParams();
+    const slug = params.slug as string;
     const { products, addToCart } = useAppStore();
     const product = products.find((p) => {
         if (generateSlug(p.name) === slug) return true; // Check against generated slug
@@ -94,7 +96,7 @@ export default function ProductDetailPage({ params: { slug } }: { params: { slug
             toast({
             variant: "destructive",
             title: "Số lượng tồn kho không đủ",
-            description: `Chỉ còn ${'${product.stock}'} sản phẩm trong kho.`,
+            description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
             });
             return;
         }
@@ -121,7 +123,7 @@ export default function ProductDetailPage({ params: { slug } }: { params: { slug
                         <div className="aspect-square w-full overflow-hidden rounded-lg">
                             <Image
                             src={url}
-                            alt={`${'${product.name}'} - image ${'${index + 1}'}`}
+                            alt={`${product.name} - image ${index + 1}`}
                             width={800}
                             height={800}
                             className="h-full w-full object-cover"
@@ -138,7 +140,7 @@ export default function ProductDetailPage({ params: { slug } }: { params: { slug
                     <div className="grid grid-cols-5 gap-2">
                     {images.map((url, index) => (
                         <button
-                        key={`thumb-${'${index}'}`}
+                        key={`thumb-${index}`}
                         onClick={() => api?.scrollTo(index)}
                         className={cn(
                             'aspect-square w-full overflow-hidden rounded-md border-2 transition-all',
@@ -147,7 +149,7 @@ export default function ProductDetailPage({ params: { slug } }: { params: { slug
                         >
                         <Image
                             src={url}
-                            alt={`${'${product.name}'} - thumbnail ${'${index + 1}'}`}
+                            alt={`${product.name} - thumbnail ${index + 1}`}
                             width={200}
                             height={200}
                             className="h-full w-full object-cover"

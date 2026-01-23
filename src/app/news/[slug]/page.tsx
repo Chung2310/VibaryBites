@@ -2,7 +2,7 @@
 
 import { useFirestore } from '@/firebase';
 import { doc, collection, query, where, getDocs } from 'firebase/firestore';
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import Image from "next/image";
 import type { NewsArticle } from '@/lib/types';
 import { useEffect, useState } from 'react';
@@ -19,7 +19,9 @@ async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArtic
     return { ...docData, id: querySnapshot.docs[0].id } as NewsArticle;
 }
 
-export default function ArticlePage({ params: { slug } }: { params: { slug: string } }) {
+export default function ArticlePage() {
+    const params = useParams();
+    const slug = params.slug as string;
     const firestore = useFirestore();
     const [article, setArticle] = useState<NewsArticle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
