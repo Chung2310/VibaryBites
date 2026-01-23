@@ -277,9 +277,9 @@ function FeaturedProducts() {
         Autoplay({ delay: 5000, stopOnInteraction: true, direction: 'forward' })
     );
 
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
+    const featuredProducts = products.slice(0, 8);
 
-    if (birthdayCakes.length === 0) {
+    if (featuredProducts.length === 0) {
         return null;
     }
 
@@ -304,7 +304,7 @@ function FeaturedProducts() {
                     className="w-full"
                 >
                     <CarouselContent className="-ml-4">
-                        {birthdayCakes.map((product) => (
+                        {featuredProducts.map((product) => (
                             <CarouselItem key={product.id} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <ProductCard 
                                     product={product}
@@ -396,3 +396,5 @@ export default function Home() {
     </>
   );
 }
+
+    
