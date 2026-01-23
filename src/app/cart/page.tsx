@@ -59,7 +59,7 @@ export default function CartPage() {
                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}>
                                 <Minus className="h-4 w-4" />
                            </Button>
-                           <Input type="number" value={item.quantity} readOnly className="h-8 w-12 border-0 text-center bg-transparent" />
+                           <Input type="text" value={item.quantity} readOnly className="h-8 w-12 border-0 text-center bg-transparent" inputMode="numeric" />
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}>
                                 <Plus className="h-4 w-4" />
                            </Button>

@@ -196,7 +196,7 @@ export default function ProductDetailPage() {
                                 <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
                                     <Minus className="h-4 w-4" />
                                 </Button>
-                                <Input type="number" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" />
+                                <Input type="text" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" inputMode="numeric" />
                                 <Button variant="ghost" size="icon" className="h-11 w-11" onClick={handleIncreaseQuantity} >
                                     <Plus className="h-4 w-4" />
                                 </Button>
