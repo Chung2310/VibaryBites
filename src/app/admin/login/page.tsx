@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -34,12 +33,10 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const { isUserLoading } = useUser();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -61,20 +58,8 @@ export default function AdminLoginPage() {
     }
   }, [form]);
 
-  // Effect to redirect if user is already logged in
-   useEffect(() => {
-    if (!isUserLoading) {
-      if (user) {
-        toast({ title: 'Đã đăng nhập', description: 'Đang chuyển hướng đến trang quản trị...' });
-        router.push('/admin');
-      } else {
-        setIsInitializing(false);
-      }
-    }
-  }, [user, isUserLoading, router, toast]);
-
   async function onSubmit(data: LoginFormValues) {
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     if (typeof window !== 'undefined') {
       if (data.rememberEmail) {
@@ -86,16 +71,13 @@ export default function AdminLoginPage() {
 
     if (!auth) {
         toast({ variant: "destructive", title: "Lỗi", description: "Dịch vụ xác thực chưa sẵn sàng."});
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
     }
 
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      toast({
-        title: 'Đăng nhập thành công',
-        description: 'Chào mừng trở lại, quản trị viên!',
-      });
+      // On successful sign-in, the layout's useEffect will handle redirection.
     } catch (error: any) {
         let description = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -109,18 +91,9 @@ export default function AdminLoginPage() {
         description: description,
       });
     } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
     }
   }
-
-  if (isInitializing || isUserLoading) {
-     return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/40">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-     )
-  }
-
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -192,8 +165,8 @@ export default function AdminLoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : 'Đăng nhập'}
+              <Button type="submit" className="w-full" disabled={isSubmitting || isUserLoading}>
+                {isSubmitting || isUserLoading ? <Loader2 className="animate-spin" /> : 'Đăng nhập'}
               </Button>
             </form>
           </Form>

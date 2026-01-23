@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -198,12 +197,52 @@ export default function AdminLayout({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isUserLoading) return;
-    if (!user && pathname !== '/admin/login') {
-      router.replace('/admin/login');
-    }
-  }, [user, isUserLoading, pathname, router]);
+    if (isUserLoading) return; // Wait until user object is resolved
 
+    if (user) {
+        // User is logged in, check for admin claim
+        user.getIdTokenResult().then(idTokenResult => {
+            if (!!idTokenResult.claims.admin) {
+                // User is admin. If they are on the login page, redirect them to the dashboard.
+                if (pathname === '/admin/login') {
+                    router.replace('/admin');
+                }
+            } else {
+                // User is not an admin. Sign them out and redirect to login with an error.
+                if (auth) {
+                    auth.signOut();
+                    toast({
+                        variant: "destructive",
+                        title: "Truy cập bị từ chối",
+                        description: "Tài khoản của bạn không có quyền quản trị.",
+                    });
+                }
+                if (pathname !== '/admin/login') {
+                    router.replace('/admin/login');
+                }
+            }
+        }).catch(() => {
+            // Error getting claims, sign out and redirect
+             if (auth) {
+                auth.signOut();
+                toast({
+                    variant: "destructive",
+                    title: "Lỗi xác thực",
+                    description: "Không thể xác minh quyền quản trị.",
+                });
+            }
+            if (pathname !== '/admin/login') {
+                router.replace('/admin/login');
+            }
+        });
+    } else {
+        // No user logged in. If not on the login page, redirect there.
+        if (pathname !== '/admin/login') {
+            router.replace('/admin/login');
+        }
+    }
+  }, [user, isUserLoading, pathname, router, auth, toast]);
+  
   const handleLogout = async () => {
     if (auth) {
       await auth.signOut();
