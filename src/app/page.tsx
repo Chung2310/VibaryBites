@@ -276,7 +276,14 @@ function WorkshopSection() {
 function FeaturedProducts() {
     const { products } = useAppStore();
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    const featuredProducts = birthdayCakes;
+    
+    // Duplicate products if there are too few for the loop to work effectively across all screen sizes.
+    let featuredProducts = [...birthdayCakes];
+    if (birthdayCakes.length > 0 && birthdayCakes.length < 5) {
+        while (featuredProducts.length < 5) {
+            featuredProducts = [...featuredProducts, ...birthdayCakes];
+        }
+    }
 
     const plugin = React.useRef(
       Autoplay({ delay: 2500, stopOnInteraction: true })
@@ -311,8 +318,8 @@ function FeaturedProducts() {
                 }}
             >
                 <CarouselContent className="-ml-4">
-                    {featuredProducts.map((product) => (
-                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                    {featuredProducts.map((product, index) => (
+                        <CarouselItem key={`${product.id}-${index}`} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <ProductCard product={product} hideStockStatus={true} />
                         </CarouselItem>
                     ))}
