@@ -281,6 +281,20 @@ function FeaturedProducts() {
 
     const marqueeProducts = [...birthdayCakes, ...birthdayCakes];
 
+    const marqueeVariants = {
+        animate: {
+            x: ['-50%', '0%'],
+            transition: {
+                x: {
+                    repeat: Infinity,
+                    repeatType: 'loop',
+                    duration: 80,
+                    ease: 'linear',
+                },
+            },
+        },
+    };
+
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -296,17 +310,8 @@ function FeaturedProducts() {
                  <div className="w-full overflow-hidden">
                     <motion.div
                         className="flex"
-                        animate={{
-                            x: ['-50%', '0%'],
-                            transition: {
-                                x: {
-                                    repeat: Infinity,
-                                    repeatType: 'loop',
-                                    duration: 80,
-                                    ease: 'linear',
-                                },
-                            },
-                        }}
+                        variants={marqueeVariants}
+                        animate="animate"
                     >
                         {marqueeProducts.map((product, index) => (
                             <div key={`${product.id}-${index}`} className="flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-2">
@@ -374,8 +379,8 @@ function HotNews() {
                     <Skeleton className="h-4 w-5/6" />
                 </div>
             ))}
-            {latestArticles?.map((article, index) => (
-              <NewsArticleCard key={`${article.id}-${index}`} article={article} />
+            {latestArticles?.map((article) => (
+              <NewsArticleCard key={article.id} article={article} />
             ))}
              {/* Add an empty div for spacing at the end of the scroll */}
             <div className="flex-shrink-0 w-1"></div>
