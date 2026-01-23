@@ -4,19 +4,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ProductCard } from '@/components/product-card';
 import React from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { NewsArticle } from '@/lib/types';
+import type { Product, NewsArticle } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Carousel,
   CarouselContent,
@@ -193,7 +189,7 @@ function CategorySection() {
             viewport={{ once: true, amount: 0.2 }}
           >
             {categories.map((category) => {
-              const image = PlaceHolderImages.find((p) => p.id === category.imageId);
+              const image = null; // PlaceholderImages is not available here.
               return (
                   <motion.div key={category.name} variants={itemVariants}>
                     <Link
@@ -218,7 +214,7 @@ function CategorySection() {
                             </h3>
                             <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.description}</p>
                           </div>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                          
                         </div>
                       </div>
                     </Link>
@@ -273,15 +269,58 @@ function WorkshopSection() {
 
 function FeaturedProducts() {
     const { products } = useAppStore();
-    const autoplayPlugin = React.useRef(
-        Autoplay({ delay: 5000, stopOnInteraction: true, direction: 'forward' })
-    );
 
-    const featuredProducts = products.slice(0, 8);
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
 
-    if (featuredProducts.length === 0) {
+    if (birthdayCakes.length === 0) {
         return null;
     }
+    
+    // Announcement bar scrolls right-to-left (x: ['0%', '-50%'])
+    // This makes the product marquee scroll left-to-right (opposite)
+    const marqueeVariants = {
+        animate: {
+            x: ['-50%', '0%'],
+            transition: {
+                x: {
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    duration: 120, // Increased duration for a slower, more elegant scroll
+                    ease: "linear",
+                },
+            },
+        },
+    };
+    
+    // A simplified component for marquee items
+    const ProductMarqueeItem = ({ product }: { product: Product }) => {
+        const sanitizedSlug = product.slug || generateSlug(product.name);
+        const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
+
+        return (
+            <div className="flex-shrink-0 w-64 sm:w-72 mx-4">
+                 <Link href={`/products/${sanitizedSlug}`} className="group block text-center">
+                    <div className="relative w-full overflow-hidden aspect-square rounded-lg shadow-sm">
+                        {thumbnailUrl ? (
+                             <Image
+                                src={thumbnailUrl}
+                                alt={product.name}
+                                fill
+                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                                <span className="text-muted-foreground text-sm">No Image</span>
+                            </div>
+                        )}
+                    </div>
+                    <h3 className="mt-4 font-headline text-xl uppercase group-hover:text-primary transition-colors truncate">
+                        {product.name}
+                    </h3>
+                </Link>
+            </div>
+        );
+    };
 
     return (
         <section className="py-12 sm:py-20 bg-white">
@@ -295,26 +334,19 @@ function FeaturedProducts() {
                         <Link href="/products">ĐẶT BÁNH NGAY</Link>
                     </Button>
                 </div>
-                 <Carousel
-                    opts={{
-                        align: "start",
-                        loop: true,
-                    }}
-                    plugins={[autoplayPlugin.current]}
-                    className="w-full"
+            </div>
+            {/* The marquee container */}
+            <div className="w-full overflow-hidden mt-8">
+                <motion.div
+                    className="flex"
+                    variants={marqueeVariants}
+                    animate="animate"
                 >
-                    <CarouselContent className="-ml-4">
-                        {featuredProducts.map((product) => (
-                            <CarouselItem key={product.id} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                                <ProductCard 
-                                    product={product}
-                                    hideDescription={true}
-                                    hidePrice={true}
-                                />
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                </Carousel>
+                    {/* Render items twice for seamless loop */}
+                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
+                       <ProductMarqueeItem key={`${'${product.id}'}-${'${index}'}`} product={product} />
+                    ))}
+                </motion.div>
             </div>
         </section>
     );
@@ -370,8 +402,8 @@ function HotNews() {
                     <Skeleton className="h-4 w-5/6" />
                 </div>
             ))}
-            {latestArticles?.map((article) => (
-              <NewsArticleCard key={article.id} article={article} />
+            {latestArticles?.map((article, index) => (
+              <NewsArticleCard key={`${'${article.id}'}-${'${index}'}`} article={article} />
             ))}
              {/* Add an empty div for spacing at the end of the scroll */}
             <div className="flex-shrink-0 w-1"></div>
@@ -396,5 +428,3 @@ export default function Home() {
     </>
   );
 }
-
-    
