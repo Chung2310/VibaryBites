@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -22,7 +20,8 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFiles: File[]) => {
+    // The handler now accepts newImageFiles. The third argument (keptImageUrls) is ignored for new products.
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
         if (!firestore) {
             toast({
                 variant: 'destructive',
@@ -32,7 +31,7 @@ export default function NewProductPage() {
             return;
         }
 
-        if (imageFiles.length === 0) {
+        if (newImageFiles.length === 0) {
             toast({
                 variant: "destructive",
                 title: "Lỗi",
@@ -44,7 +43,8 @@ export default function NewProductPage() {
         setIsSubmitting(true);
 
         try {
-            const uploadPromises = imageFiles.map(file => uploadImage(file));
+            // Upload all new files
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
             const id = `prod-${Date.now()}`;
@@ -59,7 +59,7 @@ export default function NewProductPage() {
                 price: Number(values.price),
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
-                imageUrls: uploadedUrls,
+                imageUrls: uploadedUrls, // Use the new URLs
                 // Initialize detailed fields as empty
                 detailedDescription: {
                     flavor: "",
@@ -116,7 +116,7 @@ export default function NewProductPage() {
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
-                        isEditMode={false} // Specify this is not edit mode
+                        isEditMode={false}
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/products')}
                         isSubmitting={isSubmitting}

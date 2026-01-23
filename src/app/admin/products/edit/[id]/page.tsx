@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -33,7 +31,8 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFiles: File[], existingImageUrls: string[]) => {
+    // The handler now accepts both new files to upload and a list of existing URLs to keep.
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
@@ -46,20 +45,22 @@ export default function EditProductPage() {
         setIsSubmitting(true);
 
         try {
-            // Identify URLs to delete
-            const urlsToDelete = (product.imageUrls || []).filter(url => !existingImageUrls.includes(url));
+            // 1. Identify URLs to delete
+            const originalUrls = product.imageUrls || [];
+            const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
 
-            // Upload new images
-            const uploadPromises = imageFiles.map(file => uploadImage(file));
+            // 2. Upload new images
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const newUploadedUrls = await Promise.all(uploadPromises);
 
-            // Once uploads are successful, delete the old images
+            // 3. Delete old images from storage
             if (urlsToDelete.length > 0) {
                 const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
                 await Promise.all(deletePromises);
             }
 
-            const finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
+            // 4. Combine kept URLs and new URLs for the final array
+            const finalImageUrls = [...keptImageUrls, ...newUploadedUrls];
             
             if (finalImageUrls.length === 0) {
                  toast({
@@ -80,7 +81,7 @@ export default function EditProductPage() {
                 price: Number(values.price),
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
-                imageUrls: finalImageUrls,
+                imageUrls: finalImageUrls, // Use the final combined array
                 slug: generateSlug(values.name),
             };
 
@@ -148,7 +149,7 @@ export default function EditProductPage() {
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
-                        isEditMode={true} // Specify this is edit mode
+                        isEditMode={true}
                         product={product}
                         onSubmit={handleFormSubmit}
                         onCancel={() => router.push('/admin/products')}

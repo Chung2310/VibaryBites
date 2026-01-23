@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,14 +44,17 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFiles: File[], existingImageUrls: string[]) => Promise<void> | void;
+  // This signature is crucial. We pass the new files to upload, and the list of existing URLs to keep.
+  onSubmit: (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => Promise<void> | void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
 }
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
+  // State for existing image URLs from the product object
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>(product?.imageUrls || []);
+  // State for newly selected files
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   
   const form = useForm<ProductFormValues>({
@@ -75,9 +77,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    // Prevent duplicates
     const uniqueNewFiles = acceptedFiles.filter(
       (file) => !newImageFiles.some(
-        (existingFile) => existingFile.name === file.name && existingFile.size === file.size && existingFile.lastModified === file.lastModified
+        (existingFile) => existingFile.name === file.name && existingFile.size === file.size
       )
     );
     setNewImageFiles(prev => [...prev, ...uniqueNewFiles]);
@@ -88,40 +91,41 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
   });
 
-  const handleFormSubmit = async (values: ProductFormValues) => {
-    await onSubmit(values, newImageFiles, existingImageUrls);
-  };
-  
+  // Combine existing URLs and new file previews for display
   const imagePreviews = useMemo(() => {
     const existing = existingImageUrls.map(url => ({
-      key: url,
+      id: url,
       url: url,
       isNew: false
     }));
-
     const news = newImageFiles.map(file => ({
-      key: `${file.name}-${file.lastModified}`,
+      id: `${file.name}-${file.lastModified}`,
       url: URL.createObjectURL(file),
       isNew: true
     }));
-
     return [...existing, ...news];
   }, [existingImageUrls, newImageFiles]);
 
-  const removeImage = (imageToRemove: { key: string, isNew: boolean }) => {
+  // Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    const newUrls = imagePreviews.filter(p => p.isNew).map(p => p.url);
+    return () => {
+      newUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imagePreviews]);
+
+  const removeImage = (imageToRemove: { id: string, isNew: boolean }) => {
     if (imageToRemove.isNew) {
-      setNewImageFiles(prev => prev.filter(file => `${file.name}-${file.lastModified}` !== imageToRemove.key));
+      setNewImageFiles(prev => prev.filter(file => `${file.name}-${file.lastModified}` !== imageToRemove.id));
     } else {
-      setExistingImageUrls(prev => prev.filter(url => url !== imageToRemove.key));
+      setExistingImageUrls(prev => prev.filter(url => url !== imageToRemove.id));
     }
   };
 
-  useEffect(() => {
-    const newImageUrls = imagePreviews.filter(p => p.isNew).map(p => p.url);
-    return () => {
-      newImageUrls.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [imagePreviews]);
+  const handleFormSubmit = (values: ProductFormValues) => {
+    // Call the parent onSubmit with the correctly separated files and URLs
+    onSubmit(values, newImageFiles, existingImageUrls);
+  };
 
   return (
     <Form {...form}>
@@ -220,7 +224,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             {imagePreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                     {imagePreviews.map((preview) => (
-                        <div key={preview.key} className="relative aspect-square">
+                        <div key={preview.id} className="relative aspect-square">
                             <Image src={preview.url} alt={`Xem trước ảnh`} fill className="rounded-md object-cover" />
                             <Button
                                 type="button"
@@ -235,7 +239,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                     ))}
                 </div>
             )}
-            {(imagePreviews.length === 0) && (
+            {imagePreviews.length === 0 && (
                 <FormDescription>
                     Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.
                 </FormDescription>
