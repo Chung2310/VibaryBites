@@ -1,5 +1,6 @@
 'use client';
 
+import { getApp } from 'firebase/app';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import type { Auth } from 'firebase/auth';
@@ -22,8 +23,9 @@ export const uploadImage = async (file: File, auth: Auth): Promise<string> => {
     throw new Error("User not authenticated. Cannot upload image.");
   }
 
-  // Use the auth instance's app to get the correct storage service
-  const storage = getStorage(auth.app);
+  // Explicitly use the default Firebase App instance to get the Storage service.
+  // This avoids potential issues with stale app references.
+  const storage = getStorage(getApp());
 
   try {
     const fileExtension = file.name.split('.').pop();
@@ -62,8 +64,9 @@ export const deleteImage = async (imageUrl: string, auth: Auth): Promise<void> =
       console.error("Delete Error: User not authenticated.");
       throw new Error("User not authenticated. Cannot delete image.");
   }
-
-  const storage = getStorage(auth.app);
+  
+  // Explicitly use the default Firebase App instance to get the Storage service.
+  const storage = getStorage(getApp());
 
   try {
     const storageRef = ref(storage, imageUrl);
