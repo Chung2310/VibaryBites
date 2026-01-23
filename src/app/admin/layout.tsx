@@ -199,7 +199,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (isUserLoading) return;
-    if (!user && pathname !== '/admin/login' && pathname !== '/login') {
+    if (!user && pathname !== '/admin/login') {
       router.replace('/admin/login');
     }
   }, [user, isUserLoading, pathname, router]);
@@ -211,7 +211,7 @@ export default function AdminLayout({
     }
   };
   
-  if (isUserLoading || (!user && pathname !== '/admin/login' && pathname !== '/login')) {
+  if (isUserLoading || (!user && pathname !== '/admin/login')) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -219,7 +219,7 @@ export default function AdminLayout({
     );
   }
 
-  if (pathname === '/admin/login' || pathname === '/login') {
+  if (pathname === '/admin/login') {
     return <>{children}</>;
   }
   
@@ -317,4 +317,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
