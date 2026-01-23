@@ -273,15 +273,15 @@ function WorkshopSection() {
 
 function FeaturedProducts() {
     const { products } = useAppStore();
+    const autoplayPlugin = React.useRef(
+        Autoplay({ delay: 5000, stopOnInteraction: true, direction: 'forward' })
+    );
+
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
 
     if (birthdayCakes.length === 0) {
         return null;
     }
-
-    const autoplayPlugin = React.useRef(
-        Autoplay({ delay: 5000, stopOnInteraction: true, direction: 'forward' })
-    );
 
     return (
         <section className="py-12 sm:py-20 bg-white">
