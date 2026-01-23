@@ -300,6 +300,7 @@ function FeaturedProducts() {
                         Autoplay({
                             delay: 4000,
                             stopOnInteraction: true,
+                            direction: 'backward',
                         })
                     ]}
                     className="w-full"
@@ -398,5 +399,3 @@ export default function Home() {
     </>
   );
 }
-
-    
