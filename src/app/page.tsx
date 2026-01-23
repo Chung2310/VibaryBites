@@ -289,7 +289,9 @@ function WorkshopSection() {
 
 function FeaturedProducts() {
     const { products } = useAppStore();
-    const featuredProducts = [...products, ...products];
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
+    const featuredProducts = birthdayCakes.length > 0 ? [...birthdayCakes, ...birthdayCakes] : [];
+
 
     return (
         <section className="py-12 sm:py-20 bg-white overflow-hidden">
@@ -304,27 +306,29 @@ function FeaturedProducts() {
                     </Button>
                 </div>
             </div>
-             <motion.div 
-                className="flex"
-                variants={marqueeVariantsLR}
-                animate="animate"
-                whileHover={{ animationPlayState: 'paused' }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-             >
-                {featuredProducts.map((product, index) => (
-                    <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[90vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-1/4 px-4">
-                        <ProductCard product={product} hideStockStatus={true} />
-                    </div>
-                ))}
-            </motion.div>
+            {featuredProducts.length > 0 && (
+                 <motion.div 
+                    className="flex"
+                    variants={marqueeVariantsLR}
+                    animate="animate"
+                    whileHover={{ animationPlayState: 'paused' }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                 >
+                    {featuredProducts.map((product, index) => (
+                        <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[90vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-1/4 px-4">
+                            <ProductCard product={product} hideStockStatus={true} />
+                        </div>
+                    ))}
+                </motion.div>
+            )}
         </section>
     );
 }
 
 function NewArrivals() {
   const { products } = useAppStore();
-  const newProducts = products.slice(0, 4);
+  const newProducts = products.slice(0, 3);
   return (
     <section className="bg-white py-16 sm:py-24">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
