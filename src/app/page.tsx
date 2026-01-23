@@ -298,7 +298,7 @@ function FeaturedProducts() {
                     }}
                     plugins={[
                         Autoplay({
-                            delay: 4000,
+                            delay: 5000,
                             stopOnInteraction: true,
                             direction: 'backward',
                         })
