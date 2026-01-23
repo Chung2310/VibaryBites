@@ -52,23 +52,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const products = productsData || [];
 
   useEffect(() => {
-    const isAdminPage = pathname.startsWith('/admin');
-
-    // When auth is initialized and we confirm there's no logged-in user,
-    // sign them in anonymously, but ONLY if they are not on an admin page.
-    if (!isAdminPage && auth && !isUserLoading && !user) {
-      signInAnonymously(auth).catch((error) => {
-        console.error("Anonymous sign-in failed:", error);
-        toast({
-          variant: "destructive",
-          title: "Lỗi xác thực",
-          description: "Không thể bắt đầu phiên truy cập. Một số tính năng có thể không hoạt động.",
-        });
-      });
-    }
-  }, [auth, isUserLoading, user, toast, pathname]);
-
-  useEffect(() => {
     if (typeof window !== 'undefined') {
         try {
             const storedCart = localStorage.getItem("cart");

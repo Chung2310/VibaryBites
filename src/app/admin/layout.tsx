@@ -197,30 +197,43 @@ export default function AdminLayout({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Wait until the auth state is fully resolved
     if (isUserLoading) {
-      return;
+      return; // Still loading, do nothing.
     }
 
-    // If there is a logged-in user
-    if (user) {
-      // Any authenticated user is granted access to the admin panel.
-      // The previous, stricter check for an 'admin' role has been removed
-      // to resolve the login loop issue. For a production environment,
-      // a robust method for setting and checking admin claims would be necessary.
-
-      // If the authenticated user is on the login page, redirect them to the dashboard.
-      if (pathname === '/admin/login') {
-        router.replace('/admin');
-      }
-    } else {
-      // If there is no logged-in user and they are not on the login page,
-      // redirect them to the login page.
+    if (!user) {
+      // No user logged in.
+      // If not on the login page, redirect there.
       if (pathname !== '/admin/login') {
         router.replace('/admin/login');
       }
+    } else {
+      // User is logged in, check for admin role.
+      user.getIdTokenResult().then((idTokenResult) => {
+        const isAdmin = idTokenResult.claims.admin === true;
+
+        if (isAdmin) {
+          // User is an admin.
+          // If they are on the login page, redirect to the dashboard.
+          if (pathname === '/admin/login') {
+            router.replace('/admin');
+          }
+        } else {
+          // User is not an admin.
+          // Sign them out and show a notification if they aren't on the login page.
+          if (pathname !== '/admin/login') {
+              toast({
+                variant: 'destructive',
+                title: 'Truy cập bị từ chối',
+                description: 'Tài khoản của bạn không có quyền quản trị.',
+              });
+          }
+          auth?.signOut();
+          // The effect will re-run after sign-out, and the `!user` block will handle redirecting to /admin/login.
+        }
+      });
     }
-  }, [user, isUserLoading, pathname, router]);
+  }, [user, isUserLoading, pathname, router, auth, toast]);
   
   const handleLogout = async () => {
     if (auth) {
