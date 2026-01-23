@@ -306,7 +306,7 @@ function FeaturedProducts() {
                 >
                     <CarouselContent className="-ml-4">
                         {birthdayCakes.map((product, index) => (
-                            <CarouselItem key={`${'${product.id}'}-${'${index}'}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CarouselItem key={`${product.id}-${index}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <ProductCard 
                                     product={product} 
                                     hideStockStatus={false}
@@ -324,7 +324,7 @@ function FeaturedProducts() {
 
 function NewsArticleCard({ article }: { article: NewsArticle }) {
   return (
-    <Link href={`/news/${'${article.slug}'}`} className="flex-shrink-0 w-64 md:w-80 group">
+    <Link href={`/news/${article.slug}`} className="flex-shrink-0 w-64 md:w-80 group">
       <div className="overflow-hidden rounded-lg">
         <Image
           src={article.imageUrl}
