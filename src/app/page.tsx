@@ -281,7 +281,7 @@ function FeaturedProducts() {
 
     const marqueeVariants = {
         animate: {
-            x: ['-50%', '0%'], // Left-to-right animation
+            x: ['-50%', '0%'],
             transition: {
                 x: {
                     repeat: Infinity,
@@ -290,7 +290,7 @@ function FeaturedProducts() {
                     ease: "linear",
                 },
             },
-        }
+        },
     };
 
     return (
@@ -315,7 +315,12 @@ function FeaturedProducts() {
                 >
                     {duplicatedProducts.map((product, index) => (
                         <div key={`${product.id}-${index}`} className="flex-shrink-0 w-64 md:w-72 px-2">
-                            <ProductCard product={product} hideStockStatus={true} />
+                            <ProductCard 
+                                product={product} 
+                                hideStockStatus={true} 
+                                hideDescription={true} 
+                                hidePrice={true} 
+                            />
                         </div>
                     ))}
                 </motion.div>
