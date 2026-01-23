@@ -279,6 +279,10 @@ function FeaturedProducts() {
         return null;
     }
 
+    const autoplayPlugin = React.useRef(
+        Autoplay({ delay: 5000, stopOnInteraction: true, direction: 'forward' })
+    );
+
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -296,19 +300,16 @@ function FeaturedProducts() {
                         align: "start",
                         loop: true,
                     }}
-                    plugins={[
-                        Autoplay({
-                            delay: 5000,
-                            stopOnInteraction: true,
-                        })
-                    ]}
+                    plugins={[autoplayPlugin.current]}
                     className="w-full"
                 >
                     <CarouselContent className="-ml-4">
-                        {birthdayCakes.map((product, index) => (
-                            <CarouselItem key={`${product.id}-${index}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        {birthdayCakes.map((product) => (
+                            <CarouselItem key={product.id} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <ProductCard 
                                     product={product}
+                                    hideDescription={true}
+                                    hidePrice={true}
                                 />
                             </CarouselItem>
                         ))}
