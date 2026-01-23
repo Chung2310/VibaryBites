@@ -85,12 +85,12 @@ export default function AdminLoginPage() {
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
           <CardDescription>
-            Sử dụng tài khoản quản trị viên được cấp để đăng nhập.
+            Vui lòng nhập email và mật khẩu của bạn để truy cập.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
               <FormField
                 control={form.control}
                 name="email"
@@ -102,7 +102,6 @@ export default function AdminLoginPage() {
                         type="email"
                         placeholder="admin@vibary.com"
                         {...field}
-                        autoComplete="email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -116,7 +115,7 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Mật khẩu</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
