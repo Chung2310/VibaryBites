@@ -11,7 +11,6 @@ import {
 import { useToast } from "./use-toast";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { signInAnonymously } from "firebase/auth";
 import { usePathname } from "next/navigation";
 
 interface AppContextType {
