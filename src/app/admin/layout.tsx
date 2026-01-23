@@ -19,6 +19,7 @@ import {
   Book,
   List,
   Loader2,
+  Menu,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -192,48 +193,24 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (isUserLoading) {
-      return; 
+      return; // Wait until user status is resolved
     }
 
     if (!user) {
+      // If there's no user and we are not on the login page, redirect to login
       if (pathname !== '/admin/login') {
         router.replace('/admin/login');
       }
-      setIsAdmin(false);
-      return;
+      setIsAdmin(false); // Explicitly set admin status to false
+    } else {
+      // If there is a user, grant access
+      setIsAdmin(true);
+      // If the user is somehow on the login page while logged in, redirect to admin dashboard
+      if (pathname === '/admin/login') {
+        router.replace('/admin');
+      }
     }
-    
-    // User is logged in, check for admin claim
-    user.getIdTokenResult()
-      .then((idTokenResult) => {
-        const userIsAdmin = idTokenResult.claims.admin === true;
-        
-        if (userIsAdmin) {
-          setIsAdmin(true);
-          if (pathname === '/admin/login') {
-            router.replace('/admin');
-          }
-        } else {
-          setIsAdmin(false);
-          // Only show toast if they are trying to access a protected page
-          if (pathname !== '/admin/login') {
-             toast({
-                variant: 'destructive',
-                title: 'Truy cập bị từ chối',
-                description: 'Bạn không có quyền quản trị viên.',
-            });
-          }
-          auth?.signOut();
-          // The !user check above will handle the redirect
-        }
-      })
-      .catch(error => {
-        console.error("Error getting user claims:", error);
-        setIsAdmin(false);
-        auth?.signOut();
-      });
-
-  }, [user, isUserLoading, pathname, router, auth, toast]);
+  }, [user, isUserLoading, pathname, router]);
   
   const handleLogout = async () => {
     if (auth) {
