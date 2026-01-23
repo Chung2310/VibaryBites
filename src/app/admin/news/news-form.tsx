@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { NewsArticle } from '@/lib/types';
+import type { Auth } from "firebase/auth";
 import {
   Select,
   SelectContent,
@@ -51,9 +52,10 @@ interface NewsFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
+  auth: Auth;
 }
 
-export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode }: NewsFormProps) {
+export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode, auth }: NewsFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(article?.imageUrl || null);
   
@@ -148,7 +150,7 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
                 <FormItem>
                   <FormLabel>Nội dung chính</FormLabel>
                   <FormControl>
-                    <RichTextEditor value={field.value} onChange={field.onChange} />
+                    <RichTextEditor value={field.value} onChange={field.onChange} auth={auth} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

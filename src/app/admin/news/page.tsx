@@ -35,7 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
@@ -55,6 +55,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function NewsPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const auth = useAuth();
     const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
@@ -69,14 +70,14 @@ export default function NewsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedArticle || !firestore) return;
+        if (!selectedArticle || !firestore || !auth) return;
 
         const docRef = doc(firestore, 'news_articles', selectedArticle.id);
         
         try {
             // Delete image from storage first
             if (selectedArticle.imageUrl) {
-                await deleteImage(selectedArticle.imageUrl);
+                await deleteImage(selectedArticle.imageUrl, auth);
             }
             // Then delete the document from Firestore
             await deleteDoc(docRef);
@@ -226,5 +227,3 @@ export default function NewsPage() {
         </>
     )
 }
-
-    

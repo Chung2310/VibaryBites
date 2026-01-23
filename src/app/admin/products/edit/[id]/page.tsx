@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../../product-form';
@@ -21,6 +21,7 @@ export default function EditProductPage() {
     const productId = params.id as string;
     
     const firestore = useFirestore();
+    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,11 +34,11 @@ export default function EditProductPage() {
     
     // The handler now accepts both new files to upload and a list of existing URLs to keep.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
-        if (!firestore || !product) {
+        if (!firestore || !product || !auth) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy sản phẩm.',
+                description: 'Không thể kết nối tới cơ sở dữ liệu, không tìm thấy sản phẩm hoặc chưa xác thực.',
             });
             return;
         }
@@ -50,12 +51,12 @@ export default function EditProductPage() {
             const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
 
             // 2. Upload new images
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
+            const uploadPromises = newImageFiles.map(file => uploadImage(file, auth));
             const newUploadedUrls = await Promise.all(uploadPromises);
 
             // 3. Delete old images from storage
             if (urlsToDelete.length > 0) {
-                const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
+                const deletePromises = urlsToDelete.map(url => deleteImage(url, auth).catch(err => console.warn(`Failed to delete image ${url}`, err)));
                 await Promise.all(deletePromises);
             }
 

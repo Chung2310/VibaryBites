@@ -1,25 +1,20 @@
 'use client';
 
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { initializeFirebase } from '@/firebase';
 import { v4 as uuidv4 } from 'uuid';
-import { getAuth } from 'firebase/auth';
+import type { Auth } from 'firebase/auth';
 
 /**
  * Uploads an image file to Firebase Storage.
- * This function now initializes services on-demand to ensure auth state is fresh.
  * @param file The image file to upload.
+ * @param auth The Firebase Auth instance from the current user's session.
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
-export const uploadImage = async (file: File): Promise<string> => {
+export const uploadImage = async (file: File, auth: Auth): Promise<string> => {
   if (!file) {
     throw new Error("No file provided for upload.");
   }
-
-  // Initialize services inside the function to ensure freshness
-  const { firebaseApp } = initializeFirebase();
-  const storage = getStorage(firebaseApp);
-  const auth = getAuth(firebaseApp);
+  
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
@@ -27,10 +22,13 @@ export const uploadImage = async (file: File): Promise<string> => {
     throw new Error("User not authenticated. Cannot upload image.");
   }
 
+  // Use the auth instance's app to get the correct storage service
+  const storage = getStorage(auth.app);
+
   try {
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    const storageRef = ref(storage, `products/${fileName}`);
+    const fileName = `uploads/${uuidv4()}.${fileExtension}`; 
+    const storageRef = ref(storage, fileName);
 
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
@@ -49,24 +47,23 @@ export const uploadImage = async (file: File): Promise<string> => {
 /**
  * Deletes an image from Firebase Storage using its public URL.
  * @param imageUrl The public download URL of the image to delete.
+ * @param auth The Firebase Auth instance from the current user's session.
  * @returns A promise that resolves when the image is deleted.
  */
-export const deleteImage = async (imageUrl: string): Promise<void> => {
+export const deleteImage = async (imageUrl: string, auth: Auth): Promise<void> => {
   if (!imageUrl) {
     console.warn("No image URL provided for deletion.");
     return;
   }
 
-  // Initialize services inside the function
-  const { firebaseApp } = initializeFirebase();
-  const storage = getStorage(firebaseApp);
-  const auth = getAuth(firebaseApp);
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
       console.error("Delete Error: User not authenticated.");
       throw new Error("User not authenticated. Cannot delete image.");
   }
+
+  const storage = getStorage(auth.app);
 
   try {
     const storageRef = ref(storage, imageUrl);

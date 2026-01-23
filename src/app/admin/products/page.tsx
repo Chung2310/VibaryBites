@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -63,6 +63,7 @@ import { cn } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
+    const auth = useAuth();
     const router = useRouter();
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
@@ -82,7 +83,7 @@ export default function ProductsPage() {
     }
     
     const handleDelete = () => {
-        if (!selectedProduct || !firestore) return;
+        if (!selectedProduct || !firestore || !auth) return;
 
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
@@ -90,7 +91,7 @@ export default function ProductsPage() {
 
         // Add image deletion promises
         if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-            selectedProduct.imageUrls.forEach(url => deletePromises.push(deleteImage(url)));
+            selectedProduct.imageUrls.forEach(url => deletePromises.push(deleteImage(url, auth)));
         }
 
         // Add Firestore document deletion promise

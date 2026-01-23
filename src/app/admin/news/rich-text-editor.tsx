@@ -30,13 +30,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { uploadImage } from '@/firebase/storage';
+import type { Auth } from 'firebase/auth';
 
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  auth: Auth;
 }
 
-const EditorToolbar = ({ editor }: { editor: any }) => {
+const EditorToolbar = ({ editor, auth }: { editor: any, auth: Auth }) => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -74,7 +76,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       }
       setIsUploading(true);
       try {
-          const downloadURL = await uploadImage(imageFile);
+          const downloadURL = await uploadImage(imageFile, auth);
           editor.chain().focus().setImage({ src: downloadURL }).run();
           setIsImageModalOpen(false);
           setImageFile(null);
@@ -160,7 +162,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
   );
 };
 
-export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, auth }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -217,7 +219,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
   return (
     <div className="border border-input rounded-b-md">
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} auth={auth} />
       
       <BubbleMenu
         editor={editor}
