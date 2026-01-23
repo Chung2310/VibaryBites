@@ -274,7 +274,7 @@ function FeaturedProducts() {
     
     // For a smooth marquee, we need enough items to fill the screen more than twice.
     let baseProducts = [...birthdayCakes];
-    while (baseProducts.length < 8 && birthdayCakes.length > 0) {
+    while (baseProducts.length > 0 && baseProducts.length < 8) {
         baseProducts = [...baseProducts, ...birthdayCakes];
     }
     const duplicatedProducts = [...baseProducts, ...baseProducts];
@@ -286,7 +286,7 @@ function FeaturedProducts() {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 150, // Adjust for speed
+                    duration: 40,
                     ease: "linear",
                 },
             },
