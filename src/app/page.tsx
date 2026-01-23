@@ -280,7 +280,7 @@ function FeaturedProducts() {
     // This makes the product marquee scroll left-to-right (opposite)
     const marqueeVariants = {
         animate: {
-            x: ['-50%', '0%'],
+            x: ['0%', '-50%'],
             transition: {
                 x: {
                     repeat: Infinity,
@@ -317,6 +317,9 @@ function FeaturedProducts() {
                     <h3 className="mt-4 font-headline text-xl uppercase group-hover:text-primary transition-colors truncate">
                         {product.name}
                     </h3>
+                    {product.subtitle && (
+                        <p className="mt-1 font-fraunces text-sm uppercase tracking-wider text-muted-foreground truncate">{product.subtitle}</p>
+                    )}
                 </Link>
             </div>
         );
@@ -343,8 +346,8 @@ function FeaturedProducts() {
                     animate="animate"
                 >
                     {/* Render items twice for seamless loop */}
-                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
-                       <ProductMarqueeItem key={`${'${product.id}'}-${'${index}'}`} product={product} />
+                    {[...products, ...products].map((product, index) => (
+                       <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
                     ))}
                 </motion.div>
             </div>
@@ -403,7 +406,7 @@ function HotNews() {
                 </div>
             ))}
             {latestArticles?.map((article, index) => (
-              <NewsArticleCard key={`${'${article.id}'}-${'${index}'}`} article={article} />
+              <NewsArticleCard key={`${article.id}-${index}`} article={article} />
             ))}
              {/* Add an empty div for spacing at the end of the scroll */}
             <div className="flex-shrink-0 w-1"></div>
