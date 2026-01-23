@@ -69,6 +69,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems]);
 
+  // Effect to sync cart items with the products from the database
+  useEffect(() => {
+    // Run only when products have loaded and there are items in the cart
+    if (!isLoadingProducts && products.length > 0 && cartItems.length > 0) {
+      const productIdsFromDb = new Set(products.map(p => p.id));
+      const validCartItems = cartItems.filter(item => productIdsFromDb.has(item.id));
+      
+      const removedItemsCount = cartItems.length - validCartItems.length;
+
+      if (removedItemsCount > 0) {
+        setCartItems(validCartItems);
+        toast({
+          variant: "destructive",
+          title: "Giỏ hàng đã được cập nhật",
+          description: `${removedItemsCount} sản phẩm không còn khả dụng và đã được tự động xóa khỏi giỏ hàng.`,
+        });
+      }
+    }
+  }, [isLoadingProducts, products, cartItems, toast]);
+
+
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const quantityToAdd = item.quantity || 1;
     const product = products.find(p => p.id === item.id);
