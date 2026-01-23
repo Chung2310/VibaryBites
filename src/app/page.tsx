@@ -305,8 +305,8 @@ function FeaturedProducts() {
                     className="w-full"
                 >
                     <CarouselContent className="-ml-4">
-                        {birthdayCakes.map((product, index) => (
-                            <CarouselItem key={`${product.id}-${index}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        {birthdayCakes.map((product) => (
+                            <CarouselItem key={product.id} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <ProductCard 
                                     product={product} 
                                     hideStockStatus={false}
@@ -398,3 +398,5 @@ export default function Home() {
     </>
   );
 }
+
+    
