@@ -15,9 +15,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params: { id: productId } }: { params: { id: string } }) {
     const router = useRouter();
-    const productId = params.id;
     
     const firestore = useFirestore();
     const { toast } = useToast();

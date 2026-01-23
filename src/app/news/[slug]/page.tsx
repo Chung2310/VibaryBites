@@ -19,8 +19,7 @@ async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArtic
     return { ...docData, id: querySnapshot.docs[0].id } as NewsArticle;
 }
 
-export default function ArticlePage({ params }: { params: { slug: string } }) {
-    const slug = params.slug;
+export default function ArticlePage({ params: { slug } }: { params: { slug: string } }) {
     const firestore = useFirestore();
     const [article, setArticle] = useState<NewsArticle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
