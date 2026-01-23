@@ -26,20 +26,6 @@ import { ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
-const marqueeVariantsLR = {
-  animate: {
-    x: ['-100%', '0%'],
-    transition: {
-      x: {
-        repeat: Infinity,
-        repeatType: "loop",
-        duration: 40,
-        ease: "linear",
-      },
-    },
-  },
-};
-
 const heroBanners = [
   {
     id: "hero-banner-1",
@@ -290,11 +276,18 @@ function WorkshopSection() {
 function FeaturedProducts() {
     const { products } = useAppStore();
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    const featuredProducts = birthdayCakes.length > 0 ? [...birthdayCakes, ...birthdayCakes] : [];
+    const featuredProducts = birthdayCakes;
 
+    const plugin = React.useRef(
+      Autoplay({ delay: 2500, stopOnInteraction: true })
+    );
+
+    if (featuredProducts.length === 0) {
+        return null;
+    }
 
     return (
-        <section className="py-12 sm:py-20 bg-white overflow-hidden">
+        <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="font-headline text-3xl md:text-4xl">Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến</h2>
@@ -306,22 +299,25 @@ function FeaturedProducts() {
                     </Button>
                 </div>
             </div>
-            {featuredProducts.length > 0 && (
-                 <motion.div 
-                    className="flex"
-                    variants={marqueeVariantsLR}
-                    animate="animate"
-                    whileHover={{ animationPlayState: 'paused' }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                 >
-                    {featuredProducts.map((product, index) => (
-                        <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[90vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] xl:w-1/4 px-4">
+            
+            <Carousel
+                plugins={[plugin.current]}
+                className="w-full"
+                onMouseEnter={plugin.current.stop}
+                onMouseLeave={plugin.current.reset}
+                opts={{
+                    align: "start",
+                    loop: true,
+                }}
+            >
+                <CarouselContent className="-ml-4">
+                    {featuredProducts.map((product) => (
+                        <CarouselItem key={product.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <ProductCard product={product} hideStockStatus={true} />
-                        </div>
+                        </CarouselItem>
                     ))}
-                </motion.div>
-            )}
+                </CarouselContent>
+            </Carousel>
         </section>
     );
 }
@@ -427,3 +423,5 @@ export default function Home() {
     </>
   );
 }
+
+    
