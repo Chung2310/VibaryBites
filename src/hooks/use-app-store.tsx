@@ -12,6 +12,7 @@ import { useToast } from "./use-toast";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
+import { usePathname } from "next/navigation";
 
 interface AppContextType {
   // Cart
@@ -40,6 +41,7 @@ export const useAppStore = () => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const pathname = usePathname();
 
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -50,10 +52,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const products = productsData || [];
 
   useEffect(() => {
+    const isAdminPage = pathname.startsWith('/admin');
+
     // When auth is initialized and we confirm there's no logged-in user,
-    // sign them in anonymously. This is crucial for operations that require
-    // a user to be signed in, like updating stock during checkout.
-    if (auth && !isUserLoading && !user) {
+    // sign them in anonymously, but ONLY if they are not on an admin page.
+    if (!isAdminPage && auth && !isUserLoading && !user) {
       signInAnonymously(auth).catch((error) => {
         console.error("Anonymous sign-in failed:", error);
         toast({
@@ -63,7 +66,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         });
       });
     }
-  }, [auth, isUserLoading, user, toast]);
+  }, [auth, isUserLoading, user, toast, pathname]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
