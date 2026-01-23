@@ -278,28 +278,6 @@ function FeaturedProducts() {
     if (birthdayCakes.length === 0) {
         return null;
     }
-    
-    // For a smooth marquee, we need enough items to fill the screen more than twice.
-    let baseProducts = [...birthdayCakes];
-    while (baseProducts.length > 0 && baseProducts.length < 8) {
-        baseProducts = [...baseProducts, ...birthdayCakes];
-    }
-    const duplicatedProducts = [...baseProducts, ...baseProducts];
-
-    const marqueeVariants = {
-        animate: {
-            x: ['-50%', '0%'],
-            transition: {
-                x: {
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 60,
-                    ease: "linear",
-                },
-            },
-        },
-    };
-    
 
     return (
         <section className="py-12 sm:py-20 bg-white">
@@ -313,23 +291,32 @@ function FeaturedProducts() {
                         <Link href="/products">ĐẶT BÁNH NGAY</Link>
                     </Button>
                 </div>
-            </div>
-            
-            <div className="w-full overflow-x-hidden">
-                <motion.div 
-                    className="flex"
-                    variants={marqueeVariants}
-                    animate="animate"
+                 <Carousel
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    plugins={[
+                        Autoplay({
+                            delay: 4000,
+                            stopOnInteraction: true,
+                        })
+                    ]}
+                    className="w-full"
                 >
-                    {duplicatedProducts.map((product, index) => (
-                        <div key={`${product.id}-${index}`} className="flex-shrink-0 w-64 md:w-72 px-2">
-                            <ProductCard 
-                                product={product} 
-                                hideStockStatus={true} 
-                            />
-                        </div>
-                    ))}
-                </motion.div>
+                    <CarouselContent className="-ml-4">
+                        {birthdayCakes.map((product, index) => (
+                            <CarouselItem key={`${'${product.id}'}-${'${index}'}`} className="pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                                <ProductCard 
+                                    product={product} 
+                                    hideStockStatus={false}
+                                    hideDescription={false}
+                                    hidePrice={false}
+                                />
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             </div>
         </section>
     );
@@ -337,7 +324,7 @@ function FeaturedProducts() {
 
 function NewsArticleCard({ article }: { article: NewsArticle }) {
   return (
-    <Link href={`/news/${article.slug}`} className="flex-shrink-0 w-64 md:w-80 group">
+    <Link href={`/news/${'${article.slug}'}`} className="flex-shrink-0 w-64 md:w-80 group">
       <div className="overflow-hidden rounded-lg">
         <Image
           src={article.imageUrl}
