@@ -269,15 +269,16 @@ function WorkshopSection() {
 
 function FeaturedProducts() {
     const { products } = useAppStore();
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
 
     const marqueeVariants = {
         animate: {
-            x: ['-50%', '0%'],
+            x: ["0%", "-50%"],
             transition: {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 60,
+                    duration: 40,
                     ease: "linear",
                 },
             },
@@ -313,6 +314,10 @@ function FeaturedProducts() {
         );
     };
 
+    if (birthdayCakes.length === 0) {
+        return null;
+    }
+
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -326,19 +331,19 @@ function FeaturedProducts() {
                     </Button>
                 </div>
             </div>
-            {products.length > 0 && (
-                <div className="w-full overflow-hidden mt-8">
-                    <motion.div
-                        className="flex"
-                        variants={marqueeVariants}
-                        animate="animate"
-                    >
-                        {[...products, ...products].map((product, index) => (
-                           <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
-                        ))}
-                    </motion.div>
-                </div>
-            )}
+            
+            <div className="w-full overflow-hidden mt-8">
+                <motion.div
+                    className="flex"
+                    variants={marqueeVariants}
+                    animate="animate"
+                >
+                    {/* Render items twice for seamless loop */}
+                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
+                       <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
+                    ))}
+                </motion.div>
+            </div>
         </section>
     );
 }
