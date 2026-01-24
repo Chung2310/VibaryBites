@@ -4,6 +4,7 @@ import {
   File,
   MoreHorizontal,
   PlusCircle,
+  Loader2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ export default function ProductsPage() {
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
+    const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
     
     const openDeleteConfirm = (product: Product) => {
@@ -81,6 +83,7 @@ export default function ProductsPage() {
     const handleDelete = async () => {
         if (!selectedProduct || !firestore) return;
 
+        setIsDeleting(true);
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
@@ -102,6 +105,7 @@ export default function ProductsPage() {
                 description: (error as Error).message || "Could not delete product.",
             });
         } finally {
+            setIsDeleting(false);
             closeDeleteConfirm();
         }
     }
@@ -240,7 +244,7 @@ export default function ProductsPage() {
           </TabsContent>
         </Tabs>
         
-        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
@@ -251,8 +255,10 @@ export default function ProductsPage() {
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel onClick={closeDeleteConfirm}>Hủy</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Xóa</AlertDialogAction>
+                <AlertDialogCancel onClick={closeDeleteConfirm} disabled={isDeleting}>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+                    {isDeleting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang xóa...</>) : 'Xóa'}
+                </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

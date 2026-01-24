@@ -41,7 +41,7 @@ import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { MoreHorizontal, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +60,7 @@ export default function NewsPage() {
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const { toast } = useToast();
 
@@ -71,6 +72,7 @@ export default function NewsPage() {
     const handleDelete = async () => {
         if (!selectedArticle || !firestore) return;
 
+        setIsDeleting(true);
         const docRef = doc(firestore, 'news_articles', selectedArticle.id);
         
         try {
@@ -92,6 +94,7 @@ export default function NewsPage() {
                 description: `Không thể xóa bài viết. Vui lòng thử lại.`,
             });
         } finally {
+            setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
             setSelectedArticle(null);
         }
@@ -200,7 +203,7 @@ export default function NewsPage() {
               </CardContent>
             </Card>
 
-        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
@@ -210,12 +213,13 @@ export default function NewsPage() {
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setSelectedArticle(null)}>Hủy</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setSelectedArticle(null)} disabled={isDeleting}>Hủy</AlertDialogCancel>
                 <AlertDialogAction 
                     onClick={handleDelete}
                     className="bg-destructive hover:bg-destructive/90"
+                    disabled={isDeleting}
                 >
-                    Xóa
+                    {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang xóa...</> : 'Xóa'}
                 </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
