@@ -36,20 +36,20 @@ export default function NewNewsArticlePage() {
         }
 
         setIsSubmitting(true);
-        toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         let imageUrl = '';
         try {
-            toast({ title: "Đang tải lên ảnh bìa..." });
+            toastCtrl.update({id: toastCtrl.id, title: "Đang tải lên ảnh bìa..." });
             imageUrl = await uploadImage(imageFile);
-            toast({ title: "Tải ảnh lên thành công!" });
+            toastCtrl.update({id: toastCtrl.id, title: "Tải ảnh lên thành công!" });
         } catch (error: any) {
             console.error("Lỗi khi tải ảnh lên:", error);
-            toast({
+            toastCtrl.update({
+                id: toastCtrl.id,
                 variant: 'destructive',
                 title: 'Lỗi tải ảnh lên!',
                 description: `Không thể tải ảnh lên: ${error.message}`,
-                duration: 9000,
             });
             setIsSubmitting(false);
             return;
@@ -58,7 +58,7 @@ export default function NewNewsArticlePage() {
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         try {
-            toast({ title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toastCtrl.update({id: toastCtrl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newArticle: NewsArticle = {
                 id: articleId,
@@ -74,7 +74,8 @@ export default function NewNewsArticlePage() {
 
             await setDoc(docRef, newArticle);
             
-            toast({
+            toastCtrl.update({
+                id: toastCtrl.id,
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -89,11 +90,11 @@ export default function NewNewsArticlePage() {
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
+            toastCtrl.update({
+                id: toastCtrl.id,
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
                 description: `Không thể lưu bài viết: ${error.message}`,
-                duration: 9000,
             });
         } finally {
             setIsSubmitting(false);
