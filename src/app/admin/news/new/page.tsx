@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../news-form';
@@ -37,17 +37,17 @@ export default function NewNewsArticlePage() {
         }
 
         setIsSubmitting(true);
-        const toastHandle = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
 
         try {
             // 1. Upload image
-            toastHandle.update({ title: "Đang tải lên ảnh bìa..." });
+            toastCtrl.update({ title: "Đang tải lên ảnh bìa..." });
             const imageUrl = await uploadImage(imageFile);
             
-            toastHandle.update({ title: "Đang lưu bài viết..." });
+            toastCtrl.update({ title: "Đang lưu bài viết..." });
 
             // 2. Prepare article data
             const newArticle: NewsArticle = {
@@ -65,7 +65,7 @@ export default function NewNewsArticlePage() {
             // 3. Save to Firestore
             await setDoc(docRef, newArticle);
             
-            toastHandle.update({
+            toastCtrl.update({
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
@@ -74,17 +74,16 @@ export default function NewNewsArticlePage() {
             router.push('/admin/news');
 
         } catch (error: any) {
-             const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
+             console.error("!!!!!!!!!!! RAW ERROR CAUGHT ON NEWS CREATION !!!!!!!!!!!");
+            console.error(error);
+            console.error("Error Code:", error.code);
+            console.error("Error Message:", error.message);
+            console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
-            toastHandle.update({
+            toastCtrl.update({
                 variant: 'destructive',
                 title: 'Không thể tạo bài viết',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết.`,
                 duration: 9000,
             });
         } finally {

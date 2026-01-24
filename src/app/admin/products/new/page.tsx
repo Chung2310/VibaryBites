@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -32,18 +32,18 @@ export default function NewProductPage() {
         }
 
         setIsSubmitting(true);
-        const toastHandle = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
 
         try {
             // 1. Upload images
-            toastHandle.update({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
+            toastCtrl.update({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const imageUrls = await Promise.all(uploadPromises);
             
-            toastHandle.update({ title: "Đang lưu thông tin sản phẩm..." });
+            toastCtrl.update({ title: "Đang lưu thông tin sản phẩm..." });
 
             // 2. Prepare product data
             const newProduct: Product = {
@@ -67,13 +67,13 @@ export default function NewProductPage() {
                 },
                 flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
                 structure: values.structure?.split('\n').filter(Boolean) || [],
-                sizes: [], // Default value, can be updated later
+                sizes: [],
             };
 
             // 3. Save to Firestore
             await setDoc(docRef, newProduct);
             
-            toastHandle.update({
+            toastCtrl.update({
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
@@ -82,18 +82,16 @@ export default function NewProductPage() {
             router.push('/admin/products');
 
         } catch (error: any) {
-            console.error("Error creating product:", error);
-             const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("!!!!!!!!!!! RAW ERROR CAUGHT ON PRODUCT CREATION !!!!!!!!!!!");
+            console.error(error);
+            console.error("Error Code:", error.code);
+            console.error("Error Message:", error.message);
+            console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
-            toastHandle.update({
+            toastCtrl.update({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết.`,
                 duration: 9000,
             });
         } finally {
