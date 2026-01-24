@@ -117,7 +117,7 @@ export default function CheckoutPage() {
         return;
     }
 
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1OG0fhORLrMGqcdUgujK08PY3nalyWZQzkir4U1c70_5M4E2Ac99CbreIatAMBgzu0Q/exec';
+    const API_URL = '/api/submit-order';
 
     const orderId = `VBR-${Date.now().toString().slice(-6)}`;
     const orderTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -125,38 +125,37 @@ export default function CheckoutPage() {
         .map(item => `${item.name}${item.size ? ` (${item.size})` : ''} (x${item.quantity})`)
         .join('; ');
 
-    const payload = new URLSearchParams();
-    payload.append('orderId', orderId);
-    payload.append('orderTime', orderTime);
-    payload.append('customerName', values.name);
-    payload.append('phone', values.phone);
-    payload.append('address', values.address);
-    payload.append('notes', values.notes || '');
-    payload.append('products', productsString);
-    payload.append('totalPrice', new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ');
+    const payload = {
+        orderId,
+        orderTime,
+        customerName: values.name,
+        phone: values.phone,
+        address: values.address,
+        notes: values.notes || '',
+        products: productsString,
+        totalPrice: new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ'
+    };
 
     try {
-        const response = await fetch(SCRIPT_URL, {
+        const response = await fetch(API_URL, {
             method: 'POST',
-            body: payload,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
         });
         
-        if (response.ok) {
-            const responseData = await response.json();
-            if (responseData.result === 'success') {
-                toast({
-                    title: "Đơn hàng đã được gửi!",
-                    description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
-                });
-                clearCart();
-                router.push('/');
-            } else {
-                 // The script returned a custom error message
-                 throw new Error(responseData.error || 'Google Script báo lỗi không xác định.');
-            }
+        const responseData = await response.json();
+
+        if (response.ok && responseData.result === 'success') {
+            toast({
+                title: "Đơn hàng đã được gửi!",
+                description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
+            });
+            clearCart();
+            router.push('/');
         } else {
-            // Handle HTTP errors like 404, 500, or CORS issues that made it through
-             throw new Error(`Lỗi kết nối: ${response.status} ${response.statusText}. Vui lòng kiểm tra lại URL và cài đặt của Google Script.`);
+             throw new Error(responseData.error || 'API route báo lỗi không xác định.');
         }
 
     } catch (error) {
