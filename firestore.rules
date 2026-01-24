@@ -37,16 +37,16 @@ service cloud.firestore {
     // --------------------------------
 
     /**
-     * @description Publicly readable collections. Writes are restricted to admins.
+     * @description Publicly readable collections. Writes are restricted to authenticated users.
      * @paths /cakes/{cakeId}, /categories/{categoryId}, /news_articles/{newsArticleId}, 
      *        /quiz_questions/{quizQuestionId}, /ingredients/{ingredientId}
      * @allow (read) Any user can read data.
-     * @allow (write) Only admin users can create, update, or delete data.
+     * @allow (write) Only authenticated users can create, update, or delete data.
      */
     match /{collectionName}/{docId} 
     where collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients'] {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
 
     // --------------------------------
