@@ -22,36 +22,36 @@ export default function NewNewsArticlePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        setIsSubmitting(true);
-        
         if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu.',
-            });
-            setIsSubmitting(false);
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới cơ sở dữ liệu." });
             return;
         }
-
+        
         if (!imageFile) {
             toast({
                 variant: "destructive",
-                title: "Lỗi",
+                title: "Thiếu ảnh",
                 description: "Vui lòng tải lên ảnh bìa cho bài viết.",
             });
-            setIsSubmitting(false);
             return;
         }
+
+        setIsSubmitting(true);
+        const { id: toastId } = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
-        const id = `news-${Date.now()}`;
-        const docRef = doc(firestore, 'news_articles', id);
+        const articleId = `news-${Date.now()}`;
+        const docRef = doc(firestore, 'news_articles', articleId);
 
         try {
+            // 1. Upload image
+            toastId.update({ title: "Đang tải lên ảnh bìa..." });
             const imageUrl = await uploadImage(imageFile);
             
+            toastId.update({ title: "Đang lưu bài viết..." });
+
+            // 2. Prepare article data
             const newArticle: NewsArticle = {
-                id,
+                id: articleId,
                 slug: generateSlug(values.title),
                 title: values.title,
                 author: values.author,
@@ -62,9 +62,11 @@ export default function NewNewsArticlePage() {
                 publicationDate: new Date().toISOString(),
             };
 
+            // 3. Save to Firestore
             await setDoc(docRef, newArticle);
             
-            toast({
+            toastId.update({
+                variant: "default",
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -79,7 +81,7 @@ export default function NewNewsArticlePage() {
             });
             errorEmitter.emit('permission-error', permissionError);
 
-            toast({
+            toastId.update({
                 variant: 'destructive',
                 title: 'Không thể tạo bài viết',
                 description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
