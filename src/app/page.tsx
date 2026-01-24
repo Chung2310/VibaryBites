@@ -191,10 +191,11 @@ function CategorySection() {
           >
             {categories.map((category) => {
               const image = PlaceHolderImages.find(p => p.id === category.imageId);
+              const slug = generateSlug(category.name);
               return (
                   <motion.div key={category.name} variants={itemVariants}>
                     <Link
-                      href="/products"
+                      href={`/products#${slug}`}
                       className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
                     >
                       {image && (
@@ -279,7 +280,7 @@ function FeaturedProducts() {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 20,
+                    duration: 10,
                     ease: "linear",
                 },
             },
