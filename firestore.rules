@@ -35,7 +35,8 @@ service cloud.firestore {
     // ================================
 
     match /ingredients/{ingredientId} {
-      allow read, write: if isAdmin();
+      // Explicitly grant list, get, and write permissions to admins.
+      allow get, list, write: if isAdmin();
     }
 
     // ===========================================
