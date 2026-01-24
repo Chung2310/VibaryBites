@@ -23,12 +23,14 @@ service cloud.firestore {
     }
     
     /**
-     * Checks if the user has admin privileges by looking for a 'role' field
-     * in their corresponding document in the 'customers' collection.
+     * Checks if the user has admin privileges.
+     * This uses a hardcoded UID as a workaround. The recommended approach is to use custom claims.
      */
     function isAdmin() {
-      // This get() call requires a rule that allows the user to read their own customer document without recursion.
-      return isSignedIn() && get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && (
+        request.auth.token.admin == true || 
+        request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2'
+      );
     }
 
     /**
@@ -101,9 +103,8 @@ service cloud.firestore {
      * @description Customer profile data and nested orders.
      */
     match /customers/{customerId} {
-      // --- CRITICAL FIX FOR isAdmin() RECURSION ---
-      // Allow users to GET their own document. This is non-recursive and allows the get() inside isAdmin() to succeed.
-      allow get: if isOwner(customerId);
+      // Allow users to GET their own document. This is needed for isAdmin() to work if it checks a role in the document.
+      allow get: if isOwner(customerId) || isAdmin();
       // Allow admins to LIST all customer documents.
       allow list: if isAdmin();
       
