@@ -38,6 +38,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ===========================================
+    // COLLECTION GROUP QUERIES (Admin-specific)
+    // ===========================================
+    
+    // This rule allows the admin to perform LIST queries across all 'orders' collections.
+    // It is critical for the admin dashboard/orders page.
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
+    }
+
     // ================================
     // USER-OWNED DATA (Specific Paths)
     // ================================
@@ -46,22 +56,24 @@ service cloud.firestore {
       // Rules for the customer document itself
       allow create: if isOwner(customerId);
       allow get, update: if isOwner(customerId);
+      // Admin has elevated permissions on customer profiles
       allow get, update, list, delete: if isAdmin();
 
-      // --- ORDERS Subcollection ---
-      // These rules apply to direct document access and collection group queries.
+      // --- ORDERS Subcollection (Single Document Access) ---
       match /orders/{orderId} {
-        // Admin has full read/write access, which includes 'list' for collection group queries.
-        allow read, write: if isAdmin();
+        // Admin can GET, UPDATE, or DELETE any single order document.
+        // 'list' is handled by the collection group rule above.
+        allow get, write: if isAdmin();
         
-        // Owner can get/write their own order. 'read' is covered by the admin rule.
-        // We use separate 'get' to not interfere with admin's 'list'.
+        // Owner can GET or CREATE/UPDATE their own order.
         allow get, write: if isOwner(customerId);
 
         // --- ORDER ITEMS Sub-subcollection ---
         match /order_items/{orderItemId} {
-           allow read, write: if isOwner(customerId);
+           // Admin has full access to order items.
            allow read, write: if isAdmin();
+           // Owner has full access to their own order items.
+           allow read, write: if isOwner(customerId);
         }
       }
     }
@@ -74,8 +86,9 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
       
-      // Separate allow statements to prevent OR evaluation errors.
+      // Owner can update/delete their own review
       allow update, delete: if resource.data.customerId == request.auth.uid;
+      // Admin can update/delete any review
       allow update, delete: if isAdmin();
     }
   }
