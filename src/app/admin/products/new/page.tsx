@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
@@ -43,13 +43,15 @@ export default function NewProductPage() {
             return;
         }
         
+        const id = `prod-${Date.now()}`;
+        const docRef = doc(firestore, 'cakes', id);
+
         try {
             // Step 1: Upload images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
             // Step 2: Prepare product data
-            const id = `prod-${Date.now()}`;
             const newProduct: Product = {
                 id,
                 slug: generateSlug(values.name),
@@ -75,7 +77,6 @@ export default function NewProductPage() {
             };
 
             // Step 3: Save to Firestore
-            const docRef = doc(firestore, 'cakes', id);
             await setDoc(docRef, newProduct);
             
             toast({
@@ -87,6 +88,13 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm mới:", error);
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
+
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
