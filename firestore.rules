@@ -39,10 +39,8 @@ service cloud.firestore {
     // ============================================
     
     match /cakes/{cakeId} {
-      allow read: if true;
-      // Temporarily allow all creates for debugging purposes
-      allow create: if true; 
-      allow update, delete: if isAdmin();
+      // TEMPORARY DEBUGGING STEP: Allow all access to rule out permissions issue.
+      allow read, write: if true;
       
       match /reviews/{reviewId} {
         allow read: if true;
