@@ -32,9 +32,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     const slug = params.slug;
     const { products, addToCart } = useAppStore();
     const product = products.find((p) => {
-        if (generateSlug(p.name) === slug) return true; // Check against generated slug
-        if (p.slug === slug) return true; // Fallback to existing slug
-        return false;
+        const pSlug = p.slug || generateSlug(p.name);
+        return pSlug === slug;
     });
 
     const [quantity, setQuantity] = useState(1);

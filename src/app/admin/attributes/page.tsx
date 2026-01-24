@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
@@ -22,12 +23,24 @@ import { Loader2 } from 'lucide-react';
 
 export default function AttributesPage() {
     const firestore = useFirestore();
+    const searchParams = useSearchParams();
+    const initialProductId = searchParams.get('productId');
+
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (initialProductId && products) {
+            const productFromUrl = products.find(p => p.id === initialProductId);
+            if (productFromUrl) {
+                setSelectedProduct(productFromUrl);
+            }
+        }
+    }, [initialProductId, products]);
 
     const handleSelectProduct = (product: Product) => {
         setSelectedProduct(product);
