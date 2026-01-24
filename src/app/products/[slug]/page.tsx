@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
-import { notFound, useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,8 +28,7 @@ import {
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-export default function ProductDetailPage() {
-    const params = useParams<{ slug: string }>();
+export default function ProductDetailPage({ params }: { params: { slug: string } }) {
     const slug = params.slug;
     const { products, addToCart } = useAppStore();
     const product = products.find((p) => {
