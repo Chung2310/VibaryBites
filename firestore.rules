@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -56,7 +57,7 @@ service cloud.firestore {
     
     match /product_categories/{categoryId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if request.auth != null;
     }
     
     match /news_articles/{newsArticleId} {
