@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useAuth } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -17,18 +17,18 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Corrected function signature to match the onSubmit prop in ProductForm
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         setIsSubmitting(true);
 
-        if (!firestore || !auth) {
+        if (!firestore) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi nghiêm trọng',
-                description: 'Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc xác thực.',
+                description: 'Không thể kết nối tới dịch vụ cơ sở dữ liệu.',
             });
             setIsSubmitting(false);
             return;
@@ -61,7 +61,8 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedImageUrls,
-                collection: 'special-occasions', 
+                // Initialize all fields to avoid Firestore issues with undefined values
+                collection: 'special-occasions', // default collection
                 detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
                 flavorProfile: [],
                 structure: [],
@@ -80,17 +81,20 @@ export default function NewProductPage() {
         } catch (error: any) {
             console.error("[NewProductPage] An error occurred:", error);
             
+            // This will create a more detailed error for debugging if it's a permission issue
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: values
+                requestResourceData: values // Using form values for context
             });
             errorEmitter.emit('permission-error', permissionError);
             
+            // Also show a toast to the user
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: 'Đã xảy ra lỗi. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết và thử lại.',
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                duration: 9000,
             });
         } finally {
             setIsSubmitting(false);
