@@ -55,7 +55,8 @@ export const uploadImage = async (file: File): Promise<string> => {
     const fileName = `uploads/${uuidv4()}.${fileExtension}`; 
     const storageRef = ref(storage, fileName);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const metadata = { contentType: file.type };
+    const snapshot = await uploadBytes(storageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
     
     return downloadURL;
