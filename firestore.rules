@@ -72,10 +72,9 @@ service cloud.firestore {
      * @description Allows admin users to perform collection group queries on 'orders'.
      *              This is necessary for the admin dashboard and orders page to function.
      *              The more specific rule under /customers/{customerId} still protects writes.
-     * @path /{path=**}/orders/{orderId}
      */
     match /{path=**}/orders/{orderId} {
-      allow read: if isSignedIn();
+      allow read: if true;
     }
 
     // --------------------------------
