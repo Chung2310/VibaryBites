@@ -21,10 +21,6 @@ service cloud.firestore {
       );
     }
 
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     match /{path=**}/orders/{orderId} {
       allow list: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
       allow get: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
@@ -63,7 +59,7 @@ service cloud.firestore {
     }
 
     match /ingredients/{ingredientId} {
-      allow read, write: if isAdmin();
+      allow get, list, write: if isAdmin();
     }
 
     match /customers/{customerId} {
