@@ -22,57 +22,67 @@ service cloud.firestore {
     }
 
     // ================================
+    // PUBLIC-READABLE COLLECTIONS
+    // ================================
+
+    // Cakes, Categories, News, and Quizzes are readable by anyone.
+    match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
+      allow read: if true;
+      allow write: if isAdmin(); // Only admins can write to public data.
+    }
+    
+    // ================================
     // ADMIN-ONLY COLLECTIONS
     // ================================
 
-    // Ingredients are fully controlled by admins.
     match /ingredients/{ingredientId} {
       allow read, write: if isAdmin();
     }
 
-
     // ================================
-    // PUBLIC-READABLE COLLECTIONS
+    // USER-SPECIFIC & MIXED-ACCESS
     // ================================
-
-    // Cakes, Categories, News, and Quizzes are readable by anyone, but only writable by admins.
-    match /{collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-
-    // ================================
-    // USER-SPECIFIC & MIXED-ACCESS DATA
-    // ================================
-
-    // Customer profiles. Users can manage their own, Admins can manage all.
+    
+    // Customer profiles:
+    // - Users can read/create/update their own profile.
+    // - Admins can read/update any profile and list all profiles.
     match /customers/{customerId} {
-      // Admin can list all customers. Users can only get their own.
-      allow read: if isAdmin() || isOwner(customerId);
-      // Users can create their own profile.
+      allow get: if isOwner(customerId) || isAdmin();
+      allow list, delete: if isAdmin();
       allow create: if isOwner(customerId);
-      // Users can update their own profile, Admins can update any.
       allow update: if isOwner(customerId) || isAdmin();
-      // Only admins can delete customer profiles.
-      allow delete: if isAdmin();
 
-      // Orders are nested under customers.
-      // This rule allows admins to perform collection group queries on 'orders'.
-      match /orders/{orderId}/{document=**} {
+      // Nested Orders:
+      // - This rule handles direct access to a specific order document.
+      // - It does NOT cover collection group queries.
+      match /orders/{orderId} {
         allow read, write: if isOwner(customerId) || isAdmin();
+        
+        // Order Items nested under orders
+        match /order_items/{orderItemId} {
+           allow read, write: if isOwner(customerId) || isAdmin();
+        }
       }
     }
 
-
-    // Cake reviews are nested under cakes.
+    // Cake Reviews:
+    // - Anyone can read.
+    // - Signed-in users can create their own reviews.
+    // - Owners or Admins can update/delete.
     match /cakes/{cakeId}/reviews/{reviewId} {
-      // Anyone can read reviews.
       allow read: if true;
-      // Only authenticated users can create reviews for themselves.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      // Owners and Admins can update or delete reviews.
       allow update, delete: if (resource.data.customerId == request.auth.uid) || isAdmin();
+    }
+    
+    // ================================
+    // COLLECTION GROUP RULES
+    // ================================
+    
+    // This is the critical rule that was missing.
+    // It allows an admin to perform a 'list' or 'get' query across the entire 'orders' collection group.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
     }
   }
 }
