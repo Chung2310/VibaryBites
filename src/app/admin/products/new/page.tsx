@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { uploadImage } from '@/firebase/storage';
 
 export default function NewProductPage() {
     const router = useRouter();
@@ -20,8 +20,6 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Corrected function signature to match the one expected by ProductForm's onSubmit prop.
-    // The `keptImageUrls` is unused here but required for type compatibility.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         setIsSubmitting(true);
         
@@ -41,11 +39,9 @@ export default function NewProductPage() {
         const docRef = doc(firestore, 'cakes', id);
 
         try {
-            // 1. Upload images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
-            // 2. Prepare product data
             const newProduct: Product = {
                 id,
                 slug: generateSlug(values.name),
@@ -66,7 +62,6 @@ export default function NewProductPage() {
                 collection: 'special-occasions',
             };
 
-            // 3. Save to Firestore
             await setDoc(docRef, newProduct);
             
             toast({
@@ -79,7 +74,7 @@ export default function NewProductPage() {
         } catch (error: any) {
             console.error('Lỗi khi tạo sản phẩm:', error);
             
-            if (error.code === 'storage/unauthorized' || error.code === 'permission-denied') {
+            if (error.code === 'permission-denied') {
                 const permissionError = new FirestorePermissionError({
                     path: docRef.path,
                     operation: 'create',
