@@ -43,7 +43,7 @@ service cloud.firestore {
     // This rule allows the admin to perform READ (get, list) queries across all 'orders' collections.
     // It is critical for the admin dashboard/orders page.
     match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
+      allow get, list: if isAdmin();
     }
 
     // ================================
