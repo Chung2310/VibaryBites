@@ -22,16 +22,6 @@ service cloud.firestore {
     }
     
     // ================================
-    // COLLECTION GROUP RULES
-    // ================================
-    
-    // This rule is ONLY for the admin's collection group query to list all orders.
-    // It allows an admin to perform a 'list' operation across all 'orders' subcollections.
-    match /{path=**}/orders/{orderId} {
-      allow list: if isAdmin();
-    }
-
-    // ================================
     // PUBLIC & ADMIN-WRITE COLLECTIONS
     // ================================
 
@@ -53,21 +43,20 @@ service cloud.firestore {
     // ================================
     
     match /customers/{customerId} {
+      // Rules for the customer document itself
       allow create: if isOwner(customerId);
-      
-      // Separate allow statements to prevent OR evaluation errors.
       allow get, update: if isOwner(customerId);
-      allow get, update: if isAdmin();
-      
-      allow list, delete: if isAdmin();
+      allow get, update, list, delete: if isAdmin();
 
       // --- ORDERS Subcollection ---
-      // These rules apply to direct document access.
+      // These rules apply to direct document access and collection group queries.
       match /orders/{orderId} {
-        // Owner can get and write their own order.
+        // Admin has full read/write access, which includes 'list' for collection group queries.
+        allow read, write: if isAdmin();
+        
+        // Owner can get/write their own order. 'read' is covered by the admin rule.
+        // We use separate 'get' to not interfere with admin's 'list'.
         allow get, write: if isOwner(customerId);
-        // Admin can get and write any order.
-        allow get, write: if isAdmin();
 
         // --- ORDER ITEMS Sub-subcollection ---
         match /order_items/{orderItemId} {
