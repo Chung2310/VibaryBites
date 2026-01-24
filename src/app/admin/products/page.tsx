@@ -39,7 +39,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Product, ProductCategory } from '@/lib/types';
 import {
   AlertDialog,
@@ -54,12 +54,13 @@ import {
 
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteImage } from '@/firebase/storage';
 import { cn } from '@/lib/utils';
+import { products as seedProducts } from '@/data/products';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -75,6 +76,40 @@ export default function ProductsPage() {
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
     const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (firestore && !isLoading && products && products.length === 0 && seedProducts.length > 0) {
+            const seedDatabase = async () => {
+                toast({
+                    title: "Thiết lập sản phẩm ban đầu",
+                    description: `Đang thêm ${seedProducts.length} sản phẩm mẫu vào cơ sở dữ liệu...`,
+                });
+                
+                try {
+                    const promises = seedProducts.map(product => {
+                        const docRef = doc(firestore, 'cakes', product.id);
+                        return setDoc(docRef, product);
+                    });
+
+                    await Promise.all(promises);
+
+                    toast({
+                        title: "Hoàn tất!",
+                        description: "Các sản phẩm mẫu đã được thêm thành công.",
+                    });
+                } catch (error) {
+                    console.error("Error seeding products:", error);
+                    const permissionError = new FirestorePermissionError({
+                        path: 'cakes',
+                        operation: 'create',
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+            };
+
+            seedDatabase();
+        }
+    }, [firestore, isLoading, products, toast]);
 
     const filteredProducts = useMemo(() => {
         if (!products) return [];
@@ -315,3 +350,5 @@ export default function ProductsPage() {
         </>
     )
 }
+
+    
