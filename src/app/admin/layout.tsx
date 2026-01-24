@@ -19,6 +19,7 @@ import {
   List,
   Loader2,
   Menu,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -212,6 +213,21 @@ export default function AdminLayout({
       toast({ title: 'Đã đăng xuất' });
     }
   };
+
+  const handleForceTokenRefresh = async () => {
+    if (!user) {
+      toast({ variant: "destructive", title: "Lỗi", description: "Không tìm thấy người dùng để làm mới." });
+      return;
+    };
+    try {
+      await user.getIdToken(true);
+      toast({ title: "Thành công", description: "Phiên đăng nhập đã được làm mới. Đang tải lại trang..." });
+      window.location.reload();
+    } catch (error) {
+      console.error("Error refreshing auth token:", error);
+      toast({ variant: "destructive", title: "Lỗi", description: "Không thể làm mới phiên đăng nhập." });
+    }
+  };
   
   // Show a loader while user status is being determined, but not on the login page itself.
   if (isUserLoading && pathname !== '/admin/login') {
@@ -316,7 +332,14 @@ export default function AdminLayout({
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuItem>Hỗ trợ</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleLogout}>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleForceTokenRefresh}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                <span>Làm mới & Tải lại</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Đăng xuất</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
