@@ -1,77 +1,142 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { uploadImage } from '@/firebase/storage';
+import { useRouter } from 'next/navigation';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { uploadImage } from '@/firebase/storage';
+import { ProductForm, type ProductFormValues } from '../product-form';
+import type { Product } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { generateSlug } from '@/lib/utils';
 
 export default function NewProductPage() {
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
+    const router = useRouter();
+    const firestore = useFirestore();
     const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            setImageFile(event.target.files[0]);
-        }
-    };
-
-    const handleUploadTest = async () => {
-        if (!imageFile) {
-            alert("Vui lòng chọn một file ảnh để kiểm tra.");
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới cơ sở dữ liệu." });
             return;
         }
 
-        setIsUploading(true);
+        if (newImageFiles.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Thiếu ảnh",
+                description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm.",
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+
+        let imageUrls: string[] = [];
         try {
-            console.log("Bắt đầu tải ảnh lên...");
-            const downloadURL = await uploadImage(imageFile);
-            console.log("Tải ảnh lên thành công! URL:", downloadURL);
-            alert(`Tải ảnh lên thành công! URL của ảnh là: ${downloadURL}`);
-        } catch (error) {
-            console.error("LỖI KHI TẢI ẢNH:", error);
-            alert(`Đã xảy ra lỗi khi tải ảnh lên. Vui lòng kiểm tra Console (F12) để xem chi tiết lỗi. \n\nLỗi: ${(error as Error).message}`);
+            toast({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
+            imageUrls = await Promise.all(uploadPromises);
+            toast({ title: "Tải ảnh lên thành công!" });
+        } catch (error: any) {
+            console.error("Lỗi khi tải ảnh lên:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Lỗi tải ảnh lên!',
+                description: `Không thể tải ảnh lên: ${error.message}`,
+                duration: 9000,
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const productId = `prod-${Date.now()}`;
+        const docRef = doc(firestore, 'cakes', productId);
+        try {
+            toast({ title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+
+            const newProduct: Product = {
+                id: productId,
+                slug: generateSlug(values.name),
+                name: values.name,
+                subtitle: values.subtitle,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                description: values.description,
+                imageUrls: imageUrls,
+                collection: values.categorySlug, // Defaulting collection to categorySlug
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    serving: values.detailedDescription_serving,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                },
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
+            };
+
+            await setDoc(docRef, newProduct);
+            
+            toast({
+                title: 'Thêm thành công!',
+                description: `Sản phẩm "${values.name}" đã được tạo.`,
+            });
+            
+            router.push('/admin/products');
+
+        } catch (error: any) {
+            console.error("Error creating product:", error);
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Lỗi lưu sản phẩm!',
+                description: `Không thể lưu sản phẩm: ${error.message}`,
+                duration: 9000,
+            });
         } finally {
-            setIsUploading(false);
+            setIsSubmitting(false);
         }
     };
-
+    
     return (
         <div className="space-y-4">
+             <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" className="h-7 w-7" asChild>
+                    <Link href="/admin/products">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">Back</span>
+                    </Link>
+                </Button>
+                <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
+                    Thêm Sản phẩm Mới
+                </h1>
+            </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Kiểm Tra Chức Năng Tải Ảnh Lên Firebase Storage</CardTitle>
-                    <CardDescription>
-                        Trang này đã được tạm thời thay đổi để chẩn đoán sự cố tải ảnh. Vui lòng chọn một file ảnh và nhấn nút "Bắt đầu Tải lên" để kiểm tra.
-                    </CardDescription>
+                    <CardTitle>Thông tin sản phẩm</CardTitle>
+                    <CardDescription>Điền tất cả các thông tin cần thiết để tạo một sản phẩm mới.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <label htmlFor="image-upload" className="font-medium">Bước 1: Chọn ảnh</label>
-                        <Input id="image-upload" type="file" accept="image/*" onChange={handleFileChange} className="mt-2" />
-                    </div>
-                    
-                    <Button onClick={handleUploadTest} disabled={isUploading || !imageFile}>
-                        {isUploading ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải...</>
-                        ) : (
-                            'Bước 2: Bắt đầu Tải lên'
-                        )}
-                    </Button>
-
-                     <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
-                        <p className="font-bold">Hướng dẫn:</p>
-                        <ol className="list-decimal list-inside mt-2 space-y-1">
-                            <li>Mở Developer Tools (nhấn F12).</li>
-                            <li>Chuyển sang tab "Console".</li>
-                            <li>Chọn một file ảnh bất kỳ.</li>
-                            <li>Nhấn nút "Bắt đầu Tải lên".</li>
-                            <li>Cung cấp lại cho tôi thông báo trong hộp thoại (alert) và bất kỳ lỗi màu đỏ nào trong Console.</li>
-                        </ol>
-                    </div>
+                <CardContent>
+                    <ProductForm 
+                        isEditMode={false}
+                        onSubmit={handleFormSubmit}
+                        onCancel={() => router.push('/admin/products')}
+                        isSubmitting={isSubmitting}
+                    />
                 </CardContent>
             </Card>
         </div>

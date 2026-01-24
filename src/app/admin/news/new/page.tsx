@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
 
-
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
@@ -37,31 +36,29 @@ export default function NewNewsArticlePage() {
         }
 
         setIsSubmitting(true);
-        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
-        // Step 1: Upload image
         let imageUrl = '';
         try {
-            toastCtrl.update({ id: toastCtrl.id, title: "Đang tải lên ảnh bìa...", description: "Bước 1/2: Tải ảnh lên máy chủ." });
+            toast({ title: "Đang tải lên ảnh bìa..." });
             imageUrl = await uploadImage(imageFile);
+            toast({ title: "Tải ảnh lên thành công!" });
         } catch (error: any) {
-            console.error("Error during image upload:", error);
-            toastCtrl.update({
-                id: toastCtrl.id,
+            console.error("Lỗi khi tải ảnh lên:", error);
+            toast({
                 variant: 'destructive',
                 title: 'Lỗi tải ảnh lên!',
                 description: `Không thể tải ảnh lên: ${error.message}`,
                 duration: 9000,
             });
             setIsSubmitting(false);
-            return; // Stop the process
+            return;
         }
 
-        // Step 2: Save article data to Firestore
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         try {
-            toastCtrl.update({ id: toastCtrl.id, title: "Đang lưu bài viết...", description: "Bước 2/2: Lưu dữ liệu vào cơ sở dữ liệu." });
+            toast({ title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newArticle: NewsArticle = {
                 id: articleId,
@@ -77,9 +74,7 @@ export default function NewNewsArticlePage() {
 
             await setDoc(docRef, newArticle);
             
-            toastCtrl.update({
-                id: toastCtrl.id,
-                variant: "default",
+            toast({
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -87,17 +82,14 @@ export default function NewNewsArticlePage() {
             router.push('/admin/news');
 
         } catch (error: any) {
-            console.error("Error saving article to Firestore:", error);
-
+            console.error("Error creating article:", error);
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toast({
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
                 description: `Không thể lưu bài viết: ${error.message}`,
