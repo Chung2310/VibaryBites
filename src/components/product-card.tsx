@@ -18,7 +18,7 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, hideStockStatus = false, hideDescription = false, hidePrice = false, hideSubtitle = false }: ProductCardProps) {
-  const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
+  const thumbnailUrl = product.imageUrl || '';
   const isOutOfStock = product.stock !== undefined && product.stock <= 0;
   const sanitizedSlug = generateSlug(product.name);
 
@@ -57,5 +57,3 @@ export function ProductCard({ product, hideStockStatus = false, hideDescription 
     </Card>
   );
 }
-
-    

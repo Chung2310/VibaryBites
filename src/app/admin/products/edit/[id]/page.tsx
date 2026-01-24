@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -30,7 +31,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
@@ -44,24 +45,24 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         const docRef = doc(firestore, 'cakes', product.id);
 
         try {
-            const originalUrls = product.imageUrls || [];
-            const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
+            let finalImageUrl = product.imageUrl;
 
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
-            const newUploadedUrls = await Promise.all(uploadPromises);
-
-            if (urlsToDelete.length > 0) {
-                const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
-                await Promise.all(deletePromises);
+            // Handle image changes
+            if (imageFile) { // New image uploaded
+                if (product.imageUrl) { // Delete old one if it exists
+                    await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
+                }
+                finalImageUrl = await uploadImage(imageFile);
+            } else if (imageWasRemoved && product.imageUrl) { // Image removed
+                await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete removed image ${product.imageUrl}`, err));
+                finalImageUrl = ''; // Set to empty
             }
-
-            const finalImageUrls = [...keptImageUrls, ...newUploadedUrls];
             
-            if (finalImageUrls.length === 0) {
+            if (!finalImageUrl) {
                  toast({
                     variant: "destructive",
                     title: "Lỗi",
-                    description: "Sản phẩm phải có ít nhất một ảnh.",
+                    description: "Sản phẩm phải có một ảnh.",
                 });
                 setIsSubmitting(false);
                 return;
@@ -74,7 +75,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 price: Number(values.price),
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
-                imageUrls: finalImageUrls,
+                imageUrl: finalImageUrl,
                 slug: generateSlug(values.name),
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
@@ -98,6 +99,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             router.push(`/admin/products`);
 
         } catch (error: any) {
+            console.error("Lỗi khi cập nhật sản phẩm:", error);
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
@@ -107,7 +109,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                description: `Đã xảy ra lỗi. Vui lòng xem console để biết thêm chi tiết.`,
                 duration: 9000,
             });
         } finally {

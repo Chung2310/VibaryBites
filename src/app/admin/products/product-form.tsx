@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
@@ -64,7 +65,7 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => Promise<void> | void;
+  onSubmit: (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => Promise<void> | void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -75,8 +76,8 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(product?.imageUrls || []);
-  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -112,44 +113,40 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         structure: "",
     },
   });
+  
+  useEffect(() => {
+    if (product?.imageUrl) {
+      setImagePreview(product.imageUrl);
+    }
+  }, [product]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const uniqueNewFiles = acceptedFiles.filter(
-      (file) => !newImageFiles.some(
-        (existingFile) => existingFile.name === file.name && existingFile.size === file.size
-      )
-    );
-    setNewImageFiles(prev => [...prev, ...uniqueNewFiles]);
-  }, [newImageFiles]);
+  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
+    multiple: false,
   });
 
-  const imagePreviews = useMemo(() => {
-    const existing = existingImageUrls.map(url => ({ id: url, url: url, isNew: false }));
-    const news = newImageFiles.map(file => ({ id: `${file.name}-${file.lastModified}`, url: URL.createObjectURL(file), isNew: true }));
-    return [...existing, ...news];
-  }, [existingImageUrls, newImageFiles]);
-
-  useEffect(() => {
-    const newUrls = imagePreviews.filter(p => p.isNew).map(p => p.url);
-    return () => {
-      newUrls.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [imagePreviews]);
-
-  const removeImage = (imageToRemove: { id: string, isNew: boolean }) => {
-    if (imageToRemove.isNew) {
-      setNewImageFiles(prev => prev.filter(file => `${file.name}-${file.lastModified}` !== imageToRemove.id));
-    } else {
-      setExistingImageUrls(prev => prev.filter(url => url !== imageToRemove.id));
-    }
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
   };
 
+
   const handleFormSubmit = async (values: ProductFormValues) => {
-    await onSubmit(values, newImageFiles, existingImageUrls);
+    const imageWasRemoved = isEditMode && !!product?.imageUrl && !imagePreview;
+    await onSubmit(values, imageFile, imageWasRemoved);
   };
 
   return (
@@ -196,25 +193,27 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         {/* --- Image Uploader --- */}
         <div className="space-y-2">
             <FormLabel>Ảnh sản phẩm</FormLabel>
-            <div {...getRootProps()} className={cn( 'w-full p-6 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors', isDragActive && 'border-primary bg-primary/10' )}>
-                <input {...getInputProps()} />
-                <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">Kéo thả ảnh vào đây, hoặc <span className="text-primary">bấm để chọn file</span></p>
-                <p className="text-xs text-muted-foreground/80">Bạn có thể chọn nhiều ảnh cùng lúc.</p>
-            </div>
-
-            {imagePreviews.length > 0 ? (
-                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                    {imagePreviews.map((preview) => (
-                        <div key={preview.id} className="relative aspect-square">
-                            <Image src={preview.url} alt={`Xem trước ảnh`} fill className="rounded-md object-cover" />
-                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => removeImage(preview)}><Trash2 className="h-3 w-3" /></Button>
-                        </div>
-                    ))}
+             {imagePreview ? (
+                <div className="relative w-full max-w-sm aspect-[4/3] rounded-md overflow-hidden">
+                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-cover" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-            ) : (
-                <FormDescription>Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.</FormDescription>
-            )}
+              ) : (
+                <div
+                  {...getRootProps()}
+                  className={cn(
+                    'w-full max-w-sm aspect-[4/3] border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
+                    isDragActive && 'border-primary bg-primary/10'
+                  )}
+                >
+                  <input {...getInputProps()} />
+                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
+                </div>
+              )}
+            <FormDescription>Vui lòng cung cấp một ảnh cho sản phẩm. Tỉ lệ 4:3 được khuyến nghị.</FormDescription>
         </div>
 
         <Separator />

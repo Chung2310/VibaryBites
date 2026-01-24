@@ -1,3 +1,4 @@
+
 'use client';
 import {
   File,
@@ -93,20 +94,11 @@ export default function ProductsPage() {
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
-            // Delete associated images from Firebase Storage, only if they are from Firebase
-            if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-                 const firebaseStorageUrls = selectedProduct.imageUrls.filter(url => 
-                    url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com')
-                );
-
-                if (firebaseStorageUrls.length > 0) {
-                    const deletePromises = firebaseStorageUrls.map(url => 
-                        deleteImage(url).catch(err => {
-                            console.warn(`Failed to delete image ${url}`, err);
-                        })
-                    );
-                    await Promise.all(deletePromises);
-                }
+            // Delete associated image from Firebase Storage, if it's from Firebase
+            if (selectedProduct.imageUrl && (selectedProduct.imageUrl.includes('firebasestorage.googleapis.com') || selectedProduct.imageUrl.includes('storage.googleapis.com'))) {
+                await deleteImage(selectedProduct.imageUrl).catch(err => {
+                    console.warn(`Failed to delete image ${selectedProduct.imageUrl}`, err);
+                });
             }
 
             await deleteDoc(docRef);
@@ -228,17 +220,17 @@ export default function ProductsPage() {
                         </TableRow>
                    ))}
                    {filteredProducts && filteredProducts.map(product => {
-                     const imageUrls = product.imageUrls || [];
+                     const imageUrl = product.imageUrl;
                      const isOutOfStock = product.stock !== undefined && product.stock <= 0;
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {imageUrls.length > 0 ? (
+                                {imageUrl ? (
                                     <Image
                                         alt={product.name}
                                         className="aspect-square rounded-md object-cover"
                                         height="64"
-                                        src={imageUrls[0]}
+                                        src={imageUrl}
                                         width="64"
                                     />
                                 ) : <div className="h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">No Image</div>}

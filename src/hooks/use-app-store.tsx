@@ -117,7 +117,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    const imageUrl = item.imageUrl || (product.imageUrls && product.imageUrls[0]) || '';
+    const imageUrl = item.imageUrl || product.imageUrl || '';
     const itemToAdd = { ...item, imageUrl, quantity: quantityToAdd };
 
     setCartItems((prevItems) => {

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Cake": {
@@ -13,10 +14,10 @@
         "description": { "type": "string", "description": "A short, enticing description of the cake." },
         "price": { "type": "number", "description": "The base price of the cake." },
         "stock": { "type": "number", "description": "Available stock quantity." },
-        "imageUrls": {
-          "type": "array",
-          "description": "An array of URLs for the cake's images stored in Firebase Storage.",
-          "items": { "type": "string", "format": "uri" }
+        "imageUrl": {
+          "type": "string",
+          "description": "The URL for the cake's primary image stored in Firebase Storage.",
+          "format": "uri"
         },
         "categorySlug": { "type": "string", "description": "The slug of the category this cake belongs to." },
         "sizes": {
@@ -57,7 +58,7 @@
           "items": { "type": "string" }
         }
       },
-      "required": [ "id", "name", "slug", "description", "price", "imageUrls", "categorySlug" ]
+      "required": [ "id", "name", "slug", "description", "price", "imageUrl", "categorySlug" ]
     },
     "ProductCategory": {
       "$schema": "http://json-schema.org/draft-07/schema#",

@@ -288,7 +288,7 @@ function FeaturedProducts() {
     
     const ProductMarqueeItem = ({ product }: { product: Product }) => {
         const sanitizedSlug = product.slug || generateSlug(product.name);
-        const thumbnailUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
+        const thumbnailUrl = product.imageUrl || '';
 
         return (
             <div className="flex-shrink-0 w-64 sm:w-72 mx-4">

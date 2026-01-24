@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,17 +21,17 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
         if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới cơ sở dữ liệu." });
             return;
         }
 
-        if (newImageFiles.length === 0) {
+        if (!imageFile) {
             toast({
                 variant: "destructive",
                 title: "Thiếu ảnh",
-                description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm.",
+                description: "Vui lòng tải lên một ảnh cho sản phẩm.",
             });
             return;
         }
@@ -38,11 +39,10 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
 
-        let imageUrls: string[] = [];
+        let imageUrl = '';
         try {
-            toastCtrl.update({ id: toastCtrl.id, title: `Đang tải lên ${newImageFiles.length} ảnh...` });
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
-            imageUrls = await Promise.all(uploadPromises);
+            toastCtrl.update({ id: toastCtrl.id, title: "Đang tải lên ảnh..." });
+            imageUrl = await uploadImage(imageFile);
             toastCtrl.update({ id: toastCtrl.id, title: "Tải ảnh lên thành công!" });
         } catch (error: any) {
             console.error("Lỗi khi tải ảnh lên:", error);
@@ -70,7 +70,7 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 description: values.description,
-                imageUrls: imageUrls,
+                imageUrl: imageUrl,
                 collection: values.categorySlug, // Defaulting collection to categorySlug
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
@@ -95,7 +95,7 @@ export default function NewProductPage() {
             router.push('/admin/products');
 
         } catch (error: any) {
-            console.error("Error creating product:", error);
+            console.error("Lỗi khi tạo sản phẩm:", error);
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
@@ -106,7 +106,7 @@ export default function NewProductPage() {
                 id: toastCtrl.id,
                 variant: 'destructive',
                 title: 'Lỗi lưu sản phẩm!',
-                description: `Không thể lưu sản phẩm: ${error.message}`,
+                description: `Không thể lưu sản phẩm.`,
             });
         } finally {
             setIsSubmitting(false);

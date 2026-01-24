@@ -1,3 +1,4 @@
+
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -17,18 +18,11 @@ import {
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory } from '@/lib/types';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
     const slug = params.slug;
@@ -47,21 +41,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
     const { toast } = useToast();
     
-    const [api, setApi] = useState<CarouselApi>()
-    const [current, setCurrent] = useState(0)
-    
-    useEffect(() => {
-        if (!api) {
-        return
-        }
-    
-        setCurrent(api.selectedScrollSnap())
-    
-        api.on("select", () => {
-        setCurrent(api.selectedScrollSnap())
-        })
-    }, [api])
-
     useEffect(() => {
         if (product) {
             setSelectedSize(product.sizes?.[0]?.name);
@@ -70,15 +49,27 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
     if (!product) {
         if (products.length > 0) {
-        notFound();
+            notFound();
         }
-        return <div>Đang tìm sản phẩm...</div>;
+        return (
+            <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
+                    <Skeleton className="aspect-square w-full rounded-lg" />
+                    <div className="space-y-4">
+                        <Skeleton className="h-6 w-1/4" />
+                        <Skeleton className="h-16 w-3/4" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
     const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
     
-    const images = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls : [];
+    const imageUrl = product.imageUrl;
     const detailedDescription = product.detailedDescription || {};
 
     const handleAddToCart = () => {
@@ -87,7 +78,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         id: product.id,
         name: product.name,
         price: priceToShow,
-        imageUrl: images[0],
+        imageUrl: product.imageUrl,
         slug: product.slug,
         quantity: quantity,
         size: selectedSize,
@@ -120,49 +111,21 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
             {/* Image Gallery */}
             <div className="relative h-fit">
-                <div className="space-y-4">
-                <Carousel setApi={setApi} className="w-full">
-                    <CarouselContent>
-                    {images.map((url, index) => (
-                        <CarouselItem key={index}>
-                        <div className="aspect-square w-full overflow-hidden rounded-lg">
-                            <Image
-                            src={url}
-                            alt={`${product.name} - image ${index + 1}`}
+                 <div className="aspect-square w-full overflow-hidden rounded-lg">
+                    {imageUrl ? (
+                        <Image
+                            src={imageUrl}
+                            alt={product.name}
                             width={800}
                             height={800}
                             className="h-full w-full object-cover"
-                            priority={index === 0}
-                            />
-                        </div>
-                        </CarouselItem>
-                    ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="left-4" />
-                    <CarouselNext className="right-4" />
-                </Carousel>
-                {images.length > 1 && (
-                    <div className="grid grid-cols-5 gap-2">
-                    {images.map((url, index) => (
-                        <button
-                        key={`thumb-${index}`}
-                        onClick={() => api?.scrollTo(index)}
-                        className={cn(
-                            'aspect-square w-full overflow-hidden rounded-md border-2 transition-all',
-                            current === index ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
-                        )}
-                        >
-                        <Image
-                            src={url}
-                            alt={`${product.name} - thumbnail ${index + 1}`}
-                            width={200}
-                            height={200}
-                            className="h-full w-full object-cover"
+                            priority
                         />
-                        </button>
-                    ))}
-                    </div>
-                )}
+                    ) : (
+                        <div className="h-full w-full bg-muted flex items-center justify-center">
+                            <span className="text-muted-foreground">No Image</span>
+                        </div>
+                    )}
                 </div>
             </div>
             

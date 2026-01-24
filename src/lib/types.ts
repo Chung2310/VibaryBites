@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   slug: string;
@@ -17,7 +18,7 @@ export type Product = {
     name: string;
     price: number;
   }[];
-  imageUrls: string[]; // Changed from imageUrl: string to support multiple images
+  imageUrl: string;
   collection: string;
   categorySlug: string;
   flavorProfile?: string[];
@@ -73,7 +74,7 @@ export type CartItem = {
   name: string;
   price: number;
   quantity: number;
-  imageUrl: string; // Will use the first image from product.imageUrls
+  imageUrl: string; // Will use the product's imageUrl
   slug: string;
   size?: string;
 };
