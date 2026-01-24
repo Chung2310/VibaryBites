@@ -15,7 +15,10 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && request.auth.uid in ['WEM5X92ExuRA6I82nZjRVeCru6i2', 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'];
+      return isSignedIn() && (
+        request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' ||
+        request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'
+      );
     }
 
     match /{document=**} {
@@ -23,7 +26,9 @@ service cloud.firestore {
     }
 
     match /{path=**}/orders/{orderId} {
-      allow read, write: if isAdmin();
+      allow list: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
+      allow get: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
+      allow create, update, delete: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
     }
 
     match /{path=**}/reviews/{reviewId} {
