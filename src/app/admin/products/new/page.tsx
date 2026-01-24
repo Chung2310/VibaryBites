@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -17,23 +17,30 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const auth = useAuth();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Corrected the function signature to match the onSubmit prop of ProductForm
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+        console.log('[handleFormSubmit] Started.');
         setIsSubmitting(true);
 
-        if (!firestore) {
+        if (!firestore || !auth) {
+            console.error('[handleFormSubmit] Firestore or Auth service is not available.');
             toast({
                 variant: 'destructive',
                 title: 'Lỗi nghiêm trọng',
-                description: 'Không thể kết nối tới cơ sở dữ liệu.',
+                description: 'Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc xác thực.',
             });
             setIsSubmitting(false);
             return;
         }
 
+        console.log('[handleFormSubmit] Current User UID:', auth.currentUser?.uid);
+        
         if (newImageFiles.length === 0) {
+            console.log('[handleFormSubmit] No new images provided.');
             toast({
                 variant: "destructive",
                 title: "Lỗi",
@@ -45,11 +52,13 @@ export default function NewProductPage() {
 
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        let productDataForError: any = { ...values };
+        console.log(`[handleFormSubmit] Generated new product ID: ${id}. Doc path: ${docRef.path}`);
 
         try {
+            console.log('[handleFormSubmit] Starting image uploads...');
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedImageUrls = await Promise.all(uploadPromises);
+            console.log('[handleFormSubmit] Image uploads completed.', uploadedImageUrls);
 
             const newProduct: Product = {
                 id,
@@ -61,41 +70,44 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedImageUrls,
-                // Default values for fields not in the basic product form
                 collection: 'special-occasions', 
                 detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
                 flavorProfile: [],
                 structure: [],
                 recipe: "",
             };
-            
-            productDataForError = newProduct;
 
+            console.log('[handleFormSubmit] New product data prepared:', newProduct);
+
+            console.log('[handleFormSubmit] Calling setDoc...');
             await setDoc(docRef, newProduct);
+            console.log('[handleFormSubmit] setDoc completed successfully.');
             
             toast({
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
             });
             
+            console.log('[handleFormSubmit] Navigating to /admin/products');
             router.push(`/admin/products`);
 
         } catch (error: any) {
-            console.error("Lỗi khi thêm sản phẩm:", error);
+            console.error("[handleFormSubmit] An error occurred in the try block:", error);
             
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: productDataForError
+                requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: 'Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng kiểm tra quyền truy cập của bạn và thử lại.',
+                description: 'Đã xảy ra lỗi. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết và thử lại.',
             });
         } finally {
+            console.log('[handleFormSubmit] Finished.');
             setIsSubmitting(false);
         }
     };
