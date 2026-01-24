@@ -20,8 +20,8 @@ async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArtic
 }
 
 export default function ArticlePage() {
-    const params = useParams();
-    const slug = params.slug as string;
+    const params = useParams<{ slug: string }>();
+    const slug = params.slug;
     const firestore = useFirestore();
     const [article, setArticle] = useState<NewsArticle | null>(null);
     const [isLoading, setIsLoading] = useState(true);

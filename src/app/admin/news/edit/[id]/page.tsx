@@ -17,8 +17,8 @@ import { generateSlug } from '@/lib/utils';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
-    const params = useParams();
-    const articleId = params.id as string;
+    const params = useParams<{ id: string }>();
+    const articleId = params.id;
     
     const firestore = useFirestore();
     const { toast } = useToast();

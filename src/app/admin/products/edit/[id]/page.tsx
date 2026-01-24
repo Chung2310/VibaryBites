@@ -17,8 +17,8 @@ import { generateSlug } from '@/lib/utils';
 
 export default function EditProductPage() {
     const router = useRouter();
-    const params = useParams();
-    const productId = params.id as string;
+    const params = useParams<{ id: string }>();
+    const productId = params.id;
     
     const firestore = useFirestore();
     const { toast } = useToast();
