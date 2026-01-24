@@ -4,27 +4,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     function isAdmin() {
       // In a production app, this would ideally be a custom claim set on the user's token.
       // For this project, we define the admin by a specific email address for simplicity.
-      return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
+      return request.auth != null && request.auth.token.email == 'manager@vibary.com';
     }
-
-    // --- COLLECTION GROUP QUERIES ---
-    // This rule specifically grants 'list' permission on the 'orders' collection group to admins.
-    match /{path=**}/orders/{orderId} {
-      allow list: if isAdmin();
-    }
-
 
     // --- PUBLIC & ADMIN-WRITABLE COLLECTIONS ---
     match /(cakes|categories|news_articles|quiz_questions)/{docId} {
@@ -33,37 +25,38 @@ service cloud.firestore {
     }
 
     match /ingredients/{ingredientId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-
-    // --- PATH-SPECIFIC RULES ---
+    // --- REVIEWS ---
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
       allow create: if isOwner(request.resource.data.customerId);
       allow update, delete: if isOwner(resource.data.customerId);
     }
-
+    
+    // --- CUSTOMER DATA ---
     match /customers/{customerId} {
       allow create: if isOwner(customerId);
-      // Admins can get any customer profile. Owners can only get/update their own.
       allow get, update: if isOwner(customerId) || isAdmin();
-      // Only admins can list the entire customers collection.
       allow list: if isAdmin();
 
-      // Nested Orders: Rules for accessing a single document.
-      // The collection group 'list' permission is handled by the dedicated rule above.
+      // Path-specific rule for a customer's own orders.
+      // This rule is for direct access, NOT for collection group queries.
       match /orders/{orderId} {
-        // Get a specific order if user is owner or admin.
-        allow get: if isOwner(customerId) || isAdmin();
-        // Write to a specific order if user is owner or admin.
-        allow write: if isOwner(customerId) || isAdmin();
+        allow get, write: if isOwner(customerId) || isAdmin();
 
-        // Nested Order Items
         match /order_items/{orderItemId} {
           allow read, write: if isOwner(customerId) || isAdmin();
         }
       }
+    }
+
+    // --- COLLECTION GROUP RULE for 'orders' ---
+    // This rule is ONLY for collection group queries on 'orders'.
+    // It grants read access to admins across all 'orders' subcollections.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
     }
   }
 }
