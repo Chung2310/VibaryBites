@@ -16,14 +16,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Using UID is a robust workaround if Custom Claims are not set up.
+    // This UID 'WEM5X92ExuRA6I82nZjRVeCru6i2' corresponds to manager@vibary.com
     function isAdmin() {
-      // This UID 'WEM5X92ExuRA6I82nZjRVeCru6i2' corresponds to manager@vibary.com
       return isSignedIn() && request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2';
     }
 
     // ================================
-    // PUBLIC COLLECTIONS
+    // PUBLIC & ADMIN-WRITE COLLECTIONS
     // ================================
 
     match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
@@ -42,7 +41,7 @@ service cloud.firestore {
     }
 
     // ================================
-    // USER & NESTED DATA
+    // USER-OWNED DATA
     // ================================
     
     match /customers/{customerId} {
@@ -57,17 +56,14 @@ service cloud.firestore {
 
       // --- ORDERS Subcollection ---
       match /orders/{orderId} {
-        // This structure explicitly separates permissions to avoid conflicts
-        // during collection group queries.
-
         // 1. An admin can READ (get + list) any/all orders.
-        // This rule is what allows the collection group query for the admin dashboard.
+        // This is the key rule for the admin collection group query.
         allow read: if isAdmin();
-
-        // 2. A user can GET their own order.
-        allow get: if isOwner(customerId);
         
-        // 3. A user can WRITE to their own order, and an admin can WRITE to any.
+        // 2. An owner can GET their OWN order. They cannot list other people's orders.
+        allow get: if isOwner(customerId);
+
+        // 3. An owner can WRITE to their own order. An admin can write to any order.
         allow write: if isOwner(customerId) || isAdmin();
 
         // --- ORDER ITEMS Sub-subcollection ---
@@ -79,7 +75,7 @@ service cloud.firestore {
     }
     
     // ================================
-    // OTHER NESTED COLLECTIONS
+    // PUBLIC-READ, USER-WRITE COLLECTIONS
     // ================================
     
     match /cakes/{cakeId}/reviews/{reviewId} {
@@ -88,7 +84,7 @@ service cloud.firestore {
       // Only signed-in users can create a review for themselves.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
       // Only the review author or an admin can update/delete.
-      allow update, delete: if (resource.data.customerId == request.auth.uid) || isAdmin();
+      allow update, delete: if isAdmin() || (resource.data.customerId == request.auth.uid);
     }
   }
 }
