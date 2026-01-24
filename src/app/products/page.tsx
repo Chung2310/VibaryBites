@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { ProductCard } from "@/components/product-card";
@@ -20,18 +18,21 @@ export default function ProductsPage() {
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
   const { data: productCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
-  const [activeCategory, setActiveCategory] = useState<string | undefined>(productCategories?.[0]?.slug);
+  const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
-    if (productCategories && productCategories.length > 0 && !activeCategory) {
+    if (!productCategories || productCategories.length === 0) return;
+
+    // Set initial active category from hash, or default to the first category
+    const hash = window.location.hash.substring(1);
+    if (hash && productCategories.some(c => c.slug === hash)) {
+      setActiveCategory(hash);
+    } else {
       setActiveCategory(productCategories[0].slug);
     }
-  }, [productCategories, activeCategory]);
-
-  useEffect(() => {
-    if (!productCategories) return;
-
+    
+    // This observer updates the active category in the nav as you scroll
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -40,7 +41,7 @@ export default function ProductsPage() {
           }
         });
       },
-      { rootMargin: '-30% 0px -70% 0px', threshold: 0 }
+      { rootMargin: '-25% 0px -75% 0px', threshold: 0.1 } // A section is "active" when it's near the top
     );
 
     productCategories.forEach((category) => {
@@ -61,6 +62,18 @@ export default function ProductsPage() {
   }, [productCategories]);
 
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
+    e.preventDefault();
+    const element = document.getElementById(slug);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      // Manually update URL hash
+      window.history.pushState(null, '', `#${slug}`);
+      setActiveCategory(slug);
+    }
+  };
+
+
   return (
     <>
     <div className="bg-background">
@@ -72,7 +85,7 @@ export default function ProductsPage() {
                         <a
                             key={category.slug}
                             href={`#${category.slug}`}
-                            onClick={() => setActiveCategory(category.slug)}
+                            onClick={(e) => handleNavClick(e, category.slug)}
                             className={cn(
                                 "text-sm font-lexend uppercase text-[#0A0A0A] hover:opacity-70 transition-all whitespace-nowrap pb-1",
                                 activeCategory === category.slug ? 'border-b-2 border-[#0A0A0A]' : 'border-b-2 border-transparent'
