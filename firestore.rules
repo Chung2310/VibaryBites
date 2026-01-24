@@ -21,9 +21,8 @@ service cloud.firestore {
       );
     }
 
-    // Temporary rule for debugging collection group query
     match /{path=**}/orders/{orderId} {
-      allow read, write: if true;
+      allow get, list, create, update, delete: if isAdmin();
     }
 
     match /{path=**}/reviews/{reviewId} {
