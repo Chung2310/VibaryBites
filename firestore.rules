@@ -86,27 +86,32 @@ service cloud.firestore {
 
     /**
      * @description Customer profile data. A user can only access their own document.
+     *              Admin users (any signed-in user) need read access to list all customers.
      * @path /customers/{customerId}
      */
     match /customers/{customerId} {
-      // A user can only read, create, update, or delete their OWN customer document.
-      allow read, write: if isOwner(customerId);
+      // Admins (any signed-in user) can read/list profiles.
+      // A specific user can only write to their own profile.
+      allow read: if isSignedIn();
+      allow write: if isOwner(customerId);
 
       /**
-       * @description A customer's orders. Access is inherited from the parent customer document.
+       * @description A customer's orders.
        * @path /customers/{customerId}/orders/{orderId}
        */
       match /orders/{orderId} {
-        // A user can only read and write their OWN orders.
-        allow read, write: if isOwner(customerId);
+        // Admins can read all orders. Users can only write their own.
+        allow read: if isSignedIn();
+        allow write: if isOwner(customerId);
 
         /**
-         * @description Items within a specific order. Access is inherited from the customer path.
+         * @description Items within a specific order.
          * @path /customers/{customerId}/orders/{orderId}/order_items/{orderItemId}
          */
         match /order_items/{orderItemId} {
-          // A user can only read and write their OWN order items.
-          allow read, write: if isOwner(customerId);
+          // Admins can read all order items. Users can only write their own.
+          allow read: if isSignedIn();
+          allow write: if isOwner(customerId);
         }
       }
     }
