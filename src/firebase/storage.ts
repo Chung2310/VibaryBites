@@ -3,6 +3,7 @@
 import { getApp } from 'firebase/app';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Uploads an image file to Firebase Storage.
@@ -14,9 +15,16 @@ export const uploadImage = async (file: File): Promise<string> => {
   if (!file) {
     throw new Error("No file provided for upload.");
   }
+
+  const app = getApp();
+  const auth = getAuth(app);
+  if (!auth.currentUser) {
+    console.error("Firebase Storage Upload Error: User not authenticated.");
+    throw new Error("You must be logged in to upload images. Please refresh and try again.");
+  }
   
   try {
-    const storage = getStorage(getApp());
+    const storage = getStorage(app);
 
     const fileExtension = file.name.split('.').pop();
     const fileName = `uploads/${uuidv4()}.${fileExtension}`; 
@@ -48,8 +56,15 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
     return;
   }
   
+  const app = getApp();
+  const auth = getAuth(app);
+  if (!auth.currentUser) {
+    console.error("Firebase Storage Deletion Error: User not authenticated.");
+    throw new Error("You must be logged in to delete images.");
+  }
+
   try {
-    const storage = getStorage(getApp());
+    const storage = getStorage(app);
     // Create a reference from the HTTPS URL
     const storageRef = ref(storage, imageUrl);
 
