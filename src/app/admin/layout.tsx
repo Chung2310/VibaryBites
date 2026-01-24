@@ -61,7 +61,6 @@ const navLinks = [
   { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
   { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart },
   { href: '/admin/customers', label: 'Khách hàng', icon: Users },
-  { href: '/admin/promotions', label: 'Khuyến mãi', icon: Ticket },
 ];
 
 function AdminSidebar() {

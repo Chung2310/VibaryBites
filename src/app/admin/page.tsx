@@ -1,4 +1,3 @@
-
 'use client';
 import {
   Activity,
@@ -52,11 +51,12 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { kpiData, revenueData, productProportions, topSellingProducts, recentOrders } from '@/lib/admin-data';
-import type { Ingredient, OrderStatus } from '@/lib/types';
+import { kpiData, revenueData, productProportions, topSellingProducts } from '@/lib/admin-data';
+import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import Link from 'next/link';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, collectionGroup, doc, limit, orderBy, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
     new: { text: 'Mới', className: 'bg-blue-100 text-blue-800' },
@@ -67,20 +67,64 @@ const statusMapping: Record<OrderStatus, { text: string; className: string }> = 
 };
 
 
+function RecentOrderRow({ order }: { order: Order }) {
+    const firestore = useFirestore();
+    const customerRef = useMemoFirebase(
+        () => (firestore && order.customerId ? doc(firestore, 'customers', order.customerId) : null),
+        [firestore, order.customerId]
+    );
+    const { data: customer } = useDoc<CustomerProfile>(customerRef);
+
+    return (
+         <TableRow>
+            <TableCell>
+                <div className="flex items-center gap-2">
+                    <Avatar className="hidden h-9 w-9 sm:flex">
+                        <AvatarImage src={customer?.photoURL} alt="Avatar" />
+                        <AvatarFallback>{customer?.firstName?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid gap-1">
+                        <p className="text-sm font-medium leading-none">{customer ? `${customer.firstName} ${customer.lastName}` : '...'}</p>
+                        <p className="text-xs text-muted-foreground">{order.id}</p>
+                    </div>
+                </div>
+            </TableCell>
+            <TableCell className="text-right">
+                <div className="font-medium">{new Intl.NumberFormat('vi-VN').format(order.totalAmount)}đ</div>
+                <Badge className={`text-xs mt-1 ${statusMapping[order.orderStatus].className}`} variant="outline">{statusMapping[order.orderStatus].text}</Badge>
+            </TableCell>
+        </TableRow>
+    );
+}
+
 export default function Dashboard() {
   const firestore = useFirestore();
+  
+  // Low stock ingredients
   const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
-  const { data: ingredients, isLoading } = useCollection<Ingredient>(ingredientsCollection);
-
+  const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
   const lowStockAlerts = ingredients?.filter(item => item.stock < item.parLevel) || [];
+
+  // Processing Orders Count
+  const processingOrdersQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'orders'), where('orderStatus', '==', 'processing')) : null, [firestore]);
+  const { data: processingOrders, isLoading: isLoadingProcessing } = useCollection<Order>(processingOrdersQuery);
+  
+  // New Orders Count
+  const newOrdersQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'orders'), where('orderStatus', '==', 'new')) : null, [firestore]);
+  const { data: newOrders, isLoading: isLoadingNew } = useCollection<Order>(newOrdersQuery);
+
+  // Recent Orders List
+  const recentOrdersQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'orders'), orderBy('orderDate', 'desc'), limit(5)) : null, [firestore]);
+  const { data: recentOrders, isLoading: isLoadingRecent } = useCollection<Order>(recentOrdersQuery);
+
 
   return (
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
         <div className='flex gap-2'>
-            <Button>Tạo đơn hàng</Button>
-            <Button variant="outline">Thêm sản phẩm</Button>
+            <Button asChild><Link href="/admin/orders">Tạo đơn hàng</Link></Button>
+            <Button asChild variant="outline"><Link href="/admin/products/new">Thêm sản phẩm</Link></Button>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -94,7 +138,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{new Intl.NumberFormat('vi-VN').format(kpiData.revenueToday)}đ</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% so với hôm qua
+              (Dữ liệu tĩnh)
             </p>
           </CardContent>
         </Card>
@@ -104,9 +148,9 @@ export default function Dashboard() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{kpiData.newOrders}</div>
+            {isLoadingNew ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">+{newOrders?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
-              +180.1% so với hôm qua
+              Số đơn hàng cần xác nhận
             </p>
           </CardContent>
         </Card>
@@ -116,7 +160,7 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.processingOrders}</div>
+            {isLoadingProcessing ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">{processingOrders?.length || 0}</div> }
             <p className="text-xs text-muted-foreground">
               Số đơn hàng đang trong bếp
             </p>
@@ -128,7 +172,7 @@ export default function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : lowStockAlerts.length}</div>
+            {isLoadingIngredients ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">{lowStockAlerts.length}</div>}
             <p className="text-xs text-muted-foreground">
               Nguyên liệu sắp hết
             </p>
@@ -139,7 +183,7 @@ export default function Dashboard() {
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
-              <CardTitle>Doanh thu</CardTitle>
+              <CardTitle>Doanh thu (dữ liệu tĩnh)</CardTitle>
               <CardDescription>
                 Doanh thu trong 7 ngày gần nhất.
               </CardDescription>
@@ -166,7 +210,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Đơn hàng mới nhất</CardTitle>
             <CardDescription>
-              Bạn có {recentOrders.filter(o => o.status === 'new').length} đơn hàng mới cần xác nhận.
+              Bạn có {newOrders?.length || 0} đơn hàng mới cần xác nhận.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -178,26 +222,18 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.slice(0,5).map(order => (
-                    <TableRow key={order.id}>
-                        <TableCell>
-                            <div className="flex items-center gap-2">
-                                <Avatar className="hidden h-9 w-9 sm:flex">
-                                    <AvatarImage src={order.customerAvatar} alt="Avatar" />
-                                    <AvatarFallback>{order.customerName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="grid gap-1">
-                                    <p className="text-sm font-medium leading-none">{order.customerName}</p>
-                                    <p className="text-xs text-muted-foreground">{order.id}</p>
-                                </div>
-                            </div>
-                        </TableCell>
-                         <TableCell className="text-right">
-                             <div className="font-medium">{new Intl.NumberFormat('vi-VN').format(order.total)}đ</div>
-                             <Badge className={`text-xs mt-1 ${statusMapping[order.status].className}`} variant="outline">{statusMapping[order.status].text}</Badge>
-                        </TableCell>
+                {isLoadingRecent && Array.from({length: 5}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     </TableRow>
                 ))}
+                {recentOrders?.map(order => <RecentOrderRow key={order.id} order={order} />)}
+                {!isLoadingRecent && recentOrders?.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center">Không có đơn hàng nào.</TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -208,74 +244,6 @@ export default function Dashboard() {
            </CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <Card>
-             <CardHeader>
-                <CardTitle>Tỷ trọng sản phẩm</CardTitle>
-             </CardHeader>
-             <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                        <Pie data={productProportions} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                            {productProportions.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                        </Pie>
-                        <Tooltip formatter={(value: number, name: string) => [`${value} đơn`, name]} />
-                        <Legend iconType="circle" />
-                    </PieChart>
-                </ResponsiveContainer>
-             </CardContent>
-        </Card>
-        <Card>
-             <CardHeader>
-                <CardTitle>Sản phẩm bán chạy</CardTitle>
-             </CardHeader>
-             <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={topSellingProducts} layout="vertical" margin={{ left: 20, right: 30}}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} interval={0} />
-                        <Tooltip
-                            cursor={{ fill: 'hsl(var(--muted))' }}
-                             formatter={(value: number) => [`${value} đã bán`, 'Số lượng']}
-                        />
-                        <Bar dataKey="sold" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-             </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/> Cảnh báo</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div>
-              <h3 className="font-semibold mb-2">Nguyên liệu sắp hết</h3>
-              <div className="grid gap-2 text-sm">
-                {isLoading ? <p className="text-muted-foreground">Đang tải...</p> : lowStockAlerts.length > 0 ? lowStockAlerts.map(item => (
-                   <div key={item.id} className="flex justify-between items-center">
-                     <span>{item.name}</span>
-                     <span className="font-mono text-destructive">{item.stock}{item.unit}</span>
-                   </div>
-                )) : <p className="text-muted-foreground">Không có cảnh báo nào.</p>}
-              </div>
-            </div>
-            <div className="border-t pt-4">
-              <h3 className="font-semibold mb-2">Đơn hàng cần xác nhận</h3>
-               <div className="grid gap-2 text-sm">
-                 <div className="flex justify-between items-center">
-                     <span>Đơn custom sinh nhật</span>
-                     <Link href="#" className="text-primary hover:underline">#VBR-C002</Link>
-                   </div>
-               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </>
   );
-
-    
-
+}

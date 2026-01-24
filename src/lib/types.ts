@@ -1,5 +1,3 @@
-
-
 export type Product = {
   id: string;
   slug: string;
@@ -84,26 +82,31 @@ export type CartItem = {
 // Admin Types
 export type OrderStatus = "new" | "processing" | "shipping" | "completed" | "cancelled";
 
+// Represents an Order document from Firestore
 export type Order = {
   id: string;
-  customerName: string;
-  customerAvatar: string;
-  date: string;
-  total: number;
-  status: OrderStatus;
-  items: number;
+  customerId: string;
+  orderDate: string; // ISO String
+  deliveryAddress: string;
+  deliveryDate: string; // ISO String
+  paymentMethod: string;
+  totalAmount: number;
+  orderStatus: OrderStatus;
+  // Optional customer data that can be joined client-side
+  customer?: CustomerProfile; 
 };
 
-export type Customer = {
+// Represents a Customer document from Firestore
+export type CustomerProfile = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
-  avatar: string;
-  totalOrders: number;
-  totalSpent: number;
-  joinedDate: string;
+  phoneNumber: string;
+  address: string;
+  photoURL?: string;
 };
+
 
 export type Ingredient = {
     id: string;
@@ -119,6 +122,3 @@ export type ProductCategory = {
   subtitle: string;
   description: string;
 }
-    
-
-    

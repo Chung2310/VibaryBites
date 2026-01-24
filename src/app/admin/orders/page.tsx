@@ -1,4 +1,3 @@
-
 'use client';
 import {
   File,
@@ -39,9 +38,11 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { allOrders } from '@/lib/admin-data';
-import type { Order, OrderStatus } from '@/lib/types';
+import type { Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import { useState } from 'react';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
   new: { text: 'Mới', className: 'bg-blue-100 text-blue-800' },
@@ -51,24 +52,84 @@ const statusMapping: Record<OrderStatus, { text: string; className: string }> = 
   cancelled: { text: 'Đã hủy', className: 'bg-red-100 text-red-800' },
 };
 
-const TABS: { value: string; label: string; statuses?: OrderStatus[] }[] = [
+const TABS: { value: OrderStatus | 'all'; label: string; }[] = [
     { value: 'all', label: 'Tất cả' },
-    { value: 'new', label: 'Mới', statuses: ['new'] },
-    { value: 'processing', label: 'Đang xử lý', statuses: ['processing'] },
-    { value: 'shipping', label: 'Đang giao', statuses: ['shipping'] },
-    { value: 'completed', label: 'Hoàn thành', statuses: ['completed'] },
-    { value: 'cancelled', label: 'Đã hủy', statuses: ['cancelled'] },
+    { value: 'new', label: 'Mới' },
+    { value: 'processing', label: 'Đang xử lý'},
+    { value: 'shipping', label: 'Đang giao' },
+    { value: 'completed', label: 'Hoàn thành' },
+    { value: 'cancelled', label: 'Đã hủy' },
 ]
 
-export default function OrdersPage() {
-    const [activeTab, setActiveTab] = useState('all');
-
-    const filteredOrders = activeTab === 'all'
-        ? allOrders
-        : allOrders.filter(order => TABS.find(t => t.value === activeTab)?.statuses?.includes(order.status));
+function OrderRow({ order }: { order: Order }) {
+    const firestore = useFirestore();
+    
+    const customerRef = useMemoFirebase(
+        () => (firestore && order.customerId ? doc(firestore, 'customers', order.customerId) : null),
+        [firestore, order.customerId]
+    );
+    const { data: customer, isLoading } = useDoc<CustomerProfile>(customerRef);
 
     return (
-        <Tabs defaultValue="all" onValueChange={setActiveTab}>
+        <TableRow>
+            <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
+            <TableCell>
+                {isLoading ? <Skeleton className="h-4 w-32" /> : (customer ? `${customer.firstName} ${customer.lastName}`: order.customerId)}
+            </TableCell>
+            <TableCell>
+                <Badge variant="outline" className={statusMapping[order.orderStatus].className}>
+                    {statusMapping[order.orderStatus].text}
+                </Badge>
+            </TableCell>
+            <TableCell className="hidden md:table-cell">
+                {new Date(order.orderDate).toLocaleDateString('vi-VN')}
+            </TableCell>
+            <TableCell className="text-right">{new Intl.NumberFormat('vi-VN').format(order.totalAmount)}đ</TableCell>
+             <TableCell>
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                    aria-haspopup="true"
+                    size="icon"
+                    variant="ghost"
+                    >
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Toggle menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                    <DropdownMenuItem>Xem chi tiết</DropdownMenuItem>
+                    <DropdownMenuItem>In hóa đơn</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-destructive">
+                        Hủy đơn
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </TableCell>
+        </TableRow>
+    );
+}
+
+
+export default function OrdersPage() {
+    const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
+    const firestore = useFirestore();
+
+    const ordersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        const group = collectionGroup(firestore, 'orders');
+        if (activeTab === 'all') {
+            return query(group);
+        }
+        return query(group, where('orderStatus', '==', activeTab));
+    }, [firestore, activeTab]);
+
+    const { data: orders, isLoading } = useCollection<Order>(ordersQuery);
+
+    return (
+        <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as OrderStatus | 'all')}>
           <div className="flex items-center">
             <TabsList>
               {TABS.map(tab => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
@@ -133,50 +194,32 @@ export default function OrdersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrders.map(order => (
-                        <TableRow key={order.id}>
-                            <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
-                            <TableCell>{order.customerName}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className={statusMapping[order.status].className}>
-                                    {statusMapping[order.status].text}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                                {new Date(order.date).toLocaleDateString('vi-VN')}
-                            </TableCell>
-                            <TableCell className="text-right">{new Intl.NumberFormat('vi-VN').format(order.total)}đ</TableCell>
-                             <TableCell>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                    aria-haspopup="true"
-                                    size="icon"
-                                    variant="ghost"
-                                    >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                    <DropdownMenuItem>Xem chi tiết</DropdownMenuItem>
-                                    <DropdownMenuItem>In hóa đơn</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive">
-                                        Hủy đơn
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
+                    {isLoading && Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell className='text-right'><Skeleton className="h-4 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                         </TableRow>
                     ))}
+                    {orders?.map(order => (
+                       <OrderRow key={order.id} order={order} />
+                    ))}
+                     {!isLoading && orders?.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center">
+                                Không có đơn hàng nào trong mục này.
+                            </TableCell>
+                        </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
               <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  Hiển thị <strong>{filteredOrders.length}</strong> trên <strong>{allOrders.length}</strong> đơn hàng
+                  Hiển thị <strong>{orders?.length ?? 0}</strong> đơn hàng
                 </div>
               </CardFooter>
             </Card>
