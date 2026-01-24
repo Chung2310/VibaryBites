@@ -37,17 +37,17 @@ export default function NewNewsArticlePage() {
         }
 
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastHandle = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
 
         try {
             // 1. Upload image
-            toastId.update({ title: "Đang tải lên ảnh bìa..." });
+            toastHandle.update({ title: "Đang tải lên ảnh bìa..." });
             const imageUrl = await uploadImage(imageFile);
             
-            toastId.update({ title: "Đang lưu bài viết..." });
+            toastHandle.update({ title: "Đang lưu bài viết..." });
 
             // 2. Prepare article data
             const newArticle: NewsArticle = {
@@ -65,7 +65,7 @@ export default function NewNewsArticlePage() {
             // 3. Save to Firestore
             await setDoc(docRef, newArticle);
             
-            toastId.update({
+            toastHandle.update({
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
@@ -81,7 +81,7 @@ export default function NewNewsArticlePage() {
             });
             errorEmitter.emit('permission-error', permissionError);
 
-            toastId.update({
+            toastHandle.update({
                 variant: 'destructive',
                 title: 'Không thể tạo bài viết',
                 description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,

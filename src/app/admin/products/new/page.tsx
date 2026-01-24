@@ -32,18 +32,18 @@ export default function NewProductPage() {
         }
 
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastHandle = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
 
         try {
             // 1. Upload images
-            toastId.update({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
+            toastHandle.update({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const imageUrls = await Promise.all(uploadPromises);
             
-            toastId.update({ title: "Đang lưu thông tin sản phẩm..." });
+            toastHandle.update({ title: "Đang lưu thông tin sản phẩm..." });
 
             // 2. Prepare product data
             const newProduct: Product = {
@@ -73,7 +73,7 @@ export default function NewProductPage() {
             // 3. Save to Firestore
             await setDoc(docRef, newProduct);
             
-            toastId.update({
+            toastHandle.update({
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
@@ -90,7 +90,7 @@ export default function NewProductPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
 
-            toastId.update({
+            toastHandle.update({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
                 description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
