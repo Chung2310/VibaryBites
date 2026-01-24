@@ -1,114 +1,58 @@
 'use client';
 
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-  FirebaseStorage,
-} from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
-import { getApp } from 'firebase/app';
-
-// This function assumes the Firebase app has already been initialized elsewhere.
-const getStorageInstance = (): FirebaseStorage => {
-  try {
-    const app = getApp();
-    return getStorage(app);
-  } catch (e) {
-    console.error("Firebase app not initialized. Make sure FirebaseClientProvider is set up correctly.");
-    throw new Error("Firebase not initialized for storage operations.");
-  }
-};
-
 /**
- * Uploads an image file using the client-side Firebase Storage SDK.
- * This function is designed to be called from client components.
+ * Converts an image file to a Data URL.
+ * This is a workaround for environments where direct cloud storage uploads fail.
+ * The Data URL can be stored in Firestore and rendered directly by browsers.
+ * NOTE: This is not efficient for production. It increases Firestore document size.
  *
- * @param file The image file to upload.
- * @param onProgress Optional callback to report upload progress (a number from 0 to 100).
- * @returns A promise that resolves with the public download URL of the uploaded image.
+ * @param file The image file to convert.
+ * @param onProgress Optional callback to report progress (will be 0 or 100).
+ * @returns A promise that resolves with the Data URL of the image.
  */
 export const uploadImage = (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   if (!file) {
-    return Promise.reject(new Error('No file provided for upload.'));
+    return Promise.reject(new Error('No file provided.'));
   }
 
-  const storage = getStorageInstance();
-  const fileExtension = file.name.split('.').pop() || 'jpg';
-  const filePath = `uploads/${uuidv4()}.${fileExtension}`;
-  const storageRef = ref(storage, filePath);
-
-  const uploadTask = uploadBytesResumable(storageRef, file);
+  onProgress?.(50); // Simulate progress
 
   return new Promise((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        // Report progress
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        onProgress?.(progress);
-      },
-      (error) => {
-        // Handle unsuccessful uploads
-        console.error('Client-side upload failed:', error);
-        switch (error.code) {
-          case 'storage/unauthorized':
-            reject(new Error('Permission denied. You might need to be logged in to upload files.'));
-            break;
-          case 'storage/canceled':
-            // User canceled the upload
-            break; // Don't reject, just let it be silent
-          default:
-            reject(new Error('An unknown error occurred during upload. Please check storage rules.'));
-            break;
-        }
-      },
-      async () => {
-        // Handle successful uploads on complete
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        } catch (e) {
-          console.error('Could not get download URL:', e);
-          reject(new Error('Upload succeeded, but failed to get the download URL.'));
-        }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        onProgress?.(100);
+        resolve(dataUrl);
+      } else {
+        reject(new Error('Failed to read file as Data URL.'));
       }
-    );
+    };
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      reject(new Error('An error occurred while reading the file.'));
+    };
+    reader.readAsDataURL(file);
   });
 };
 
 /**
- * Deletes an image from Firebase Storage using the client-side SDK.
+ * This is a no-op function to match the previous API.
+ * Since images are stored as Data URLs in Firestore, there is no separate file
+ * in cloud storage to delete. The data is deleted when the Firestore document is deleted.
  *
- * @param imageUrl The public HTTPS download URL of the image to delete.
- * @returns A promise that resolves when the deletion is complete.
+ * @param imageUrl The Data URL of the image (ignored).
+ * @returns A promise that resolves immediately.
  */
 export const deleteImage = async (imageUrl: string): Promise<void> => {
-  // Only attempt to delete URLs that point to Firebase Storage.
-  if (!imageUrl || !imageUrl.includes('firebasestorage.googleapis.com')) {
-    console.log(`Skipping deletion for non-Firebase Storage URL: ${imageUrl}`);
-    return;
+  // No operation needed as the image is a data URL within the Firestore document.
+  if (imageUrl?.startsWith('data:image')) {
+    console.log('Skipping deletion for Data URL image.');
+  } else {
+    console.log(`Skipping deletion for image URL: ${imageUrl}. Deletion is now a no-op.`);
   }
-
-  try {
-    const storage = getStorageInstance();
-    // Create a reference from the HTTPS URL. This is a feature of the client SDK.
-    const imageRef = ref(storage, imageUrl);
-    await deleteObject(imageRef);
-  } catch (error: any) {
-    // A common error is trying to delete a file that doesn't exist.
-    // We can safely ignore this, as the end result (the file is not there) is the same.
-    if (error.code === 'storage/object-not-found') {
-      console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
-    } else {
-      // For other errors, log them but don't re-throw. A failed delete is often
-      // not a critical UI-blocking error.
-      console.error('Client-side delete failed:', error);
-    }
-  }
+  return Promise.resolve();
 };
