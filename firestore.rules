@@ -19,40 +19,44 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
     }
 
-    // Public collections are readable by anyone, writable by admins.
+    // --- COLLECTION GROUP QUERIES ---
+    // This rule specifically grants 'list' permission on the 'orders' collection group to admins.
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
+    }
+
+
+    // --- PUBLIC & ADMIN-WRITABLE COLLECTIONS ---
     match /(cakes|categories|news_articles|quiz_questions)/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Ingredients are admin-only
     match /ingredients/{ingredientId} {
         allow read, write: if isAdmin();
     }
 
-    // Reviews are readable by anyone, but only the owner can create/edit/delete.
+
+    // --- PATH-SPECIFIC RULES ---
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
       allow create: if isOwner(request.resource.data.customerId);
       allow update, delete: if isOwner(resource.data.customerId);
     }
 
-    // Customer-specific data
     match /customers/{customerId} {
-      // Users can create their own profile.
       allow create: if isOwner(customerId);
-      // Admins can get any customer profile. Users can only get/update their own.
-      // Admins can also list all customers.
-      allow read, update: if isOwner(customerId) || isAdmin();
-      // Only admins can list all customers.
+      // Admins can get any customer profile. Owners can only get/update their own.
+      allow get, update: if isOwner(customerId) || isAdmin();
+      // Only admins can list the entire customers collection.
       allow list: if isAdmin();
 
-      // Nested Orders: for single document access
+      // Nested Orders: Rules for accessing a single document.
+      // The collection group 'list' permission is handled by the dedicated rule above.
       match /orders/{orderId} {
-        // Admins can read any order. Owners can read their own.
-        // Admins can list all orders (via collection group query).
-        allow read: if isOwner(customerId) || isAdmin();
-        // Admins or owners can write to an order.
+        // Get a specific order if user is owner or admin.
+        allow get: if isOwner(customerId) || isAdmin();
+        // Write to a specific order if user is owner or admin.
         allow write: if isOwner(customerId) || isAdmin();
 
         // Nested Order Items
