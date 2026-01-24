@@ -8,38 +8,27 @@ service cloud.firestore {
     // Helper Functions
     // --------------------------------
 
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Checks if the user is the designated admin based on their email.
-     */
     function isAdmin() {
+      // In a production app, this would ideally be a custom claim set on the user's token.
+      // For this project, we define the admin by a specific email address for simplicity.
       return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
     }
 
     // --------------------------------
-    // Public Read / Admin Write Collections
+    // Public & Admin Writable Collections
     // --------------------------------
 
-    /**
-     * @description Publicly readable collections. Writes are restricted to authenticated users (admins).
-     * @paths /cakes/{cakeId}, /categories/{categoryId}, /news_articles/{newsArticleId}, 
-     *        /quiz_questions/{quizQuestionId}, /ingredients/{ingredientId}
-     */
-    match /{collectionName}/{docId} 
-    where collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients'] {
+    // Cakes, Categories, News, Ingredients, and Quiz questions can be read by anyone.
+    // Only administrators can create, update, or delete them.
+    match /(cakes|categories|news_articles|quiz_questions|ingredients)/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -48,61 +37,47 @@ service cloud.firestore {
     // User-Generated Content
     // --------------------------------
 
-    /**
-     * @description Customer reviews for a specific cake. Reviews are publicly readable.
-     *              Users can only create, update, or delete their OWN reviews.
-     * @path /cakes/{cakeId}/reviews/{reviewId}
-     */
+    // Reviews can be read by anyone.
+    // Users can create reviews and can only modify or delete their own reviews.
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
-      // Allow create if user is signed in and the review's customerId matches their UID.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      // Allow update/delete if the user is the owner of the existing review document.
-      allow update, delete: if isSignedIn() && resource.data.customerId == request.auth.uid;
-    }
-
-    // --------------------------------
-    // Admin access for collection group queries
-    // --------------------------------
-    
-    /**
-     * @description Allows admin users to perform collection group queries on 'orders'.
-     *              This is necessary for the admin dashboard and orders page to function.
-     */
-    match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
+      allow update, delete: if resource.data.customerId == request.auth.uid;
     }
 
     // --------------------------------
     // User & Customer Data
     // --------------------------------
 
-    /**
-     * @description Customer profile data. Admins can read all profiles.
-     *              A user can only write to their own profile.
-     * @path /customers/{customerId}
-     */
+    // Rules for the 'customers' collection
     match /customers/{customerId} {
-      allow read: if isAdmin();
-      allow write: if isOwner(customerId);
+      // Admins can get any specific customer document and list all customers.
+      allow get, list: if isAdmin();
+      // A user can create, read, and update their OWN customer document. They cannot delete it.
+      allow create, get, update: if isOwner(customerId);
+    }
+    
+    // Rules for the 'orders' subcollection within a customer document
+    match /customers/{customerId}/orders/{orderId} {
+        // An owner can read and write their own orders.
+        allow read, write: if isOwner(customerId);
 
-      /**
-       * @description A customer's orders. Write access is protected by ownership.
-       *              Read access for admins is handled by the collection group rule above.
-       * @path /customers/{customerId}/orders/{orderId}
-       */
-      match /orders/{orderId} {
-        allow write: if isOwner(customerId);
-
-        /**
-         * @description Items within a specific order. Admins can read, owner can write.
-         * @path /customers/{customerId}/orders/{orderId}/order_items/{orderItemId}
-         */
+        // Rules for the nested 'order_items' subcollection
         match /order_items/{orderItemId} {
-          allow read: if isAdmin();
-          allow write: if isOwner(customerId);
+            // An owner can read and write their own order items.
+            allow read, write: if isOwner(customerId);
         }
-      }
+    }
+    
+    // --------------------------------
+    // Admin-Specific Collection Group Queries
+    // --------------------------------
+    
+    // This rule is CRUCIAL. It explicitly allows an admin to perform a 'list' operation
+    // across the 'orders' collection group. This is necessary for the admin dashboard
+    // and orders page to fetch all orders from all customers.
+    match /{path=**}/orders/{orderId} {
+      allow list, get: if isAdmin();
     }
   }
 }
