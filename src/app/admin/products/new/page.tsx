@@ -20,37 +20,32 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Corrected function signature to match the one expected by ProductForm
+    // Corrected function signature to match the one expected by ProductForm's onSubmit prop.
+    // The `keptImageUrls` is unused here but required for type compatibility.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
-        console.log("Step 1: handleFormSubmit triggered.");
         setIsSubmitting(true);
         
         if (!firestore) {
-            console.error("Step 2: Firestore not available. Aborting.");
-            toast({ variant: 'destructive', title: 'Lỗi kết nối', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
             setIsSubmitting(false);
             return;
         }
-        console.log("Step 2: Firestore is available.");
 
         if (newImageFiles.length === 0) {
-            console.error("Step 3: No image files provided. Aborting.");
             toast({ variant: "destructive", title: "Thiếu ảnh sản phẩm", description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm." });
             setIsSubmitting(false);
             return;
         }
-        console.log(`Step 3: ${newImageFiles.length} image files are present.`);
         
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        console.log(`Step 4: Generated new product ID: ${id}`);
 
         try {
-            console.log("Step 5: Starting image uploads...");
+            // 1. Upload images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
-            console.log("Step 6: Image uploads successful. URLs:", uploadedUrls);
 
+            // 2. Prepare product data
             const newProduct: Product = {
                 id,
                 slug: generateSlug(values.name),
@@ -70,25 +65,22 @@ export default function NewProductPage() {
                 recipe: "",
                 collection: 'special-occasions',
             };
-            console.log("Step 7: New product data object created:", newProduct);
 
-            console.log("Step 8: Attempting to save document to Firestore...");
+            // 3. Save to Firestore
             await setDoc(docRef, newProduct);
-            console.log("Step 9: Document successfully saved.");
             
             toast({
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
             });
             
-            console.log("Step 10: Redirecting to attributes page...");
             router.push(`/admin/attributes?productId=${newProduct.id}`);
 
         } catch (error: any) {
-            console.error('ERROR during product creation process:', error);
+            console.error('Lỗi khi tạo sản phẩm:', error);
             
-            if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'storage/unauthorized')) {
-                 const permissionError = new FirestorePermissionError({
+            if (error.code === 'storage/unauthorized' || error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
                     path: docRef.path,
                     operation: 'create',
                     requestResourceData: values
@@ -98,11 +90,10 @@ export default function NewProductPage() {
                  toast({
                     variant: 'destructive',
                     title: 'Không thể tạo sản phẩm',
-                    description: error.message || 'Đã có lỗi xảy ra. Vui lòng kiểm tra console để biết thêm chi tiết.',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 });
             }
         } finally {
-            console.log("Step 11 (Finally): Setting isSubmitting to false.");
             setIsSubmitting(false);
         }
     };
