@@ -84,7 +84,7 @@ export default function RecipesPage() {
                                             className={`cursor-pointer ${selectedProduct?.id === product.id ? 'bg-muted' : ''}`}
                                         >
                                             <TableCell className="flex items-center gap-3">
-                                                <Image src={product.imageUrls[0]} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
+                                                <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
                                                 <span className="font-medium">{product.name}</span>
                                             </TableCell>
                                         </TableRow>
@@ -114,5 +114,3 @@ export default function RecipesPage() {
         </div>
     );
 }
-
-    
