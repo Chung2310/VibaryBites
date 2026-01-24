@@ -13,9 +13,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // In a production app, this would ideally be a custom claim set on the user's token.
-      // For this project, we define the admin by a specific email address for simplicity.
-      return request.auth != null && request.auth.token.email == 'manager@vibary.com';
+      // An admin is a user with a 'role' field set to 'admin' in their customer document.
+      // This allows for more flexible role management directly in the database.
+      return request.auth != null &&
+             get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin';
     }
 
     // --- COLLECTION GROUP RULE ---
