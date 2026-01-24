@@ -4,6 +4,7 @@ import {
   MoreHorizontal,
   PlusCircle,
   Loader2,
+  ListFilter,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -36,8 +38,8 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { useState } from 'react';
-import type { Product } from '@/lib/types';
+import { useState, useMemo } from 'react';
+import type { Product, ProductCategory } from '@/lib/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,10 +66,20 @@ export default function ProductsPage() {
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
+    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+    const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
+    const [activeCategorySlug, setActiveCategorySlug] = useState('all');
+
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
     const [isDeleting, setIsDeleting] = useState(false);
     const { toast } = useToast();
+
+    const filteredProducts = useMemo(() => {
+        if (!products) return [];
+        if (activeCategorySlug === 'all') return products;
+        return products.filter(p => p.categorySlug === activeCategorySlug);
+    }, [products, activeCategorySlug]);
     
     const openDeleteConfirm = (product: Product) => {
         setSelectedProduct(product);
@@ -125,6 +137,39 @@ export default function ProductsPage() {
               Quản lý sản phẩm
             </h1>
             <div className="hidden items-center gap-2 md:ml-auto md:flex">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    <ListFilter className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Lọc theo danh mục
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Lọc theo danh mục</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                      checked={activeCategorySlug === 'all'}
+                      onSelect={() => setActiveCategorySlug('all')}
+                  >
+                      Tất cả
+                  </DropdownMenuCheckboxItem>
+                  {isLoadingCategories ? (
+                    <DropdownMenuItem disabled>Đang tải...</DropdownMenuItem>
+                  ) : (
+                    categories?.map(category => (
+                        <DropdownMenuCheckboxItem
+                            key={category.id}
+                            checked={activeCategorySlug === category.slug}
+                            onSelect={() => setActiveCategorySlug(category.slug)}
+                        >
+                            {category.title}
+                        </DropdownMenuCheckboxItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button size="sm" variant="outline" className="h-8 gap-1">
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -182,7 +227,7 @@ export default function ProductsPage() {
                             </TableCell>
                         </TableRow>
                    ))}
-                   {products && products.map(product => {
+                   {filteredProducts && filteredProducts.map(product => {
                      const imageUrls = product.imageUrls || [];
                      const isOutOfStock = product.stock !== undefined && product.stock <= 0;
                      return (
@@ -202,7 +247,7 @@ export default function ProductsPage() {
                                 {product.name}
                             </TableCell>
                             <TableCell>
-                                <Badge variant="outline">{product.categorySlug}</Badge>
+                                <Badge variant="outline">{categories?.find(c => c.slug === product.categorySlug)?.title || product.categorySlug}</Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 {new Intl.NumberFormat('vi-VN').format(product.price)}đ
@@ -237,12 +282,21 @@ export default function ProductsPage() {
                         </TableRow>
                      )
                    })}
+                   {!isLoading && filteredProducts.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center h-24">
+                                {activeCategorySlug === 'all'
+                                ? 'Chưa có sản phẩm nào.'
+                                : 'Không có sản phẩm nào trong danh mục này.'}
+                            </TableCell>
+                        </TableRow>
+                   )}
                   </TableBody>
                 </Table>
               </CardContent>
               <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  Hiển thị <strong>{products?.length || 0}</strong> trên <strong>{products?.length || 0}</strong> sản phẩm
+                  Hiển thị <strong>{filteredProducts?.length || 0}</strong> trên tổng số <strong>{products?.length || 0}</strong> sản phẩm
                 </div>
               </CardFooter>
             </Card>
