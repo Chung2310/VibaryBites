@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -21,7 +20,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         if (!firestore) {
             toast({
                 variant: 'destructive',
