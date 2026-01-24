@@ -21,33 +21,38 @@ export default function NewProductPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+        setIsSubmitting(true);
+        
         if (!firestore) {
             toast({
                 variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu.',
+                title: 'Lỗi kết nối',
+                description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại.',
             });
+            setIsSubmitting(false);
             return;
         }
 
         if (newImageFiles.length === 0) {
             toast({
                 variant: "destructive",
-                title: "Lỗi",
-                description: "Vui lòng tải lên ít nhất một ảnh.",
+                title: "Thiếu ảnh sản phẩm",
+                description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm.",
             });
+            setIsSubmitting(false);
             return;
         }
         
-        setIsSubmitting(true);
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
         let newProduct: Product;
-
+        
         try {
+            // Step 1: Upload images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
+            // Step 2: Prepare product data
             newProduct = {
                 id,
                 slug: generateSlug(values.name),
@@ -72,6 +77,7 @@ export default function NewProductPage() {
                 recipe: "",
             };
 
+            // Step 3: Save to Firestore
             await setDoc(docRef, newProduct);
             
             toast({
@@ -81,13 +87,24 @@ export default function NewProductPage() {
             
             router.push(`/admin/attributes?productId=${id}`);
 
-        } catch (error) {
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
+        } catch (error: any) {
+            console.error("Lỗi khi tạo sản phẩm mới:", error);
+            
+            if (error.code === 'permission-denied') { // Check for native Firestore permission error
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'create',
+                    requestResourceData: values,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                // Handle other errors (like storage or network issues)
+                toast({
+                    variant: 'destructive',
+                    title: 'Không thể tạo sản phẩm',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra. Vui lòng kiểm tra console để biết thêm chi tiết.'
+                });
+            }
         } finally {
             setIsSubmitting(false);
         }
