@@ -46,12 +46,10 @@ service cloud.firestore {
       // Only admins can list all customers.
       allow list: if isAdmin();
 
-      // Nested Orders
+      // Nested Orders: for single document access
       match /orders/{orderId} {
-        // Admins or the owner can access an order.
+        // Admins or the owner can access/modify a specific order.
         allow get, write: if isOwner(customerId) || isAdmin();
-        // Admins can list orders for collection group queries.
-        allow list: if isAdmin();
 
         // Nested Order Items
         match /order_items/{orderItemId} {
@@ -61,9 +59,10 @@ service cloud.firestore {
     }
 
     // Rule for collection group query for 'orders'. This is critical for the admin panel.
-    // It allows an admin to list all orders across all customers.
+    // It allows an admin to read all orders across all customers.
+    // Using `read` instead of `list` because the client SDK fetches documents after listing them.
     match /{path=**}/orders/{orderId} {
-      allow list: if isAdmin();
+      allow read: if isAdmin();
     }
   }
 }
