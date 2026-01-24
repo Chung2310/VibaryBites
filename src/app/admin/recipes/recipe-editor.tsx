@@ -1,100 +1,358 @@
-
-'use client';
-import { useState } from 'react';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import type { Product } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2 } from 'lucide-react';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-
-interface RecipeEditorProps {
-  product: Product;
-}
-
-const recipeFormSchema = z.object({
-  recipe: z.string().optional(),
-});
-
-type RecipeFormValues = z.infer<typeof recipeFormSchema>;
-
-export function RecipeEditor({ product }: RecipeEditorProps) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<RecipeFormValues>({
-    resolver: zodResolver(recipeFormSchema),
-    defaultValues: {
-      recipe: product.recipe || "",
+{
+  "entities": {
+    "Cake": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Cake",
+      "type": "object",
+      "description": "Represents an Entremet cake sold by the pastry shop.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the Cake entity." },
+        "name": { "type": "string", "description": "The name of the cake." },
+        "subtitle": { "type": "string", "description": "A short subtitle for the cake." },
+        "slug": { "type": "string", "description": "URL-friendly slug for the cake." },
+        "description": { "type": "string", "description": "A short, enticing description of the cake." },
+        "price": { "type": "number", "description": "The base price of the cake." },
+        "stock": { "type": "number", "description": "Available stock quantity." },
+        "imageUrls": {
+          "type": "array",
+          "description": "An array of URLs for the cake's images stored in Firebase Storage.",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "categorySlug": { "type": "string", "description": "The slug of the category this cake belongs to." },
+        "sizes": {
+          "type": "array",
+          "description": "Available sizes and their corresponding prices.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "detailedDescription": {
+          "type": "object",
+          "description": "Detailed specifications of the cake.",
+          "properties": {
+            "flavor": { "type": "string", "description": "A detailed description of the cake's flavor profile." },
+            "ingredients": { "type": "string", "description": "A list of the main ingredients." },
+            "serving": { "type": "string", "description": "Serving size suggestion." },
+            "storage": { "type": "string", "description": "Instructions on how to store the cake." },
+            "dimensions": { "type": "string", "description": "The physical dimensions of the cake." },
+            "accessories": {
+              "type": "array",
+              "description": "A list of included accessories.",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "flavorProfile": {
+          "type": "array",
+          "description": "Short tags describing the taste and feel of the cake.",
+          "items": { "type": "string" }
+        },
+        "structure": {
+          "type": "array",
+          "description": "A list describing the layers of the cake from top to bottom.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": [ "id", "name", "slug", "description", "price", "imageUrls", "categorySlug" ]
+    },
+    "ProductCategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductCategory",
+      "type": "object",
+      "description": "Represents a display category for products.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the product category." },
+        "slug": { "type": "string", "description": "URL-friendly slug for the category." },
+        "title": { "type": "string", "description": "The display title of the category." },
+        "subtitle": { "type": "string", "description": "A short subtitle for the category." },
+        "description": { "type": "string", "description": "A longer description for the category page." }
+      },
+      "required": [ "id", "slug", "title" ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents a customer order.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the Order entity." },
+        "customerId": { "type": "string", "description": "Reference to Customer. (Relationship: Customer 1:N Order)" },
+        "orderDate": { "type": "string", "description": "The date the order was placed.", "format": "date-time" },
+        "deliveryAddress": { "type": "string", "description": "The delivery address for the order (Hanoi only)." },
+        "deliveryDate": { "type": "string", "description": "The requested delivery date.", "format": "date-time" },
+        "paymentMethod": { "type": "string", "description": "The payment method used for the order (Momo, ZaloPay, bank transfer, COD)." },
+        "totalAmount": { "type": "number", "description": "The total amount of the order." },
+        "orderStatus": { "type": "string", "description": "The status of the order (e.g., pending, processing, delivered)." }
+      },
+      "required": [ "id", "customerId", "orderDate", "deliveryAddress", "deliveryDate", "paymentMethod", "totalAmount", "orderStatus" ]
+    },
+    "OrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OrderItem",
+      "type": "object",
+      "description": "Represents an item within an order.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the OrderItem entity." },
+        "orderId": { "type": "string", "description": "Reference to Order. (Relationship: Order 1:N OrderItem)" },
+        "cakeId": { "type": "string", "description": "Reference to Cake. (Relationship: Cake 1:N OrderItem)" },
+        "quantity": { "type": "number", "description": "The quantity of the cake in the order item." },
+        "unitPrice": { "type": "number", "description": "The price of one unit of the cake at the time of the order." }
+      },
+      "required": [ "id", "orderId", "cakeId", "quantity", "unitPrice" ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer of the pastry shop.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the Customer entity." },
+        "firstName": { "type": "string", "description": "The customer's first name." },
+        "lastName": { "type": "string", "description": "The customer's last name." },
+        "email": { "type": "string", "description": "The customer's email address.", "format": "email" },
+        "phoneNumber": { "type": "string", "description": "The customer's phone number." },
+        "address": { "type": "string", "description": "The customer's address." }
+      },
+      "required": [ "id", "firstName", "lastName", "email", "phoneNumber", "address" ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a customer review for a cake.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the Review entity." },
+        "cakeId": { "type": "string", "description": "Reference to Cake. (Relationship: Cake 1:N Review)" },
+        "customerId": { "type": "string", "description": "Reference to Customer. (Relationship: Customer 1:N Review)" },
+        "rating": { "type": "number", "description": "The rating given by the customer (e.g., 1-5 stars)." },
+        "comment": { "type": "string", "description": "The customer's review comment." },
+        "reviewDate": { "type": "string", "description": "The date the review was submitted.", "format": "date-time" }
+      },
+      "required": [ "id", "cakeId", "customerId", "rating", "comment", "reviewDate" ]
+    },
+    "NewsArticle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NewsArticle",
+      "type": "object",
+      "description": "Represents a news or blog article.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the NewsArticle entity." },
+        "title": { "type": "string", "description": "The title of the news article." },
+        "content": { "type": "string", "description": "The content of the news article (rich text)." },
+        "author": { "type": "string", "description": "The author of the news article." },
+        "publicationDate": { "type": "string", "description": "The date the article was published.", "format": "date-time" },
+        "category": { "type": "string", "description": "Category of the news article (e.g., Founder Stories, Shopping Guides)." },
+        "imageUrl": { "type": "string", "description": "URL of the article's image stored in Firebase Storage.", "format": "uri" }
+      },
+      "required": [ "id", "title", "content", "author", "publicationDate", "category" ]
+    },
+    "QuizQuestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizQuestion",
+      "type": "object",
+      "description": "Represents a question in the flavor quiz.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the QuizQuestion entity." },
+        "questionText": { "type": "string", "description": "The text of the quiz question." },
+        "answerOptions": {
+          "type": "array",
+          "description": "An array of possible answer options for the question.",
+          "items": { "type": "string" }
+        },
+        "cakeIdRecommendations": {
+          "type": "array",
+          "description": "References to Cakes recommended for certain answers. (Relationship: QuizQuestion 1:N Cake)",
+          "items": { "type": "string" }
+        }
+      },
+      "required": [ "id", "questionText", "answerOptions" ]
+    },
+    "Ingredient": {
+      "title": "Ingredient",
+      "type": "object",
+      "description": "Represents a raw material used in cake production.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the ingredient." },
+        "name": { "type": "string", "description": "Name of the ingredient." },
+        "stock": { "type": "number", "description": "Current quantity in stock." },
+        "unit": { "type": "string", "description": "Unit of measurement (e.g., g, ml, units)." },
+        "parLevel": { "type": "number", "description": "The low-stock threshold." }
+      },
+      "required": [ "id", "name", "stock", "unit", "parLevel" ]
     }
-  });
-
-  const onSubmit = async (values: RecipeFormValues) => {
-    if (!firestore) return;
-    setIsSubmitting(true);
-    
-    const productRef = doc(firestore, 'cakes', product.id);
-    const dataToSave = { recipe: values.recipe };
-
-    try {
-        await setDoc(productRef, dataToSave, { merge: true });
-        toast({
-            title: "Thành công!",
-            description: `Công thức cho sản phẩm "${product.name}" đã được cập nhật.`
-        });
-    } catch (error) {
-        const permissionError = new FirestorePermissionError({
-            path: productRef.path,
-            operation: 'update',
-            requestResourceData: dataToSave
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Công thức cho: {product.name}</CardTitle>
-        <CardDescription>Mô tả các thành phần và các bước để làm ra sản phẩm này.</CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent>
-             <FormField
-                control={form.control}
-                name="recipe"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Mô tả công thức</FormLabel>
-                    <FormControl>
-                        <Textarea
-                        placeholder="Vd: Lớp 1: Bạt bánh hạnh nhân..."
-                        className="min-h-[200px]"
-                        {...field}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-          </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Lưu Công thức'}
-              </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
-  );
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/cakes/{cakeId}",
+        "definition": {
+          "entityName": "Cake",
+          "schema": {
+            "$ref": "#/backend/entities/Cake"
+          },
+          "description": "Stores information about cakes. Requires authorized access to create/modify.",
+          "params": [
+            {
+              "name": "cakeId",
+              "description": "The unique identifier of the cake."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/product_categories/{categoryId}",
+        "definition": {
+          "entityName": "ProductCategory",
+          "schema": {
+            "$ref": "#/backend/entities/ProductCategory"
+          },
+          "description": "Stores product categories for display and filtering.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier of the product category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer data. Path-based ownership for customer data.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer (equal to the user's UID)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order data associated with a specific customer. Path-based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer (equal to the user's UID)."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique identifier of the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/orders/{orderId}/order_items/{orderItemId}",
+        "definition": {
+          "entityName": "OrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/OrderItem"
+          },
+          "description": "Stores order item data associated with a specific order and customer. Path-based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer (equal to the user's UID)."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique identifier of the order."
+            },
+            {
+              "name": "orderItemId",
+              "description": "The unique identifier of the order item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/cakes/{cakeId}/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores customer reviews for cakes.",
+          "params": [
+            {
+              "name": "cakeId",
+              "description": "The unique identifier of the cake."
+            },
+            {
+              "name": "reviewId",
+              "description": "The unique identifier of the review."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/news_articles/{newsArticleId}",
+        "definition": {
+          "entityName": "NewsArticle",
+          "schema": {
+            "$ref": "#/backend/entities/NewsArticle"
+          },
+          "description": "Stores news articles. Requires authorized access to create/modify.",
+          "params": [
+            {
+              "name": "newsArticleId",
+              "description": "The unique identifier of the news article."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quiz_questions/{quizQuestionId}",
+        "definition": {
+          "entityName": "QuizQuestion",
+          "schema": {
+            "$ref": "#/backend/entities/QuizQuestion"
+          },
+          "description": "Stores quiz questions.",
+          "params": [
+            {
+              "name": "quizQuestionId",
+              "description": "The unique identifier of the quiz question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/ingredients/{ingredientId}",
+        "definition": {
+          "entityName": "Ingredient",
+          "schema": {
+            "$ref": "#/backend/entities/Ingredient"
+          },
+          "description": "Stores raw material inventory data. Requires admin access.",
+          "params": [
+            {
+              "name": "ingredientId",
+              "description": "The unique identifier for the ingredient."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support a pastry shop application focusing on Entremet cakes. The design prioritizes authorization independence and simplifies security rules. Here's a breakdown:\n\n*   **cakes Collection:** Stores cake data, including image URLs pointing to Firebase Storage. No specific access controls needed beyond basic read access for all users and write access for authorized shop employees (implementation not detailed here, would require a separate mechanism e.g. a `/roles_admin/{uid}` collection).\n*   **product_categories Collection:** Stores product categories, used for filtering and display on the products page. Read access for all, write for admin.\n*   **customers Collection:** Stores customer information. Each customer's data is stored under `/customers/{customerId}`, providing path-based ownership for simplified security rules.\n*   **orders Collection:** Stores order data, located under `/customers/{customerId}/orders/{orderId}` providing path-based ownership. Each order is associated with a specific customer.\n*   **order_items Collection:** Stores order item data, located under `/customers/{customerId}/orders/{orderId}/order_items/{orderItemId}`, reflecting the `Customer -> Order -> OrderItem` hierarchy. This structure enables efficient querying of items within a specific order and simplifies security rules based on customer ownership.\n*   **reviews Collection:** Stores customer reviews for cakes, located under `/cakes/{cakeId}/reviews/{reviewId}`. This enables easy retrieval of reviews for a specific cake.\n*   **news_articles Collection:** Stores news articles. Similar to cakes, assume basic read access and controlled write access.\n*   **quiz_questions Collection:** Stores quiz questions and references recommended cake `cakeIds`. Read access for all.\n\n**Authorization Independence:**  Authorization is achieved through path-based ownership for customer-related data (orders, order items). This means that security rules can be written to allow a user to only access their own data based on their `uid`, without needing to `get()` data from other documents.\n\n**QAPs (Rules are not Filters):**\n*   The segregation of customer data into `/customers/{customerId}` ensures that listing operations can be securely performed.  A customer can only list their own orders, and order items associated with those orders.\n*   Public data (cakes, categories, news articles, quiz questions) can be listed without complex filtering logic. Write access for these can be protected using a separate mechanism (e.g., `/roles_admin/{uid}`)."
+  }
 }

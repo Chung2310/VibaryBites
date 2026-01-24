@@ -21,40 +21,52 @@ export default function NewProductPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
-        console.log("Submit triggered. isSubmitting=true");
         setIsSubmitting(true);
-        
-        // 1. Initial Checks
-        console.log("1. Running initial checks...");
+        const { toast } = useToast();
+        const toastId = toast({
+            title: "Đang xử lý...",
+            description: "Bắt đầu quá trình tạo sản phẩm mới.",
+        });
+
         if (!firestore) {
-            console.error("Firestore service not available.");
-            toast({ variant: 'destructive', title: 'Lỗi', description: 'Dịch vụ cơ sở dữ liệu chưa sẵn sàng.' });
+            toast({
+                id: toastId.id,
+                variant: 'destructive',
+                title: 'Lỗi',
+                description: 'Dịch vụ cơ sở dữ liệu chưa sẵn sàng.',
+            });
             setIsSubmitting(false);
             return;
         }
+
         if (newImageFiles.length === 0) {
-            console.error("No images provided.");
-            toast({ variant: 'destructive', title: 'Thiếu ảnh', description: 'Vui lòng thêm ít nhất một ảnh cho sản phẩm.' });
+            toast({
+                id: toastId.id,
+                variant: 'destructive',
+                title: 'Thiếu ảnh',
+                description: 'Vui lòng thêm ít nhất một ảnh cho sản phẩm.',
+            });
             setIsSubmitting(false);
             return;
         }
-        console.log("Checks passed.");
 
         try {
-            // 2. Upload Images to Firebase Storage
-            console.log(`2. Uploading ${newImageFiles.length} image(s)...`);
-            const uploadPromises = newImageFiles.map((file, index) => {
-                console.log(` -> Uploading file ${index + 1}: ${file.name}`);
-                return uploadImage(file);
+            toast({
+                id: toastId.id,
+                title: "Đang tải ảnh lên...",
+                description: `Đang tải lên ${newImageFiles.length} ảnh. Vui lòng chờ...`,
             });
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedImageUrls = await Promise.all(uploadPromises);
-            console.log("All images uploaded successfully. URLs:", uploadedImageUrls);
 
-            // 3. Prepare Product Data
-            console.log("3. Preparing product data for Firestore...");
+            toast({
+                id: toastId.id,
+                title: "Đang lưu thông tin...",
+                description: "Ảnh đã được tải lên. Đang lưu chi tiết sản phẩm.",
+            });
+
             const id = `prod-${Date.now()}`;
             const docRef = doc(firestore, 'cakes', id);
-            console.log(`Generated product ID: ${id}`);
 
             const newProduct: Product = {
                 id,
@@ -66,48 +78,46 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedImageUrls,
-                collection: 'special-occasions',
-                sizes: [],
-                detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
-                flavorProfile: [],
-                structure: [],
-                recipe: "",
+                collection: 'special-occasions', // Default value
+                sizes: [], // Default value
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    serving: values.detailedDescription_serving,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                },
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
             };
-            console.log("Product data prepared:", newProduct);
 
-            // 4. Save to Firestore
-            console.log("4. Saving document to Firestore collection 'cakes'...");
             await setDoc(docRef, newProduct);
-            console.log("Document saved successfully!");
 
-            // 5. Success
             toast({
+                id: toastId.id,
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
             });
-            console.log("Redirecting to /admin/products");
+            
             router.push(`/admin/products`);
 
         } catch (error: any) {
-            // 6. Error Handling
-            console.error("!!! AN ERROR OCCURRED !!!", error);
-            
             const permissionError = new FirestorePermissionError({
-                path: `cakes/new-product-id-${Date.now()}`,
+                path: `cakes/prod-${Date.now()}`,
                 operation: 'create',
                 requestResourceData: values 
             });
             errorEmitter.emit('permission-error', permissionError);
             
             toast({
+                id: toastId.id,
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: `Đã xảy ra lỗi không mong muốn. Vui lòng kiểm tra Console (F12) để biết chi tiết.`,
+                description: `Đã xảy ra lỗi không mong muốn. Chi tiết: ${error.message}`,
                 duration: 9000,
             });
         } finally {
-            // 7. Finalization
-            console.log("Submit finished. isSubmitting=false");
             setIsSubmitting(false);
         }
     };
@@ -127,8 +137,8 @@ export default function NewProductPage() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Thông tin cơ bản</CardTitle>
-                    <CardDescription>Điền các thông tin cần thiết để tạo sản phẩm. Bạn sẽ có thể thêm công thức và các chi tiết khác ở các trang quản lý khác.</CardDescription>
+                    <CardTitle>Thông tin sản phẩm</CardTitle>
+                    <CardDescription>Điền tất cả các thông tin cần thiết để tạo một sản phẩm mới.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 

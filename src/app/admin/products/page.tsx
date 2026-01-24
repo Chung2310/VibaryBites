@@ -269,9 +269,7 @@ export default function ProductsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                    <DropdownMenuItem onSelect={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => router.push(`/admin/attributes?productId=${product.id}`)}>Sửa thuộc tính</DropdownMenuItem>
-                                     <DropdownMenuItem onSelect={() => router.push(`/admin/recipes?productId=${product.id}`)}>Sửa công thức</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => router.push(`/admin/products/edit/${product.id}`)}>Chỉnh sửa chi tiết</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onSelect={() => openDeleteConfirm(product)} className="text-destructive">
                                         Xóa

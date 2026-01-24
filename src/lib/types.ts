@@ -22,7 +22,6 @@ export type Product = {
   categorySlug: string;
   flavorProfile?: string[];
   structure?: string[];
-  recipe?: string;
   stock?: number;
 };
 

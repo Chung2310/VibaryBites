@@ -31,14 +31,32 @@ import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+
+const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
+Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị chảy)
+Sử dụng trong vòng 03 ngày`;
 
 const productSchema = z.object({
+    // Basic Info
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
     subtitle: z.string().optional(),
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Số lượng tồn kho phải là số nguyên không âm." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
+
+    // Detailed Description
+    detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
+    detailedDescription_ingredients: z.string().min(1, "Vui lòng nhập thành phần."),
+    detailedDescription_serving: z.string().min(1, "Vui lòng nhập khẩu phần."),
+    detailedDescription_storage: z.string().min(1, "Vui lòng nhập hướng dẫn bảo quản."),
+    detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước."),
+    detailedDescription_accessories: z.string().optional(),
+
+    // Profiles & Structure
+    flavorProfile: z.string().optional(),
+    structure: z.string().optional(),
 });
 
 
@@ -46,7 +64,6 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  // This signature is crucial. We pass the new files to upload, and the list of existing URLs to keep.
   onSubmit: (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => Promise<void> | void;
   onCancel: () => void;
   isSubmitting: boolean;
@@ -58,9 +75,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
-  // State for existing image URLs from the product object
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>(product?.imageUrls || []);
-  // State for newly selected files
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   
   const form = useForm<ProductFormValues>({
@@ -72,18 +87,33 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         stock: product.stock ?? 0,
         categorySlug: product.categorySlug,
         description: product.description,
+        detailedDescription_flavor: product.detailedDescription?.flavor || "",
+        detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
+        detailedDescription_serving: product.detailedDescription?.serving || "",
+        detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
+        detailedDescription_dimensions: product.detailedDescription?.dimensions || "",
+        detailedDescription_accessories: product.detailedDescription?.accessories?.join('\n') || "",
+        flavorProfile: product.flavorProfile?.join('\n') || "",
+        structure: product.structure?.join('\n') || "",
     } : {
         name: "",
         subtitle: "",
         price: 0,
-        stock: 0,
+        stock: 10,
         categorySlug: "",
         description: "",
+        detailedDescription_flavor: "",
+        detailedDescription_ingredients: "",
+        detailedDescription_serving: "",
+        detailedDescription_storage: defaultStorageInstructions,
+        detailedDescription_dimensions: "",
+        detailedDescription_accessories: "01 Chiếc nến sinh nhật\n01 Bộ đĩa và dĩa dành cho 10 người\n01 Dao cắt bánh",
+        flavorProfile: "",
+        structure: "",
     },
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    // Prevent duplicates
     const uniqueNewFiles = acceptedFiles.filter(
       (file) => !newImageFiles.some(
         (existingFile) => existingFile.name === file.name && existingFile.size === file.size
@@ -97,22 +127,12 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
   });
 
-  // Combine existing URLs and new file previews for display
   const imagePreviews = useMemo(() => {
-    const existing = existingImageUrls.map(url => ({
-      id: url,
-      url: url,
-      isNew: false
-    }));
-    const news = newImageFiles.map(file => ({
-      id: `${file.name}-${file.lastModified}`,
-      url: URL.createObjectURL(file),
-      isNew: true
-    }));
+    const existing = existingImageUrls.map(url => ({ id: url, url: url, isNew: false }));
+    const news = newImageFiles.map(file => ({ id: `${file.name}-${file.lastModified}`, url: URL.createObjectURL(file), isNew: true }));
     return [...existing, ...news];
   }, [existingImageUrls, newImageFiles]);
 
-  // Cleanup object URLs to prevent memory leaks
   useEffect(() => {
     const newUrls = imagePreviews.filter(p => p.isNew).map(p => p.url);
     return () => {
@@ -129,170 +149,115 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   };
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    // Call the parent onSubmit with the correctly separated files and URLs, and wait for it to complete.
     await onSubmit(values, newImageFiles, existingImageUrls);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tên sản phẩm</FormLabel>
-              <FormControl>
-                <Input placeholder="BE IN BLOSSOM" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
-          name="subtitle"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tên phụ (VÍ DỤ: VẢI & HOA HỒNG)</FormLabel>
-              <FormControl>
-                <Input placeholder="VẢI & HOA HỒNG" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
+        
+        {/* --- Main Product Info --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="space-y-6">
+                <h3 className="text-lg font-medium border-b pb-2">Thông tin cơ bản</h3>
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Tên sản phẩm</FormLabel><FormControl><Input placeholder="BE IN BLOSSOM" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField control={form.control} name="subtitle" render={({ field }) => ( <FormItem><FormLabel>Tên phụ (VÍ DỤ: VẢI & HOA HỒNG)</FormLabel><FormControl><Input placeholder="VẢI & HOA HỒNG" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Mô tả ngắn</FormLabel><FormControl><Textarea placeholder="Mô tả ngắn về sản phẩm..." className="resize-none" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            </div>
+            <div className="space-y-6">
+                 <h3 className="text-lg font-medium border-b pb-2">Phân loại & Giá</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormLabel>Giá</FormLabel><FormControl><Input type="number" placeholder="650000" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField control={form.control} name="stock" render={({ field }) => ( <FormItem><FormLabel>Tồn kho</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                 </div>
+                <FormField control={form.control} name="categorySlug" render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Giá</FormLabel>
-                    <FormControl>
-                        <Input type="number" placeholder="650000" {...field} />
-                    </FormControl>
+                    <FormLabel>Danh mục</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || !categories || categories.length === 0}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Chọn một danh mục" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                        {isLoadingCategories ? ( <div className="p-4 text-sm text-muted-foreground">Đang tải danh mục...</div> ) : (
+                            categories && categories.length > 0 ? (
+                            categories.map(cat => ( <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem> ))
+                            ) : (
+                            <div className="p-4 text-sm text-muted-foreground">Không tìm thấy danh mục. Vui lòng <Link href="/admin/categories" className="underline text-primary hover:text-primary/80">thêm danh mục mới</Link> trước.</div>
+                            )
+                        )}
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                     </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="stock"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Số lượng tồn kho</FormLabel>
-                    <FormControl>
-                        <Input type="number" placeholder="10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+                )}/>
+            </div>
         </div>
-        <FormField
-            control={form.control}
-            name="categorySlug"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Danh mục</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isLoadingCategories || !categories || categories.length === 0}
-                >
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Chọn một danh mục" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {isLoadingCategories ? (
-                        <div className="p-4 text-sm text-muted-foreground">Đang tải danh mục...</div>
-                      ) : (
-                        categories && categories.length > 0 ? (
-                          categories.map(cat => (
-                              <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-4 text-sm text-muted-foreground">
-                            Không tìm thấy danh mục. Vui lòng <Link href="/admin/categories" className="underline text-primary hover:text-primary/80">thêm danh mục mới</Link> trước.
-                          </div>
-                        )
-                      )}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
-        <FormItem>
+        
+        <Separator />
+
+        {/* --- Image Uploader --- */}
+        <div className="space-y-2">
             <FormLabel>Ảnh sản phẩm</FormLabel>
-            <div
-                {...getRootProps()}
-                className={cn(
-                    'w-full p-6 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
-                    isDragActive && 'border-primary bg-primary/10'
-                )}
-            >
+            <div {...getRootProps()} className={cn( 'w-full p-6 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors', isDragActive && 'border-primary bg-primary/10' )}>
                 <input {...getInputProps()} />
                 <UploadCloud className="h-8 w-8 text-muted-foreground" />
                 <p className="mt-2 text-sm text-muted-foreground">Kéo thả ảnh vào đây, hoặc <span className="text-primary">bấm để chọn file</span></p>
                 <p className="text-xs text-muted-foreground/80">Bạn có thể chọn nhiều ảnh cùng lúc.</p>
             </div>
 
-            {imagePreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+            {imagePreviews.length > 0 ? (
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                     {imagePreviews.map((preview) => (
                         <div key={preview.id} className="relative aspect-square">
                             <Image src={preview.url} alt={`Xem trước ảnh`} fill className="rounded-md object-cover" />
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                onClick={() => removeImage(preview)}
-                            >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
+                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => removeImage(preview)}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                     ))}
                 </div>
+            ) : (
+                <FormDescription>Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.</FormDescription>
             )}
-            {imagePreviews.length === 0 && (
-                <FormDescription>
-                    Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.
-                </FormDescription>
-            )}
-        </FormItem>
+        </div>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mô tả ngắn</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Mô tả ngắn về sản phẩm..."
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Separator />
+
+        {/* --- Detailed Description --- */}
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Chi tiết sản phẩm</h3>
+            <FormField control={form.control} name="detailedDescription_flavor" render={({ field }) => ( <FormItem><FormLabel>Mô tả hương vị (Flavor)</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng tinh tế kết hợp với thạch vải nhẹ..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="detailedDescription_ingredients" render={({ field }) => ( <FormItem><FormLabel>Thành phần chính (Ingredients)</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng, thạch vải, mứt mâm xôi, bạt bánh hạnh nhân..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="detailedDescription_dimensions" render={({ field }) => ( <FormItem><FormLabel>Kích thước (Dimensions)</FormLabel><FormControl><Input placeholder="Đường kính: 16cm | Chiều cao: 5cm" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField control={form.control} name="detailedDescription_serving" render={({ field }) => ( <FormItem><FormLabel>Khẩu phần (Serving)</FormLabel><FormControl><Input placeholder="Dành cho 6-8 người ăn" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            </div>
+            <FormField control={form.control} name="detailedDescription_storage" render={({ field }) => ( <FormItem><FormLabel>Hướng dẫn sử dụng & Bảo quản (Storage)</FormLabel><FormControl><Textarea rows={4} placeholder="Luôn giữ bánh trong hộp kín..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="detailedDescription_accessories" render={({ field }) => ( <FormItem><FormLabel>Phụ kiện đi kèm (Accessories)</FormLabel><FormDescription>Mỗi phụ kiện trên một dòng.</FormDescription><FormControl><Textarea placeholder="01 Chiếc nến sinh nhật..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
+        </div>
         
-        <div className="flex justify-end gap-4 items-center pt-4">
+        <Separator />
+        
+        {/* --- Flavor & Structure --- */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField control={form.control} name="flavorProfile" render={({ field }) => (
+                <FormItem>
+                <FormLabel>Cảm giác vị bánh (Flavor Profile)</FormLabel>
+                <FormDescription>Mỗi tag vị trên một dòng. VD: Ngọt ngào, Chua thanh, Đậm vị trà...</FormDescription>
+                <FormControl><Textarea placeholder="Ngọt ngào\nThơm ngát..." {...field} /></FormControl>
+                <FormMessage />
+                </FormItem>
+            )}/>
+            <FormField control={form.control} name="structure" render={({ field }) => (
+                <FormItem>
+                <FormLabel>Cấu trúc các lớp bánh (Structure)</FormLabel>
+                <FormDescription>Mô tả mỗi lớp trên một dòng, từ trên xuống dưới.</FormDescription>
+                <FormControl><Textarea placeholder="Phun phủ bơ cacao\nMousse hoa hồng..." {...field} /></FormControl>
+                <FormMessage />
+                </FormItem>
+            )}/>
+        </div>
+        
+        <div className="flex justify-end gap-4 items-center pt-4 border-t mt-8">
             <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>Hủy</Button>
             <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang lưu...
-                    </>
-                ) : (isEditMode ? 'Lưu thay đổi' : 'Tạo sản phẩm')}
+                {isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang lưu...</> ) : (isEditMode ? 'Lưu thay đổi' : 'Tạo sản phẩm')}
             </Button>
         </div>
       </form>

@@ -44,15 +44,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         const docRef = doc(firestore, 'cakes', product.id);
 
         try {
-            // Determine which images were removed by the user
             const originalUrls = product.imageUrls || [];
             const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
 
-            // Upload new images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const newUploadedUrls = await Promise.all(uploadPromises);
 
-            // Delete removed images
             if (urlsToDelete.length > 0) {
                 const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
                 await Promise.all(deletePromises);
@@ -79,6 +76,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 categorySlug: values.categorySlug,
                 imageUrls: finalImageUrls,
                 slug: generateSlug(values.name),
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    serving: values.detailedDescription_serving,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                },
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
             await setDoc(docRef, updatedProductData, { merge: true });
@@ -88,7 +95,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
             
-            router.push(`/admin/attributes?productId=${product.id}`);
+            router.push(`/admin/products`);
 
         } catch (error: any) {
             const permissionError = new FirestorePermissionError({
@@ -141,13 +148,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     </Link>
                 </Button>
                 <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                    Chỉnh sửa chi tiết: {product.name}
+                    Chỉnh sửa: {product.name}
                 </h1>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Thông tin cơ bản sản phẩm</CardTitle>
-                    <CardDescription>Cập nhật các thông tin cơ bản cho sản phẩm. Các thuộc tính chi tiết được quản lý ở trang "Thuộc tính sản phẩm".</CardDescription>
+                    <CardTitle>Thông tin sản phẩm</CardTitle>
+                    <CardDescription>Cập nhật tất cả các thông tin cho sản phẩm này.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProductForm 
