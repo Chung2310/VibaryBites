@@ -20,6 +20,7 @@ import {
   Loader2,
   Menu,
   RefreshCw,
+  LayoutGrid,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ const navLinks = [
         { href: '/admin/products', label: 'Danh sách sản phẩm', icon: List },
         { href: '/admin/attributes', label: 'Thuộc tính', icon: Settings },
         { href: '/admin/recipes', label: 'Công thức', icon: Book },
+        { href: '/admin/categories', label: 'Danh mục', icon: LayoutGrid },
     ]
   },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },

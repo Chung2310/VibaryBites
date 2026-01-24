@@ -1,6 +1,6 @@
 
 
-import type { Product, Collection, Article, FaqItem, NavLink, ProductCategory } from './types';
+import type { Product, Collection, Article, FaqItem, NavLink } from './types';
 
 export const navLinks: NavLink[] = [
   { href: '/products', label: 'Sản Phẩm' },
@@ -8,33 +8,6 @@ export const navLinks: NavLink[] = [
   { href: '/faq', label: 'Hỏi đáp' },
   { href: '/news', label: 'Tin Tức' },
   { href: '/contact', label: 'Liên Hệ' },
-];
-
-export const productCategories: ProductCategory[] = [
-    { 
-        slug: 'banh-sinh-nhat', 
-        title: 'Bánh sinh nhật',
-        subtitle: 'DÀNH CHO 2-10 NGƯỜI',
-        description: 'Sản phẩm đặc trưng của VIBARY là bánh Entremet – dòng bánh lạnh cao cấp của Pháp. Dành cho tiệc sinh nhật, hoặc bất kỳ khoảnh khắc nào quan trọng của bạn.'
-    },
-    { 
-        slug: 'banh-le', 
-        title: 'Bánh lẻ',
-        subtitle: 'THƯỞNG THỨC HƯƠNG VỊ',
-        description: 'Những chiếc bánh ngọt tinh tế, từ mousse mềm mịn đến tart giòn tan, hoàn hảo cho những giây phút thưởng thức cá nhân.'
-    },
-    { 
-        slug: 'banh-nuong', 
-        title: 'Bánh nướng',
-        subtitle: 'GIÒN TAN, THƠM LỪNG',
-        description: 'Các loại bánh nướng giòn tan, thơm lừng từ lò, mang lại hương vị ấm áp và quen thuộc.'
-    },
-    { 
-        slug: 'banh-tea-break', 
-        title: 'Bánh Tea-Break',
-        subtitle: 'CHO TIỆC TRÀ & SỰ KIỆN',
-        description: 'Những set bánh nhỏ xinh, đa dạng được thiết kế riêng cho các buổi tiệc trà, hội nghị và sự kiện đặc biệt.'
-    },
 ];
 
 export const collections: Collection[] = [
@@ -313,7 +286,7 @@ export const products: Product[] = [
     description: 'Phiên bản hiện đại của một món kinh điển, tràn ngập các loại quả mọng.',
     detailedDescription: {
       flavor: 'Kem cheesecake không nướng nhẹ nhàng được trang trí bằng một hỗn hợp các loại quả mọng mùa hè tươi trên đế bánh quy bơ.',
-      ingredients: 'Phô mai kem, kem tươi, hỗn hợp quả mọng (dâu tây, việt quất, mâm xôi), đế bánh quy digestive.',
+      ingredients: 'Phô mai kem, kem tươi, hỗn hợp các loại quả mọng (dâu tây, việt quất, mâm xôi), đế bánh quy digestive.',
       serving: 'Dành cho 6-8 người ăn',
       storage: 'Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh. Ngon nhất khi dùng trong vòng 24 giờ. Sử dụng trong vòng 03 ngày.',
       dimensions: 'Đường kính: 16cm | Chiều cao: 5cm',

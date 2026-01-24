@@ -54,7 +54,7 @@ service cloud.firestore {
       }
     }
     
-    match /categories/{categoryId} {
+    match /product_categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }

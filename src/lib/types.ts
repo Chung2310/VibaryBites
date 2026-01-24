@@ -117,6 +117,7 @@ export type Ingredient = {
 };
 
 export type ProductCategory = {
+  id: string;
   slug: string;
   title: string;
   subtitle: string;

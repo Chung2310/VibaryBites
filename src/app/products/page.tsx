@@ -8,14 +8,30 @@ import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/hooks/use-app-store";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
-import { productCategories } from "@/lib/data";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { ProductCategory } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductsPage() {
   const { products } = useAppStore();
-  const [activeCategory, setActiveCategory] = useState('banh-sinh-nhat');
+  const firestore = useFirestore();
+
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+  const { data: productCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
+
+  const [activeCategory, setActiveCategory] = useState<string | undefined>(productCategories?.[0]?.slug);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
+    if (productCategories && productCategories.length > 0 && !activeCategory) {
+      setActiveCategory(productCategories[0].slug);
+    }
+  }, [productCategories, activeCategory]);
+
+  useEffect(() => {
+    if (!productCategories) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -42,7 +58,7 @@ export default function ProductsPage() {
         }
       });
     };
-  }, []);
+  }, [productCategories]);
 
 
   return (
@@ -51,7 +67,8 @@ export default function ProductsPage() {
         <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
-                    {productCategories.map(category => (
+                    {isLoadingCategories && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-4 w-24" />)}
+                    {productCategories?.map(category => (
                         <a
                             key={category.slug}
                             href={`#${category.slug}`}
@@ -69,7 +86,8 @@ export default function ProductsPage() {
         </nav>
 
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {productCategories.map((category, index) => {
+        {isLoadingCategories && <p>Đang tải danh mục...</p>}
+        {productCategories?.map((category, index) => {
           const categoryProducts = products.filter(p => p.categorySlug === category.slug);
 
           return (

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Product } from "@/lib/types";
+import type { Product, ProductCategory } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -26,9 +26,10 @@ import {
 import Image from "next/image";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
-import { productCategories } from "@/lib/data";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
@@ -52,6 +53,10 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
+  const firestore = useFirestore();
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
+
   // State for existing image URLs from the product object
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>(product?.imageUrls || []);
   // State for newly selected files
@@ -197,9 +202,13 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                    {productCategories.map(cat => (
-                        <SelectItem key={cat.slug} value={cat.slug}>{cat.title}</SelectItem>
-                    ))}
+                    {isLoadingCategories ? (
+                      <SelectItem value="loading" disabled>Đang tải danh mục...</SelectItem>
+                    ) : (
+                      categories?.map(cat => (
+                          <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem>
+                      ))
+                    )}
                     </SelectContent>
                 </Select>
                 <FormMessage />
