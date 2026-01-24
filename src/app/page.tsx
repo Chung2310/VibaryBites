@@ -162,50 +162,23 @@ function CategorySection() {
         'banh-nuong': 'category-other-cakes',
         'banh-tea-break': 'category-drinks',
     };
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.2,
-            },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                duration: 0.8,
-            },
-        },
-    };
   
     return (
       <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
-                    <motion.div key={i} variants={itemVariants} className="aspect-[3/4] w-full">
+                    <div key={i} className="aspect-[3/4] w-full">
                         <Skeleton className="h-full w-full rounded-2xl" />
-                    </motion.div>
+                    </div>
                 ))
             ) : (
                 categories?.map((category) => {
                 const imageId = categoryImageMap[category.slug] || 'category-birthday-cake'; // Default image
                 const image = PlaceHolderImages.find(p => p.id === imageId);
                 return (
-                    <motion.div key={category.slug} variants={itemVariants}>
+                    <div key={category.slug}>
                         <Link
                         href={`/products#${category.slug}`}
                         className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
@@ -232,11 +205,11 @@ function CategorySection() {
                             </div>
                         </div>
                         </Link>
-                    </motion.div>
+                    </div>
                 )
                 })
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
     );
