@@ -20,103 +20,29 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // DEBUGGING VERSION of handleFormSubmit
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
+        console.log("Submission started. Files:", newImageFiles);
         setIsSubmitting(true);
-        const toastId = toast({
-            title: "Đang xử lý...",
-            description: "Bắt đầu quá trình tạo sản phẩm mới.",
-        });
-
-        if (!firestore) {
-            toastId.update({
-                id: toastId.id,
-                variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Dịch vụ cơ sở dữ liệu chưa sẵn sàng.',
-            });
-            setIsSubmitting(false);
-            return;
-        }
-
+        
         if (newImageFiles.length === 0) {
-            toastId.update({
-                id: toastId.id,
-                variant: 'destructive',
-                title: 'Thiếu ảnh',
-                description: 'Vui lòng thêm ít nhất một ảnh cho sản phẩm.',
-            });
+            console.log("No files selected.");
+            alert("Vui lòng chọn ít nhất một ảnh.");
             setIsSubmitting(false);
             return;
         }
 
         try {
-            toastId.update({
-                id: toastId.id,
-                title: "Đang tải ảnh lên...",
-                description: `Đang tải lên ${newImageFiles.length} ảnh. Vui lòng chờ...`,
-            });
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
-            const uploadedImageUrls = await Promise.all(uploadPromises);
-
-            toastId.update({
-                id: toastId.id,
-                title: "Đang lưu thông tin...",
-                description: "Ảnh đã được tải lên. Đang lưu chi tiết sản phẩm.",
-            });
-
-            const id = `prod-${Date.now()}`;
-            const docRef = doc(firestore, 'cakes', id);
-
-            const newProduct: Product = {
-                id,
-                slug: generateSlug(values.name),
-                name: values.name,
-                subtitle: values.subtitle || "",
-                description: values.description,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                categorySlug: values.categorySlug,
-                imageUrls: uploadedImageUrls,
-                collection: 'special-occasions', // Default value
-                sizes: [], // Default value
-                detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    serving: values.detailedDescription_serving,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
-                },
-                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-                structure: values.structure?.split('\n').filter(Boolean) || [],
-            };
-
-            await setDoc(docRef, newProduct);
-
-            toastId.update({
-                id: toastId.id,
-                title: 'Thêm thành công!',
-                description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
-            });
-            
-            router.push(`/admin/products`);
-
-        } catch (error: any) {
-            const permissionError = new FirestorePermissionError({
-                path: `cakes/prod-${Date.now()}`,
-                operation: 'create',
-                requestResourceData: values 
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            
-            toastId.update({
-                id: toastId.id,
-                variant: 'destructive',
-                title: 'Không thể tạo sản phẩm',
-                description: `Đã xảy ra lỗi không mong muốn. Chi tiết: ${error.message}`,
-                duration: 9000,
-            });
+            const file = newImageFiles[0];
+            console.log(`Uploading file: ${file.name}`);
+            const imageUrl = await uploadImage(file);
+            console.log("Upload successful! URL:", imageUrl);
+            alert(`Image uploaded successfully: ${imageUrl}`);
+        } catch (error) {
+            console.error("UPLOAD FAILED:", error);
+            alert(`Upload failed: ${error}`);
         } finally {
+            console.log("Submission finished.");
             setIsSubmitting(false);
         }
     };
