@@ -1,4 +1,3 @@
-
 'use client';
 
 import { getApp } from 'firebase/app';
@@ -55,7 +54,9 @@ export const uploadImage = async (file: File): Promise<string> => {
     const fileName = `uploads/${uuidv4()}.${fileExtension}`; 
     const storageRef = ref(storage, fileName);
 
-    const metadata = { contentType: file.type };
+    const contentType = file.type || 'application/octet-stream';
+    const metadata = { contentType: contentType };
+    
     const snapshot = await uploadBytes(storageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
     
