@@ -22,6 +22,18 @@ service cloud.firestore {
     }
 
     // ================================
+    // COLLECTION GROUP RULES
+    // ================================
+    
+    // This rule allows an admin to perform a collection group query on 'orders'.
+    // This is required for the admin dashboard to list all orders.
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
+      // Note: 'get', 'create', 'update', 'delete' are NOT granted here.
+      // Those are handled by the more specific rule under /customers/{customerId}.
+    }
+
+    // ================================
     // PUBLIC-READABLE COLLECTIONS
     // ================================
 
@@ -53,13 +65,10 @@ service cloud.firestore {
       // Only admins can delete.
       allow delete: if isAdmin();
 
-      // Rules for orders subcollection.
+      // Rules for a user accessing their OWN orders, or an admin accessing a SPECIFIC order.
       match /orders/{orderId} {
-        // Allow owners and admins to get a single order.
+        // 'list' is handled by the collection group rule above for admins.
         allow get: if isOwner(customerId) || isAdmin();
-        // Allow admins to list all orders for the collection group query.
-        allow list: if isAdmin();
-        // Allow owners and admins to create/update an order.
         allow write: if isOwner(customerId) || isAdmin();
 
         // Rule for `order_items` sub-subcollection
