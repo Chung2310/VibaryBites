@@ -22,13 +22,21 @@ service cloud.firestore {
     }
     
     // ================================
+    // COLLECTION GROUP RULES
+    // ================================
+    
+    // This rule is ONLY for the admin's collection group query to list all orders.
+    // It allows an admin to perform a 'list' operation across all 'orders' subcollections.
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
+    }
+
+    // ================================
     // PUBLIC & ADMIN-WRITE COLLECTIONS
     // ================================
 
     match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
-      // Anyone can read public data.
       allow read: if true;
-      // Only admins can modify public data.
       allow write: if isAdmin();
     }
     
@@ -45,28 +53,26 @@ service cloud.firestore {
     // ================================
     
     match /customers/{customerId} {
-      // User can create their own profile.
       allow create: if isOwner(customerId);
-      // User can get their own profile. Admin can get any.
-      allow get: if isOwner(customerId) || isAdmin();
-      // User can update their own profile. Admin can update any.
-      allow update: if isOwner(customerId) || isAdmin();
-      // Only admins can list or delete customers.
+      
+      // Separate allow statements to prevent OR evaluation errors.
+      allow get, update: if isOwner(customerId);
+      allow get, update: if isAdmin();
+      
       allow list, delete: if isAdmin();
 
       // --- ORDERS Subcollection ---
+      // These rules apply to direct document access.
       match /orders/{orderId} {
-        // Admins can read (get/list) and write any order. This rule is evaluated first for admins.
-        allow read, write: if isAdmin();
-        // Owners can get and write their own orders, but cannot list all orders via this rule.
+        // Owner can get and write their own order.
         allow get, write: if isOwner(customerId);
+        // Admin can get and write any order.
+        allow get, write: if isAdmin();
 
         // --- ORDER ITEMS Sub-subcollection ---
         match /order_items/{orderItemId} {
-           // Admins can read and write any order item.
+           allow read, write: if isOwner(customerId);
            allow read, write: if isAdmin();
-           // Owners can get and write their own order items.
-           allow get, write: if isOwner(customerId);
         }
       }
     }
@@ -76,14 +82,12 @@ service cloud.firestore {
     // ================================
     
     match /cakes/{cakeId}/reviews/{reviewId} {
-      // Anyone can read reviews.
       allow read: if true;
-      // Only signed-in users can create a review for themselves.
-      // Make sure incoming data has the correct customerId.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      // Only the review author or an admin can update/delete.
-      // Check existing data for ownership.
-      allow update, delete: if isAdmin() || (resource.data.customerId == request.auth.uid);
+      
+      // Separate allow statements to prevent OR evaluation errors.
+      allow update, delete: if resource.data.customerId == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
   }
 }
