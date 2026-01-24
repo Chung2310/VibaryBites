@@ -1,34 +1,30 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
     
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' ||
-        request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'
-      );
+      return isSignedIn() && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
     }
-
+    
+    // COLLECTION GROUP: Allow admin to query ALL orders across all customers
     match /{path=**}/orders/{orderId} {
-      allow get, list, create, update, delete: if isAdmin();
+      allow read, write: if request.auth != null && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
     }
-
+    
+    // COLLECTION GROUP: Allow anyone to read all reviews
     match /{path=**}/reviews/{reviewId} {
       allow read: if true;
     }
-
+    
+    // Public collections
     match /cakes/{cakeId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -36,65 +32,61 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if true;
         allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.cakeId == cakeId;
-        allow update: if isExistingOwner(resource.data.customerId);
-        allow delete: if isExistingOwner(resource.data.customerId) || isAdmin();
+        allow update, delete: if isSignedIn() && resource.data.customerId == request.auth.uid;
+        allow update, delete: if isAdmin();
       }
     }
-
+    
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
+    
     match /news_articles/{newsArticleId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
+    
     match /quiz_questions/{quizQuestionId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
+    
     match /ingredients/{ingredientId} {
       allow read, write: if isAdmin();
     }
-
-    match /customers/{customerId} {
-      allow read: if isOwner(customerId) || isAdmin();
-      allow create: if isOwner(customerId);
-      allow update: if isExistingOwner(customerId) || isAdmin();
-      allow delete: if isAdmin();
-
-      match /orders/{orderId} {
-        // This rule is now redundant due to the collection group rule above,
-        // but we leave it for clarity and for when we restore security.
-        allow read, write: if isOwner(customerId) || isAdmin();
-
-        match /order_items/{orderItemId} {
-          allow read: if isOwner(customerId) || isAdmin();
-          allow create: if isOwner(customerId) && request.resource.data.orderId == orderId;
-          allow update: if isExistingOwner(customerId) || isAdmin();
-          allow delete: if isExistingOwner(customerId) || isAdmin();
-        }
-      }
-
-      match /addresses/{addressId} {
-        allow read, write: if isOwner(customerId) || isAdmin();
-      }
-
-      match /favorites/{favoriteId} {
-        allow read, write: if isOwner(customerId);
-      }
-    }
-
+    
     match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-
+    
     match /analytics/{analyticsId} {
       allow read, write: if isAdmin();
+    }
+    
+    // Customer data
+    match /customers/{customerId} {
+      allow create: if isOwner(customerId);
+      allow read: if isOwner(customerId) || isAdmin();
+      allow update: if isOwner(customerId) || isAdmin();
+      allow delete: if isAdmin();
+      
+      match /orders/{orderId} {
+        allow read, write: if isOwner(customerId) || isAdmin();
+        
+        match /order_items/{orderItemId} {
+          allow read, write: if isOwner(customerId) || isAdmin();
+        }
+      }
+      
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(customerId) || isAdmin();
+      }
+      
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(customerId) || isAdmin();
+      }
     }
   }
 }
