@@ -21,22 +21,14 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * Checks for ownership on an existing document.
-     * Used for update and delete operations.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
     
     /**
      * Checks if the user has admin privileges by looking for a 'role' field
      * in their corresponding document in the 'customers' collection.
      */
     function isAdmin() {
-      return request.auth != null &&
-             get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin';
+      // This get() call requires a rule that allows the user to read their own customer document without recursion.
+      return isSignedIn() && get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin';
     }
 
     /**
@@ -51,61 +43,20 @@ service cloud.firestore {
     // ================================
 
     /**
-     * Cakes Collection
-     * @description Publicly readable cake catalog. Admin-only writes.
-     * @path /cakes/{cakeId}
+     * Cakes, Categories, News, Quizzes
+     * @description Publicly readable data. Admin-only writes.
      */
-    match /cakes/{cakeId} {
+    match /{collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
       allow read: if true;
-      allow create: if isAdmin() && hasRequiredFields(['name', 'price']);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * Categories Collection
-     * @description Publicly readable categories. Admin-only writes.
-     * @path /categories/{categoryId}
-     */
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow create: if isAdmin() && hasRequiredFields(['name']);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * News Articles Collection
-     * @description Publicly readable news. Admin-only writes.
-     * @path /news_articles/{newsArticleId}
-     */
-    match /news_articles/{newsArticleId} {
-      allow read: if true;
-      allow create: if isAdmin() && hasRequiredFields(['title', 'content']);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * Quiz Questions Collection
-     * @description Publicly readable quiz questions. Admin-only writes.
-     * @path /quiz_questions/{quizQuestionId}
-     */
-    match /quiz_questions/{quizQuestionId} {
-      allow read: if true;
-      allow create: if isAdmin() && hasRequiredFields(['question']);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     /**
      * Ingredients Collection
      * @description Raw material inventory. Admin-only access.
-     * @path /ingredients/{ingredientId}
      */
     match /ingredients/{ingredientId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     // ================================
@@ -113,22 +64,15 @@ service cloud.firestore {
     // ================================
 
     /**
-     * Orders Collection Group
-     * @description Allows admins to query all orders across all customers.
-     * @path /{path=**}/orders/{orderId}
+     * Orders & OrderItems Collection Group
+     * @description Allows admins to query all orders/items across all customers.
      */
     match /{path=**}/orders/{orderId} {
       allow read: if isAdmin();
-      allow write: if isAdmin();
     }
-
-    /**
-     * Reviews Collection Group
-     * @description Allows querying all reviews across all cakes.
-     * @path /{path=**}/reviews/{reviewId}
-     */
-    match /{path=**}/reviews/{reviewId} {
-      allow read: if true;
+    
+    match /{path=**}/order_items/{orderItemId} {
+        allow read: if isAdmin();
     }
 
     // ================================
@@ -137,135 +81,79 @@ service cloud.firestore {
 
     /**
      * Cake Reviews (Subcollection)
-     * @description Customer reviews for specific cakes. Publicly readable.
-     * @path /cakes/{cakeId}/reviews/{reviewId}
+     * @description Customer reviews for specific cakes.
      */
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
-      
-      allow create: if isSignedIn() 
+      allow create: if isSignedIn()
         && hasRequiredFields(['customerId', 'cakeId', 'rating', 'comment'])
         && request.resource.data.customerId == request.auth.uid 
-        && request.resource.data.cakeId == cakeId
-        && request.resource.data.rating >= 1 
-        && request.resource.data.rating <= 5;
-      
-      allow update: if isExistingOwner(resource.data.customerId) 
-        && request.resource.data.customerId == resource.data.customerId 
-        && request.resource.data.cakeId == resource.data.cakeId;
-      
-      allow delete: if isExistingOwner(resource.data.customerId) || isAdmin();
+        && request.resource.data.cakeId == cakeId;
+      allow update, delete: if isOwner(resource.data.customerId) || isAdmin();
     }
 
     // ================================
-    // USER-OWNED DATA
+    // USER-OWNED DATA (RESTRUCTURED)
     // ================================
 
     /**
      * Customers Collection
-     * @description Customer profile data. Users can only access their own profile.
-     * @path /customers/{customerId}
+     * @description Customer profile data and nested orders.
      */
     match /customers/{customerId} {
-      allow read: if isOwner(customerId) || isAdmin();
+      // --- CRITICAL FIX FOR isAdmin() RECURSION ---
+      // Allow users to GET their own document. This is non-recursive and allows the get() inside isAdmin() to succeed.
+      allow get: if isOwner(customerId);
+      // Allow admins to LIST all customer documents.
+      allow list: if isAdmin();
       
+      // Allow CREATE for new users creating their own profile.
       allow create: if isOwner(customerId) 
-        && hasRequiredFields(['email', 'name'])
-        && request.resource.data.email == request.auth.token.email;
+        && hasRequiredFields(['email', 'firstName', 'lastName']);
       
-      allow update: if (isExistingOwner(customerId) || isAdmin())
-        && request.resource.data.email == resource.data.email; // Prevent email change
+      // Allow UPDATE for owners (who can't change their email) or admins.
+      allow update: if (isOwner(customerId) && request.resource.data.email == resource.data.email) || isAdmin();
       
-      allow delete: if isAdmin(); // Only admins can delete customer profiles
+      // Allow DELETE only for admins.
+      allow delete: if isAdmin();
 
       /**
        * Customer Orders (Subcollection)
-       * @description Orders belonging to a specific customer.
-       * @path /customers/{customerId}/orders/{orderId}
        */
       match /orders/{orderId} {
-        allow read: if isOwner(customerId) || isAdmin();
-        
-        allow create: if isOwner(customerId) 
-          && hasRequiredFields(['customerId', 'status', 'totalPrice'])
-          && request.resource.data.customerId == customerId
-          && request.resource.data.status == 'pending';
-        
-        allow update: if isOwner(customerId) || isAdmin();
-        
-        allow delete: if isAdmin();
+        // An owner can manage their own order. An admin can manage any order.
+        allow read, write: if isOwner(customerId) || isAdmin();
 
         /**
          * Order Items (Subcollection)
-         * @description Items within a specific order.
-         * @path /customers/{customerId}/orders/{orderId}/order_items/{orderItemId}
          */
         match /order_items/{orderItemId} {
-          allow read: if isOwner(customerId) || isAdmin();
-          
-          allow create: if isOwner(customerId) 
-            && hasRequiredFields(['orderId', 'cakeId', 'quantity', 'price'])
-            && request.resource.data.orderId == orderId 
-            && request.resource.data.quantity > 0
-            && exists(/databases/$(database)/documents/customers/$(customerId)/orders/$(orderId));
-          
-          allow update: if (isExistingOwner(customerId) || isAdmin())
-            && request.resource.data.orderId == resource.data.orderId
-            && request.resource.data.cakeId == resource.data.cakeId;
-          
-          allow delete: if isExistingOwner(customerId) || isAdmin();
+          // Permissions are inherited from the parent order.
+          allow read, write: if isOwner(customerId) || isAdmin();
         }
       }
 
       /**
-       * Customer Addresses (Subcollection) - Optional
-       * @description Shipping addresses for a customer.
-       * @path /customers/{customerId}/addresses/{addressId}
+       * Optional Subcollections
        */
       match /addresses/{addressId} {
-        allow read: if isOwner(customerId) || isAdmin();
-        allow write: if isOwner(customerId) || isAdmin();
+        allow read, write: if isOwner(customerId) || isAdmin();
       }
 
-      /**
-       * Customer Favorites (Subcollection) - Optional
-       * @description Customer's favorite cakes.
-       * @path /customers/{customerId}/favorites/{favoriteId}
-       */
       match /favorites/{favoriteId} {
-        allow read: if isOwner(customerId) || isAdmin();
-        allow write: if isOwner(customerId);
+        allow read, write: if isOwner(customerId) || isAdmin();
       }
     }
 
     // ================================
-    // SYSTEM COLLECTIONS (Admin Only)
+    // SYSTEM & OTHER COLLECTIONS
     // ================================
-
-    /**
-     * System Settings
-     * @description Application-wide settings. Admin-only access.
-     * @path /settings/{settingId}
-     */
     match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-
-    /**
-     * Analytics Data
-     * @description System analytics and metrics. Admin-only access.
-     * @path /analytics/{analyticsId}
-     */
     match /analytics/{analyticsId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
-
-    // ================================
-    // DENY ALL OTHER PATHS
-    // ================================
-    
-    // Any paths not explicitly allowed above are denied by default
   }
 }
