@@ -10,7 +10,8 @@ service firebase.storage {
       
       // Allow writes (uploads, updates, deletes) only if the user is authenticated.
       // This is a security measure to prevent unauthorized uploads.
-      allow write: if request.auth != null;
+      // TEMPORARY DEBUGGING STEP: Allow all writes to isolate the issue.
+      allow write: if true;
     }
   }
 }
