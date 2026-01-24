@@ -18,6 +18,7 @@ service cloud.firestore {
 
     // Using UID is a robust workaround if Custom Claims are not set up.
     function isAdmin() {
+      // This UID 'WEM5X92ExuRA6I82nZjRVeCru6i2' corresponds to manager@vibary.com
       return isSignedIn() && request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2';
     }
 
@@ -59,12 +60,12 @@ service cloud.firestore {
         // This structure explicitly separates permissions to avoid conflicts
         // during collection group queries.
 
-        // 1. A user can GET their own order.
-        allow get: if isOwner(customerId);
-        
-        // 2. An admin can READ (get + list) any/all orders.
+        // 1. An admin can READ (get + list) any/all orders.
         // This rule is what allows the collection group query for the admin dashboard.
         allow read: if isAdmin();
+
+        // 2. A user can GET their own order.
+        allow get: if isOwner(customerId);
         
         // 3. A user can WRITE to their own order, and an admin can WRITE to any.
         allow write: if isOwner(customerId) || isAdmin();
