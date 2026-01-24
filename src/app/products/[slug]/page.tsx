@@ -1,6 +1,6 @@
 'use client';
 
-import { faqs, productCategories } from '@/lib/data';
+import { faqs } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import type { Product } from '@/lib/types';
+import type { Product, ProductCategory } from '@/lib/types';
 import {
   Carousel,
   CarouselContent,
@@ -27,10 +27,17 @@ import {
 } from "@/components/ui/carousel";
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
     const slug = params.slug;
     const { products, addToCart } = useAppStore();
+    
+    const firestore = useFirestore();
+    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+    const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection);
+
     const product = products.find((p) => {
         const pSlug = p.slug || generateSlug(p.name);
         return pSlug === slug;
@@ -102,7 +109,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         setQuantity((q) => q + 1);
     };
     
-    const category = productCategories.find(cat => cat.slug === product.categorySlug);
+    const category = productCategories?.find(cat => cat.slug === product.categorySlug);
                             
     return (
         <>
