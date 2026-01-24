@@ -125,14 +125,7 @@ export default function ProductsPage() {
                   Xuất File
                 </span>
               </Button>
-              <Button size="sm" className="h-8 gap-1" asChild>
-                <Link href="/admin/products/new">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Thêm sản phẩm
-                    </span>
-                </Link>
-              </Button>
+              <p className="text-sm text-muted-foreground">hiện tại không thể thêm sản phẩm mới</p>
             </div>
           </div>
           <TabsContent value="all">
