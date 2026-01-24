@@ -22,9 +22,8 @@ import { Loader2 } from "lucide-react";
 const formSchema = z.object({
   detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
   detailedDescription_ingredients: z.string().min(1, "Vui lòng nhập thành phần."),
-  detailedDescription_serving: z.string().min(1, "Vui lòng nhập khẩu phần."),
   detailedDescription_storage: z.string().min(1, "Vui lòng nhập hướng dẫn bảo quản."),
-  detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước."),
+  detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước và khẩu phần."),
   detailedDescription_accessories: z.string().optional(),
   flavorProfile: z.string().optional(),
   structure: z.string().optional(),
@@ -46,7 +45,6 @@ export function ProductAttributesForm({ product, onSubmit, onCancel, isSubmittin
     defaultValues: {
       detailedDescription_flavor: product.detailedDescription?.flavor || "",
       detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
-      detailedDescription_serving: product.detailedDescription?.serving || "",
       detailedDescription_storage: product.detailedDescription?.storage || "",
       detailedDescription_dimensions: product.detailedDescription?.dimensions || "",
       detailedDescription_accessories: product.detailedDescription?.accessories?.join('\n') || "",
@@ -63,8 +61,7 @@ export function ProductAttributesForm({ product, onSubmit, onCancel, isSubmittin
             <h3 className="text-lg font-medium">Chi tiết sản phẩm</h3>
             <FormField control={form.control} name="detailedDescription_flavor" render={({ field }) => ( <FormItem><FormLabel>Mô tả hương vị</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng tinh tế kết hợp với thạch vải nhẹ..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="detailedDescription_ingredients" render={({ field }) => ( <FormItem><FormLabel>Thành phần chính</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng, thạch vải, mứt mâm xôi, bạt bánh hạnh nhân..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
-            <FormField control={form.control} name="detailedDescription_dimensions" render={({ field }) => ( <FormItem><FormLabel>Kích thước</FormLabel><FormControl><Input placeholder="Đường kính: 16cm | Chiều cao: 5cm" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-            <FormField control={form.control} name="detailedDescription_serving" render={({ field }) => ( <FormItem><FormLabel>Khẩu phần</FormLabel><FormControl><Input placeholder="Dành cho 6-8 người ăn" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="detailedDescription_dimensions" render={({ field }) => ( <FormItem><FormLabel>Kích thước & Khẩu phần</FormLabel><FormControl><Input placeholder="Đường kính: 16cm, cho 6-8 người ăn" {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="detailedDescription_storage" render={({ field }) => ( <FormItem><FormLabel>Hướng dẫn bảo quản</FormLabel><FormControl><Textarea rows={4} placeholder="Luôn giữ bánh trong hộp kín..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
           </div>
           <div className="space-y-6">

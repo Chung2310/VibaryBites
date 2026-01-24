@@ -56,10 +56,8 @@ export default function AttributesPage() {
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         const updatedProductData: Partial<Product> = {
             detailedDescription: {
-                ...selectedProduct.detailedDescription,
                 flavor: values.detailedDescription_flavor,
                 ingredients: values.detailedDescription_ingredients,
-                serving: values.detailedDescription_serving,
                 storage: values.detailedDescription_storage,
                 dimensions: values.detailedDescription_dimensions,
                 accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),

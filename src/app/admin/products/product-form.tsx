@@ -50,9 +50,8 @@ const productSchema = z.object({
     // Detailed Description
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
     detailedDescription_ingredients: z.string().min(1, "Vui lòng nhập thành phần."),
-    detailedDescription_serving: z.string().min(1, "Vui lòng nhập khẩu phần."),
     detailedDescription_storage: z.string().min(1, "Vui lòng nhập hướng dẫn bảo quản."),
-    detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước."),
+    detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước & khẩu phần."),
     detailedDescription_accessories: z.string().optional(),
 
     // Profiles & Structure
@@ -90,7 +89,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         description: product.description,
         detailedDescription_flavor: product.detailedDescription?.flavor || "",
         detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
-        detailedDescription_serving: product.detailedDescription?.serving || "",
         detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
         detailedDescription_dimensions: product.detailedDescription?.dimensions || "",
         detailedDescription_accessories: product.detailedDescription?.accessories?.join('\n') || "",
@@ -105,7 +103,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         description: "",
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
-        detailedDescription_serving: "",
         detailedDescription_storage: defaultStorageInstructions,
         detailedDescription_dimensions: "",
         detailedDescription_accessories: "01 Chiếc nến sinh nhật\n01 Bộ đĩa và dĩa dành cho 10 người\n01 Dao cắt bánh",
@@ -223,10 +220,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             <h3 className="text-lg font-medium">Chi tiết sản phẩm</h3>
             <FormField control={form.control} name="detailedDescription_flavor" render={({ field }) => ( <FormItem><FormLabel>Mô tả hương vị (Flavor)</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng tinh tế kết hợp với thạch vải nhẹ..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="detailedDescription_ingredients" render={({ field }) => ( <FormItem><FormLabel>Thành phần chính (Ingredients)</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng, thạch vải, mứt mâm xôi, bạt bánh hạnh nhân..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="detailedDescription_dimensions" render={({ field }) => ( <FormItem><FormLabel>Kích thước (Dimensions)</FormLabel><FormControl><Input placeholder="Đường kính: 16cm | Chiều cao: 5cm" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                <FormField control={form.control} name="detailedDescription_serving" render={({ field }) => ( <FormItem><FormLabel>Khẩu phần (Serving)</FormLabel><FormControl><Input placeholder="Dành cho 6-8 người ăn" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-            </div>
+            <FormField control={form.control} name="detailedDescription_dimensions" render={({ field }) => ( <FormItem><FormLabel>Kích thước & Khẩu phần (Dimensions & Serving)</FormLabel><FormControl><Input placeholder="Vd: Đường kính 16cm, cho 6-8 người ăn" {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="detailedDescription_storage" render={({ field }) => ( <FormItem><FormLabel>Hướng dẫn sử dụng & Bảo quản (Storage)</FormLabel><FormControl><Textarea rows={4} placeholder="Luôn giữ bánh trong hộp kín..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
             <FormField control={form.control} name="detailedDescription_accessories" render={({ field }) => ( <FormItem><FormLabel>Phụ kiện đi kèm (Accessories)</FormLabel><FormDescription>Mỗi phụ kiện trên một dòng.</FormDescription><FormControl><Textarea placeholder="01 Chiếc nến sinh nhật..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
         </div>

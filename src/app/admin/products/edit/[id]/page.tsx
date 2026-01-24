@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -85,10 +86,8 @@ export default function EditProductPage() {
                 imageUrl: finalImageUrl,
                 slug: generateSlug(values.name),
                 detailedDescription: {
-                    ...product.detailedDescription,
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
-                    serving: values.detailedDescription_serving,
                     storage: values.detailedDescription_storage,
                     dimensions: values.detailedDescription_dimensions,
                     accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],

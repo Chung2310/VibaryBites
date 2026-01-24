@@ -8,7 +8,6 @@ export type Product = {
   detailedDescription: {
     flavor: string;
     ingredients: string;
-    serving: string;
     storage: string;
     dimensions: string;
     accessories: string[];

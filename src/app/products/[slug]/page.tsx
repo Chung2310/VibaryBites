@@ -1,3 +1,4 @@
+
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -221,19 +222,18 @@ export default function ProductDetailPage() {
 
             {/* --- Secondary Details Section --- */}
             <div className="mt-16 border-t border-b">
-                <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x">
                     {detailedDescription?.dimensions && (
-                        <div className="py-8 md:pr-8">
-                        <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC</h4>
+                        <div className="py-8 md:px-8">
+                        <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC & KHẨU PHẦN</h4>
                         <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
-                        {detailedDescription.serving && <p className="text-muted-foreground text-sm mt-1">{detailedDescription.serving}</p>}
                         </div>
                     )}
                     {detailedDescription?.storage && (
                         <div className="py-8 md:px-8">
                         <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
                         <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                            {detailedDescription.storage.split('. ').filter(s => s).map((line, index) => (
+                            {detailedDescription.storage.split('\n').filter(s => s).map((line, index) => (
                                 <li key={index}>{line}</li>
                             ))}
                         </ul>
