@@ -81,14 +81,20 @@ export default function ProductsPage() {
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
-            // Delete associated images from Firebase Storage
+            // Delete associated images from Firebase Storage, only if they are from Firebase
             if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-                const deletePromises = selectedProduct.imageUrls.map(url => 
-                    deleteImage(url).catch(err => {
-                        console.warn(`Failed to delete image at ${url}`, err);
-                    })
+                 const firebaseStorageUrls = selectedProduct.imageUrls.filter(url => 
+                    url.includes('firebasestorage.googleapis.com') || url.includes('storage.googleapis.com')
                 );
-                await Promise.all(deletePromises);
+
+                if (firebaseStorageUrls.length > 0) {
+                    const deletePromises = firebaseStorageUrls.map(url => 
+                        deleteImage(url).catch(err => {
+                            console.warn(`Failed to delete image ${url}`, err);
+                        })
+                    );
+                    await Promise.all(deletePromises);
+                }
             }
 
             await deleteDoc(docRef);
