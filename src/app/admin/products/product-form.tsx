@@ -191,8 +191,8 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         <div className="space-y-2">
             <FormLabel>Ảnh sản phẩm</FormLabel>
              {imagePreview ? (
-                <div className="relative w-full max-w-sm aspect-[4/3] rounded-md overflow-hidden">
-                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-cover" />
+                <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden">
+                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-contain" />
                   <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -201,7 +201,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                 <div
                   {...getRootProps()}
                   className={cn(
-                    'w-full max-w-sm aspect-[4/3] border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
+                    'w-full max-w-sm aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
                     isDragActive && 'border-primary bg-primary/10'
                   )}
                 >
@@ -210,7 +210,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                   <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
                 </div>
               )}
-            <FormDescription>Vui lòng cung cấp một ảnh cho sản phẩm. Tỉ lệ 4:3 được khuyến nghị.</FormDescription>
+            <FormDescription>Ảnh có nền trong suốt (tách nền) sẽ hiển thị tốt nhất với tỉ lệ 1:1.</FormDescription>
         </div>
 
         <Separator />
