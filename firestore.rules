@@ -18,6 +18,13 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email == 'manager@vibary.com';
     }
 
+    // --- COLLECTION GROUP RULE ---
+    // This rule is CRITICAL for admin queries. It allows admins to list documents
+    // across all 'orders' subcollections. 'read' includes 'get' and 'list'.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
+    }
+
     // --- PUBLIC & ADMIN-WRITABLE COLLECTIONS ---
     match /(cakes|categories|news_articles|quiz_questions)/{docId} {
       allow read: if true;
@@ -44,10 +51,10 @@ service cloud.firestore {
       allow list: if isAdmin();
 
       // Nested rule for orders within a customer's document.
+      // This allows an owner to access their own order, and an admin to write to it.
+      // Admin reads are handled by the collection group rule above.
       match /orders/{orderId} {
-        // Admins can read/write any order. Owners can read/write their own orders.
-        // 'read' includes 'get' and 'list', which is required for the admin's collection group query.
-        allow read, write: if isOwner(customerId) || isAdmin();
+        allow get, write: if isOwner(customerId) || isAdmin();
 
         // Nested rule for items within an order.
         match /order_items/{orderItemId} {
