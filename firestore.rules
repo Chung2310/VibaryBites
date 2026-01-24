@@ -35,28 +35,25 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource.data.customerId);
     }
     
-    // --- CUSTOMER DATA ---
+    // --- CUSTOMER DATA & ORDERS ---
     match /customers/{customerId} {
+      // Customers can create their own profile. Admins can view/update any profile.
       allow create: if isOwner(customerId);
       allow get, update: if isOwner(customerId) || isAdmin();
+      // Only admins can list all customers.
       allow list: if isAdmin();
 
-      // Path-specific rule for a customer's own orders.
-      // This rule is for direct access, NOT for collection group queries.
+      // Nested rule for orders within a customer's document.
       match /orders/{orderId} {
-        allow get, write: if isOwner(customerId) || isAdmin();
+        // Admins can read/write any order. Owners can read/write their own orders.
+        // 'read' includes 'get' and 'list', which is required for the admin's collection group query.
+        allow read, write: if isOwner(customerId) || isAdmin();
 
+        // Nested rule for items within an order.
         match /order_items/{orderItemId} {
           allow read, write: if isOwner(customerId) || isAdmin();
         }
       }
-    }
-
-    // --- COLLECTION GROUP RULE for 'orders' ---
-    // This rule is ONLY for collection group queries on 'orders'.
-    // It grants read access to admins across all 'orders' subcollections.
-    match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
     }
   }
 }
