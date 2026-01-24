@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,88 +21,89 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+    const handleFormSubmit = (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+        console.log('Step 1: handleFormSubmit called.');
         setIsSubmitting(true);
         
         if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi kết nối',
-                description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại.',
-            });
+            console.error('Step 2: Firestore not available.');
+            toast({ variant: 'destructive', title: 'Lỗi kết nối', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
             setIsSubmitting(false);
             return;
         }
+        console.log('Step 2: Firestore is available.');
 
         if (newImageFiles.length === 0) {
-            toast({
-                variant: "destructive",
-                title: "Thiếu ảnh sản phẩm",
-                description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm.",
-            });
+            console.error('Step 3: No image files provided.');
+            toast({ variant: "destructive", title: "Thiếu ảnh sản phẩm", description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm." });
             setIsSubmitting(false);
             return;
         }
+        console.log(`Step 3: ${newImageFiles.length} image file(s) provided.`);
         
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        let newProduct: Product | null = null;
+        console.log(`Step 4: Generated product ID: ${id}`);
 
-        try {
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
-            const uploadedUrls = await Promise.all(uploadPromises);
+        console.log('Step 5: Starting image uploads.');
+        const uploadPromises = newImageFiles.map(file => uploadImage(file));
 
-            newProduct = {
-                id,
-                slug: generateSlug(values.name),
-                name: values.name,
-                subtitle: values.subtitle,
-                description: values.description,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                categorySlug: values.categorySlug,
-                imageUrls: uploadedUrls,
-                detailedDescription: {
-                    flavor: "",
-                    ingredients: "",
-                    serving: "",
-                    storage: "",
-                    dimensions: "",
-                    accessories: [],
-                },
-                flavorProfile: [],
-                structure: [],
-                recipe: "",
-                collection: 'special-occasions',
-            };
+        Promise.all(uploadPromises)
+            .then(uploadedUrls => {
+                console.log('Step 6: Image uploads successful.', uploadedUrls);
+                const newProduct: Product = {
+                    id,
+                    slug: generateSlug(values.name),
+                    name: values.name,
+                    subtitle: values.subtitle,
+                    description: values.description,
+                    price: Number(values.price),
+                    stock: Number(values.stock),
+                    categorySlug: values.categorySlug,
+                    imageUrls: uploadedUrls,
+                    detailedDescription: {
+                        flavor: "", ingredients: "", serving: "",
+                        storage: "", dimensions: "", accessories: [],
+                    },
+                    flavorProfile: [],
+                    structure: [],
+                    recipe: "",
+                    collection: 'special-occasions',
+                };
 
-            await setDoc(docRef, newProduct);
-            
-            toast({
-                title: 'Thêm thành công!',
-                description: `Sản phẩm "${values.name}" đã được tạo. Giờ hãy thêm các thuộc tính cho sản phẩm.`,
+                console.log('Step 7: Calling setDoc.');
+                return setDoc(docRef, newProduct).then(() => {
+                    console.log('Step 8: setDoc successful.');
+                    return { newProduct }; // Pass product for the next .then()
+                });
+            })
+            .then(({ newProduct }) => {
+                toast({
+                    title: 'Thêm thành công!',
+                    description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
+                });
+                console.log('Step 9: Redirecting...');
+                router.push(`/admin/attributes?productId=${newProduct.id}`);
+            })
+            .catch((error: any) => {
+                console.error('Step ERROR: An error occurred in the promise chain.', error);
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'create',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    variant: 'destructive',
+                    title: 'Không thể tạo sản phẩm',
+                    description: error.message || 'Lỗi không xác định. Kiểm tra console.',
+                });
+            })
+            .finally(() => {
+                console.log('Step FINALLY: Submission process finished.');
+                setIsSubmitting(false);
             });
-            
-            router.push(`/admin/attributes?productId=${id}`);
-
-        } catch (error: any) {
-            console.error("Lỗi khi tạo sản phẩm mới:", error);
-            const resourceData = newProduct || values;
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: resourceData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-
-            toast({
-                variant: 'destructive',
-                title: 'Không thể tạo sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra. Vui lòng kiểm tra console để biết thêm chi tiết.'
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     return (
