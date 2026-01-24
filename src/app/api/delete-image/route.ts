@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-const storage = new Storage({ projectId: "gen-lang-client-0850828234" });
+// This is secure because this code only runs on the server.
+// The App Hosting environment provides default credentials.
+const storage = new Storage();
 const bucketName = 'gen-lang-client-0850828234.appspot.com';
 const bucket = storage.bucket(bucketName);
 
