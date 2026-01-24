@@ -1,14 +1,15 @@
 'use client';
 
+const MAX_IMAGE_DIMENSION = 1200; // Max width/height of 1200px
+const IMAGE_QUALITY = 0.85; // JPEG quality
+
 /**
- * Converts an image file to a Data URL.
- * This is a workaround for environments where direct cloud storage uploads fail.
- * The Data URL can be stored in Firestore and rendered directly by browsers.
- * NOTE: This is not efficient for production. It increases Firestore document size.
+ * Converts an image file to a resized, compressed JPEG Data URL.
+ * This is crucial to avoid exceeding Firestore's 1 MiB document size limit.
  *
  * @param file The image file to convert.
- * @param onProgress Optional callback to report progress (will be 0 or 100).
- * @returns A promise that resolves with the Data URL of the image.
+ * @param onProgress Optional callback to report progress.
+ * @returns A promise that resolves with the Data URL of the resized image.
  */
 export const uploadImage = (
   file: File,
@@ -17,24 +18,69 @@ export const uploadImage = (
   if (!file) {
     return Promise.reject(new Error('No file provided.'));
   }
+  if (!file.type.startsWith('image/')) {
+    return Promise.reject(new Error('File is not an image.'));
+  }
 
-  onProgress?.(50); // Simulate progress
+  onProgress?.(10); // Initial progress
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        onProgress?.(30);
+
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > MAX_IMAGE_DIMENSION) {
+            height *= MAX_IMAGE_DIMENSION / width;
+            width = MAX_IMAGE_DIMENSION;
+          }
+        } else {
+          if (height > MAX_IMAGE_DIMENSION) {
+            width *= MAX_IMAGE_DIMENSION / height;
+            height = MAX_IMAGE_DIMENSION;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          return reject(new Error('Failed to get canvas context.'));
+        }
+        
+        onProgress?.(60);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Get the data URL from the canvas as a JPEG
+        const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
         onProgress?.(100);
+
         resolve(dataUrl);
-      } else {
-        reject(new Error('Failed to read file as Data URL.'));
-      }
+      };
+
+      img.onerror = (error) => {
+        console.error('Image loading error:', error);
+        reject(new Error('Failed to load image for resizing.'));
+      };
+
+      // Start loading the image
+      img.src = e.target?.result as string;
+      onProgress?.(20);
     };
+
     reader.onerror = (error) => {
       console.error('FileReader error:', error);
       reject(new Error('An error occurred while reading the file.'));
     };
+    
     reader.readAsDataURL(file);
   });
 };
@@ -50,9 +96,9 @@ export const uploadImage = (
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   // No operation needed as the image is a data URL within the Firestore document.
   if (imageUrl?.startsWith('data:image')) {
-    console.log('Skipping deletion for Data URL image.');
+    // console.log('Skipping deletion for Data URL image.');
   } else {
-    console.log(`Skipping deletion for image URL: ${imageUrl}. Deletion is now a no-op.`);
+    // console.log(`Skipping deletion for image URL: ${imageUrl}. Deletion is now a no-op.`);
   }
   return Promise.resolve();
 };

@@ -38,7 +38,7 @@ service cloud.firestore {
     
     match /cakes/{cakeId} {
       allow read: if true;
-      allow write: if true; // TEMPORARY DIAGNOSTIC CHANGE
+      allow write: if isAdmin();
       
       match /reviews/{reviewId} {
         allow read: if true;
