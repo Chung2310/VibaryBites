@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../news-form';
@@ -39,17 +39,30 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
         const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
+        // Step 1: Upload image
+        let imageUrl = '';
+        try {
+            toastCtrl.update({ id: toastCtrl.id, title: "Đang tải lên ảnh bìa...", description: "Bước 1/2: Tải ảnh lên máy chủ." });
+            imageUrl = await uploadImage(imageFile);
+        } catch (error: any) {
+            console.error("Error during image upload:", error);
+            toastCtrl.update({
+                id: toastCtrl.id,
+                variant: 'destructive',
+                title: 'Lỗi tải ảnh lên!',
+                description: `Không thể tải ảnh lên: ${error.message}`,
+                duration: 9000,
+            });
+            setIsSubmitting(false);
+            return; // Stop the process
+        }
+
+        // Step 2: Save article data to Firestore
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
-
         try {
-            // 1. Upload image
-            toastCtrl.update({ title: "Đang tải lên ảnh bìa..." });
-            const imageUrl = await uploadImage(imageFile);
-            
-            toastCtrl.update({ title: "Đang lưu bài viết..." });
+            toastCtrl.update({ id: toastCtrl.id, title: "Đang lưu bài viết...", description: "Bước 2/2: Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            // 2. Prepare article data
             const newArticle: NewsArticle = {
                 id: articleId,
                 slug: generateSlug(values.title),
@@ -62,10 +75,10 @@ export default function NewNewsArticlePage() {
                 publicationDate: new Date().toISOString(),
             };
 
-            // 3. Save to Firestore
             await setDoc(docRef, newArticle);
             
             toastCtrl.update({
+                id: toastCtrl.id,
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
@@ -74,16 +87,20 @@ export default function NewNewsArticlePage() {
             router.push('/admin/news');
 
         } catch (error: any) {
-             console.error("!!!!!!!!!!! RAW ERROR CAUGHT ON NEWS CREATION !!!!!!!!!!!");
-            console.error(error);
-            console.error("Error Code:", error.code);
-            console.error("Error Message:", error.message);
-            console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            console.error("Error saving article to Firestore:", error);
+
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
 
             toastCtrl.update({
+                id: toastCtrl.id,
                 variant: 'destructive',
-                title: 'Không thể tạo bài viết',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết.`,
+                title: 'Lỗi lưu bài viết!',
+                description: `Không thể lưu bài viết: ${error.message}`,
                 duration: 9000,
             });
         } finally {

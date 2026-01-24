@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -34,18 +34,31 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
+        // Step 1: Upload images
+        let imageUrls: string[] = [];
+        try {
+            toastCtrl.update({ id: toastCtrl.id, title: `Đang tải lên ${newImageFiles.length} ảnh...`, description: "Bước 1/2: Tải ảnh lên máy chủ." });
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
+            imageUrls = await Promise.all(uploadPromises);
+        } catch (error: any) {
+            console.error("Error during image upload:", error);
+            toastCtrl.update({
+                id: toastCtrl.id,
+                variant: 'destructive',
+                title: 'Lỗi tải ảnh lên!',
+                description: `Không thể tải ảnh lên: ${error.message}`,
+                duration: 9000,
+            });
+            setIsSubmitting(false);
+            return; // Stop the process
+        }
+
+        // Step 2: Save product data to Firestore
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
-
         try {
-            // 1. Upload images
-            toastCtrl.update({ title: `Đang tải lên ${newImageFiles.length} ảnh...` });
-            const uploadPromises = newImageFiles.map(file => uploadImage(file));
-            const imageUrls = await Promise.all(uploadPromises);
+            toastCtrl.update({ id: toastCtrl.id, title: "Đang lưu thông tin sản phẩm...", description: "Bước 2/2: Lưu dữ liệu vào cơ sở dữ liệu." });
             
-            toastCtrl.update({ title: "Đang lưu thông tin sản phẩm..." });
-
-            // 2. Prepare product data
             const newProduct: Product = {
                 id: productId,
                 slug: generateSlug(values.name),
@@ -70,10 +83,10 @@ export default function NewProductPage() {
                 sizes: [],
             };
 
-            // 3. Save to Firestore
             await setDoc(docRef, newProduct);
             
             toastCtrl.update({
+                id: toastCtrl.id,
                 variant: "default",
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
@@ -82,16 +95,20 @@ export default function NewProductPage() {
             router.push('/admin/products');
 
         } catch (error: any) {
-            console.error("!!!!!!!!!!! RAW ERROR CAUGHT ON PRODUCT CREATION !!!!!!!!!!!");
-            console.error(error);
-            console.error("Error Code:", error.code);
-            console.error("Error Message:", error.message);
-            console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            console.error("Error saving product to Firestore:", error);
+            
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
 
             toastCtrl.update({
+                id: toastCtrl.id,
                 variant: 'destructive',
-                title: 'Không thể tạo sản phẩm',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng kiểm tra Console (F12) để biết thêm chi tiết.`,
+                title: 'Lỗi lưu sản phẩm!',
+                description: `Không thể lưu thông tin sản phẩm: ${error.message}`,
                 duration: 9000,
             });
         } finally {
