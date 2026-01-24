@@ -59,25 +59,15 @@ service cloud.firestore {
     
     // Rules for the 'orders' subcollection within a customer document
     match /customers/{customerId}/orders/{orderId} {
-        // An owner can read and write their own orders.
-        allow read, write: if isOwner(customerId);
+        // An owner can read/write their own orders. An admin can read/write any order.
+        // This combined rule is necessary for admin collection group queries to work.
+        allow read, write: if isOwner(customerId) || isAdmin();
 
         // Rules for the nested 'order_items' subcollection
         match /order_items/{orderItemId} {
-            // An owner can read and write their own order items.
-            allow read, write: if isOwner(customerId);
+            // Permissions are inherited. Admins and owners can read/write order items.
+            allow read, write: if isOwner(customerId) || isAdmin();
         }
-    }
-    
-    // --------------------------------
-    // Admin-Specific Collection Group Queries
-    // --------------------------------
-    
-    // This rule is CRUCIAL. It explicitly allows an admin to perform a 'list' operation
-    // across the 'orders' collection group. This is necessary for the admin dashboard
-    // and orders page to fetch all orders from all customers.
-    match /{path=**}/orders/{orderId} {
-      allow list, get: if isAdmin();
     }
   }
 }
