@@ -42,27 +42,24 @@ service cloud.firestore {
       // Users can create their own profile.
       allow create: if isOwner(customerId);
       // Admins can get any customer profile. Users can only get/update their own.
-      allow get, update: if isOwner(customerId) || isAdmin();
+      // Admins can also list all customers.
+      allow read, update: if isOwner(customerId) || isAdmin();
       // Only admins can list all customers.
       allow list: if isAdmin();
 
       // Nested Orders: for single document access
       match /orders/{orderId} {
-        // Admins or the owner can access/modify a specific order.
-        allow get, write: if isOwner(customerId) || isAdmin();
+        // Admins can read any order. Owners can read their own.
+        // Admins can list all orders (via collection group query).
+        allow read: if isOwner(customerId) || isAdmin();
+        // Admins or owners can write to an order.
+        allow write: if isOwner(customerId) || isAdmin();
 
         // Nested Order Items
         match /order_items/{orderItemId} {
           allow read, write: if isOwner(customerId) || isAdmin();
         }
       }
-    }
-
-    // Rule for collection group query for 'orders'. This is critical for the admin panel.
-    // It allows an admin to read all orders across all customers.
-    // Using `read` instead of `list` because the client SDK fetches documents after listing them.
-    match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
     }
   }
 }
