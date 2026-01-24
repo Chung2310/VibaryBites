@@ -30,6 +30,7 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import Link from "next/link";
 
 const productSchema = z.object({
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
@@ -195,20 +196,30 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Danh mục</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoadingCategories || !categories || categories.length === 0}
+                >
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Chọn một danh mục" />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                    {isLoadingCategories ? (
-                      <SelectItem value="loading" disabled>Đang tải danh mục...</SelectItem>
-                    ) : (
-                      categories?.map(cat => (
-                          <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem>
-                      ))
-                    )}
+                      {isLoadingCategories ? (
+                        <div className="p-4 text-sm text-muted-foreground">Đang tải danh mục...</div>
+                      ) : (
+                        categories && categories.length > 0 ? (
+                          categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-4 text-sm text-muted-foreground">
+                            Không tìm thấy danh mục. Vui lòng <Link href="/admin/categories" className="underline text-primary hover:text-primary/80">thêm danh mục mới</Link> trước.
+                          </div>
+                        )
+                      )}
                     </SelectContent>
                 </Select>
                 <FormMessage />
