@@ -14,10 +14,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
     }
     
-    // COLLECTION GROUP: TEMPORARY DEBUGGING - Allow public read for collection group query
+    // COLLECTION GROUP: Allow admin to query ALL orders across all customers
     match /{path=**}/orders/{orderId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
+      // Explicitly allow list and get for the admin. 'read' is a shorthand for 'get' and 'list'.
+      // Since 'read' might be failing, we are being more specific.
+      allow list, get: if isAdmin();
+      allow write: if isAdmin();
     }
     
     // COLLECTION GROUP: Allow anyone to read all reviews
