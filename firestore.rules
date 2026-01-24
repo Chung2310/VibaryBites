@@ -28,10 +28,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // For development, any signed-in user is considered an admin.
-      // For production, you should replace this with a more secure check,
-      // such as checking for a custom claim: request.auth.token.admin == true
-      return isSignedIn();
+      // Grant admin access only to the specific admin user UID
+      return request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
     }
     
     // ============================================
