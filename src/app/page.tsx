@@ -11,7 +11,7 @@ import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Product, NewsArticle } from '@/lib/types';
+import type { Product, NewsArticle, ProductCategory } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -151,12 +151,17 @@ function Hero() {
 }
 
 function CategorySection() {
-    const categories = [
-        { name: 'Bánh sinh nhật', description: 'Những chiếc bánh cho ngày đặc biệt', imageId: 'category-birthday-cake' },
-        { name: 'Bánh lẻ', description: 'Thưởng thức hương vị mỗi ngày', imageId: 'category-sweet-cake' },
-        { name: 'Bánh nướng', description: 'Giòn tan, thơm lừng từ lò nướng', imageId: 'category-other-cakes' },
-        { name: 'Bánh Tea-Break', description: 'Set bánh cho tiệc trà & sự kiện', imageId: 'category-drinks' },
-    ];
+    const firestore = useFirestore();
+    const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
+    const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
+
+    // This map connects the slug from the DB to the imageId from placeholder-images.json
+    const categoryImageMap: Record<string, string> = {
+        'banh-sinh-nhat': 'category-birthday-cake',
+        'banh-le': 'category-sweet-cake',
+        'banh-nuong': 'category-other-cakes',
+        'banh-tea-break': 'category-drinks',
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -189,40 +194,48 @@ function CategorySection() {
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
           >
-            {categories.map((category) => {
-              const image = PlaceHolderImages.find(p => p.id === category.imageId);
-              const slug = generateSlug(category.name);
-              return (
-                  <motion.div key={category.name} variants={itemVariants}>
-                    <Link
-                      href={`/products#${slug}`}
-                      className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
-                    >
-                      {image && (
-                          <Image
-                              src={image.imageUrl}
-                              alt={category.name}
-                              fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-110"
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                              data-ai-hint={image.imageHint}
-                          />
-                      )}
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
-                          <div>
-                            <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
-                                {category.name}
-                            </h3>
-                            <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.description}</p>
-                          </div>
-                          
+            {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                    <motion.div key={i} variants={itemVariants} className="aspect-[3/4] w-full">
+                        <Skeleton className="h-full w-full rounded-2xl" />
+                    </motion.div>
+                ))
+            ) : (
+                categories?.map((category) => {
+                const imageId = categoryImageMap[category.slug] || 'category-birthday-cake'; // Default image
+                const image = PlaceHolderImages.find(p => p.id === imageId);
+                return (
+                    <motion.div key={category.slug} variants={itemVariants}>
+                        <Link
+                        href={`/products#${category.slug}`}
+                        className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
+                        >
+                        {image && (
+                            <Image
+                                src={image.imageUrl}
+                                alt={category.title}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                data-ai-hint={image.imageHint}
+                            />
+                        )}
+                        <div className="absolute bottom-4 left-4 right-4">
+                            <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
+                            <div>
+                                <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
+                                    {category.title}
+                                </h3>
+                                <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.subtitle}</p>
+                            </div>
+                            
+                            </div>
                         </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-              )
-            })}
+                        </Link>
+                    </motion.div>
+                )
+                })
+            )}
           </motion.div>
         </div>
       </section>
