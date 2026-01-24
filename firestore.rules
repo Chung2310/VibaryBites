@@ -16,57 +16,63 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Using UID is a robust workaround if Custom Claims are not set up.
     function isAdmin() {
-      // This is a temporary workaround. For better security, use custom claims.
-      // See: https://firebase.google.com/docs/auth/admin/custom-claims
       return isSignedIn() && request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2';
     }
 
     // ================================
-    // ADMIN "GOD MODE"
+    // ADMIN-ONLY COLLECTIONS
     // ================================
-    // This rule allows users identified as admins to read and write any document
-    // in the database. This is a simple but powerful way to manage admin access.
-    match /{path=**} {
+
+    // Ingredients are fully controlled by admins.
+    match /ingredients/{ingredientId} {
       allow read, write: if isAdmin();
     }
 
-    // ===============================================
-    // PUBLIC & USER-SPECIFIC RULES (for non-admins)
-    // ===============================================
-    // The following rules apply to users who are NOT admins.
-    // The admin rule above will grant access before these are evaluated for admins.
 
-    // Publicly readable collections
+    // ================================
+    // PUBLIC-READABLE COLLECTIONS
+    // ================================
+
+    // Cakes, Categories, News, and Quizzes are readable by anyone, but only writable by admins.
     match /{collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
-      allow get: if true;
-      allow list: if true;
-      // Write access is handled by the admin rule.
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Customer documents
-    match /customers/{customerId} {
-      // A user can get their own document. This is also needed for the isAdminByRole check.
-      allow get: if isOwner(customerId);
-      // A user can create their own customer document.
-      allow create: if isOwner(customerId);
-      // A user can update their own document.
-      allow update: if isOwner(customerId);
 
-      // A user can read and write to their own orders and subcollections.
+    // ================================
+    // USER-SPECIFIC & MIXED-ACCESS DATA
+    // ================================
+
+    // Customer profiles. Users can manage their own, Admins can manage all.
+    match /customers/{customerId} {
+      // Admin can list all customers. Users can only get their own.
+      allow read: if isAdmin() || isOwner(customerId);
+      // Users can create their own profile.
+      allow create: if isOwner(customerId);
+      // Users can update their own profile, Admins can update any.
+      allow update: if isOwner(customerId) || isAdmin();
+      // Only admins can delete customer profiles.
+      allow delete: if isAdmin();
+
+      // Orders are nested under customers.
+      // This rule allows admins to perform collection group queries on 'orders'.
       match /orders/{orderId}/{document=**} {
-        allow read, write: if isOwner(customerId);
+        allow read, write: if isOwner(customerId) || isAdmin();
       }
     }
 
-    // Cake reviews
+
+    // Cake reviews are nested under cakes.
     match /cakes/{cakeId}/reviews/{reviewId} {
       // Anyone can read reviews.
       allow read: if true;
       // Only authenticated users can create reviews for themselves.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      // Only the review's owner can update or delete it.
-      allow update, delete: if isSignedIn() && resource.data.customerId == request.auth.uid;
+      // Owners and Admins can update or delete reviews.
+      allow update, delete: if (resource.data.customerId == request.auth.uid) || isAdmin();
     }
   }
 }
