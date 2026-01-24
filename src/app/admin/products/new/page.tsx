@@ -20,72 +20,82 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // This is a debugging step to isolate the Firestore write operation.
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         setIsSubmitting(true);
-        console.log("--- Bắt đầu quy trình thêm sản phẩm (CHẾ ĐỘ GỠ LỖI) ---");
 
         if (!firestore) {
-            console.error("Lỗi: Firestore instance không tồn tại.");
-            toast({ variant: 'destructive', title: 'Lỗi nghiêm trọng', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+            toast({
+                variant: 'destructive',
+                title: 'Lỗi nghiêm trọng',
+                description: 'Không thể kết nối tới cơ sở dữ liệu.',
+            });
             setIsSubmitting(false);
             return;
         }
 
-        const id = `prod-debug-${Date.now()}`;
+        if (newImageFiles.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Lỗi",
+                description: "Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.",
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        console.log(`Đã tạo ID sản phẩm gỡ lỗi: ${id} tại collection 'cakes'`);
+        let productDataForError: any = { ...values };
 
-        // Create a hardcoded product object, ignoring form values for now.
-        const hardcodedProduct: Product = {
-            id,
-            slug: `test-product-${id}`,
-            name: "Sản phẩm Test",
-            description: "Đây là một mô tả test.",
-            price: 100000,
-            stock: 10,
-            categorySlug: "banh-le",
-            imageUrls: ["https://placehold.co/600x400/EEE/31343C.png?text=Test"],
-            collection: 'special-occasions',
-            detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
-        };
-        
-        let newProduct: Product; // Variable to hold the actual product data for error reporting
-        
         try {
-            // We will use the hardcoded product for the write operation
-            newProduct = hardcodedProduct;
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
+            const uploadedImageUrls = await Promise.all(uploadPromises);
 
-            console.log("Đang lưu dữ liệu sản phẩm HARDCODED vào Firestore:", newProduct);
+            const newProduct: Product = {
+                id,
+                slug: generateSlug(values.name),
+                name: values.name,
+                subtitle: values.subtitle || "",
+                description: values.description,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                imageUrls: uploadedImageUrls,
+                // Default values for fields not in the basic product form
+                collection: 'special-occasions', 
+                detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
+                flavorProfile: [],
+                structure: [],
+                recipe: "",
+            };
+            
+            productDataForError = newProduct;
+
             await setDoc(docRef, newProduct);
-            console.log("Lưu sản phẩm vào Firestore thành công.");
             
             toast({
-                title: 'Thêm thành công (Chế độ gỡ lỗi)!',
+                title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
             });
             
-            console.log("Đang chuyển hướng đến trang sản phẩm...");
             router.push(`/admin/products`);
 
         } catch (error: any) {
-            console.error("---!!! ĐÃ XẢY RA LỖI KHI THÊM SẢN PHẨM !!! ---");
-            console.error("Chi tiết lỗi:", error);
+            console.error("Lỗi khi thêm sản phẩm:", error);
             
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: newProduct! // Use the product data that was attempted
+                requestResourceData: productDataForError
             });
             errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra. Vui lòng kiểm tra console để biết thêm chi tiết.',
+                description: 'Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng kiểm tra quyền truy cập của bạn và thử lại.',
             });
         } finally {
-            console.log("--- Kết thúc quy trình thêm sản phẩm ---");
             setIsSubmitting(false);
         }
     };
