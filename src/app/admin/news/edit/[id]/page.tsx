@@ -47,12 +47,12 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
         try {
             let finalImageUrl = article.imageUrl;
 
-            // If a new image is provided, upload it.
             if (imageFile) {
-                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới..." });
                 try {
-                    const newImageUrl = await uploadImage(imageFile);
-                     // Delete old one only after new one is successfully uploaded
+                    const onProgress = (progress: number) => {
+                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới...", description: `Tiến trình: ${Math.round(progress)}%` });
+                    };
+                    const newImageUrl = await uploadImage(imageFile, onProgress);
                     if (article.imageUrl && (article.imageUrl.includes('firebasestorage') || article.imageUrl.includes('storage.googleapis'))) {
                         await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                     }
@@ -66,17 +66,15 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
                         description: `Không thể thay đổi ảnh bìa. Các thông tin khác sẽ được lưu.`,
                         duration: 9000,
                     });
-                    // Keep the old image URL if upload fails
                     finalImageUrl = article.imageUrl;
                 }
             } 
-            // If no new image, but the existing one was removed.
             else if (imageWasRemoved && article.imageUrl) {
                 await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 
-            toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết..." });
+            toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "" });
 
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
@@ -86,7 +84,6 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
                 content: values.content,
                 imageUrl: finalImageUrl,
                 slug: generateSlug(values.title),
-                // publicationDate is not updated on edit
             };
 
             await setDoc(docRef, updatedArticleData, { merge: true });

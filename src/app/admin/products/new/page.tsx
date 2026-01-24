@@ -32,12 +32,13 @@ export default function NewProductPage() {
         let imageUrl = '';
         if (imageFile) {
             try {
-                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh..." });
-                imageUrl = await uploadImage(imageFile);
+                const onProgress = (progress: number) => {
+                    toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh...", description: `Tiến trình: ${Math.round(progress)}%` });
+                };
+                imageUrl = await uploadImage(imageFile, onProgress);
                 toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
             } catch (error) {
                 console.error("Lỗi khi tải ảnh lên:", error);
-                // Assign a placeholder and notify the user, but don't stop the process.
                 imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=Image+Upload+Failed`;
                 toast({
                     variant: 'destructive',
@@ -47,7 +48,6 @@ export default function NewProductPage() {
                 });
             }
         } else {
-             // If no image is provided at all, use a placeholder.
              imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
              toast({
                 title: 'Không có ảnh',
@@ -71,7 +71,7 @@ export default function NewProductPage() {
                 categorySlug: values.categorySlug,
                 description: values.description,
                 imageUrl: imageUrl,
-                collection: values.categorySlug, // Defaulting collection to categorySlug
+                collection: values.categorySlug,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,

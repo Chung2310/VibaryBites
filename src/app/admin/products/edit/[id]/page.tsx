@@ -47,12 +47,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         try {
             let finalImageUrl = product.imageUrl;
 
-            // Handle image changes
-            if (imageFile) { // New image uploaded
-                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới..." });
+            if (imageFile) {
                 try {
-                    const newImageUrl = await uploadImage(imageFile);
-                    // Delete old one only after new one is successfully uploaded
+                    const onProgress = (progress: number) => {
+                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới...", description: `Tiến trình: ${Math.round(progress)}%` });
+                    };
+                    const newImageUrl = await uploadImage(imageFile, onProgress);
                     if (product.imageUrl && (product.imageUrl.includes('firebasestorage') || product.imageUrl.includes('storage.googleapis'))) {
                         await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
                     }
@@ -66,16 +66,14 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                         description: `Không thể thay đổi ảnh. Các thông tin khác sẽ được lưu.`,
                         duration: 9000,
                     });
-                    // Keep the old image URL if upload fails
                     finalImageUrl = product.imageUrl;
                 }
-
-            } else if (imageWasRemoved && product.imageUrl) { // Image removed by user
+            } else if (imageWasRemoved && product.imageUrl) {
                 await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete removed image ${product.imageUrl}`, err));
-                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`; // Set to placeholder
+                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             }
             
-            toastControl.update({ id: toastControl.id, title: "Đang lưu thông tin sản phẩm..." });
+            toastControl.update({ id: toastControl.id, title: "Đang lưu thông tin sản phẩm...", description: "" });
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -86,7 +84,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 imageUrl: finalImageUrl,
                 slug: generateSlug(values.name),
                 detailedDescription: {
-                    ...product.detailedDescription, // preserve any fields not in the form
+                    ...product.detailedDescription,
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
                     serving: values.detailedDescription_serving,

@@ -1,42 +1,56 @@
 'use client';
 
 import { getApp } from 'firebase/app';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Uploads an image file to Firebase Storage.
- * Authentication is enforced by Firebase Storage Security Rules.
+ * Uploads an image file to Firebase Storage with progress tracking.
  * @param file The image file to upload.
+ * @param onProgress Optional callback to report upload progress (a number from 0 to 100).
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
-export const uploadImage = async (file: File): Promise<string> => {
-  if (!file) {
-    throw new Error("No file provided for upload.");
-  }
+export const uploadImage = (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      return reject(new Error("No file provided for upload."));
+    }
 
-  const app = getApp();
-  
-  try {
+    const app = getApp();
     const storage = getStorage(app);
-
     const fileExtension = file.name.split('.').pop();
-    const fileName = `uploads/${uuidv4()}.${fileExtension}`; 
+    const fileName = `uploads/${uuidv4()}.${fileExtension}`;
     const storageRef = ref(storage, fileName);
-    
     const contentType = file.type || 'application/octet-stream';
     const metadata = { contentType };
-    
-    const snapshot = await uploadBytes(storageRef, file, metadata);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return downloadURL;
-  } catch (error) {
-    console.error("Firebase Storage Upload Error:", error);
-    // Re-throw a more user-friendly error.
-    throw new Error(`Image upload failed: ${(error as Error).message}`);
-  }
+
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        console.error("Firebase Storage Upload Error:", error);
+        reject(new Error(`Image upload failed: ${error.code}`));
+      },
+      async () => {
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (error) {
+          console.error("Firebase Storage Get URL Error:", error);
+          reject(new Error(`Failed to get download URL: ${(error as Error).message}`));
+        }
+      }
+    );
+  });
 };
+
 
 /**
  * Deletes an image from Firebase Storage using its public URL.

@@ -32,8 +32,10 @@ export default function NewNewsArticlePage() {
         let imageUrl = '';
         if (imageFile) {
             try {
-                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh bìa..." });
-                imageUrl = await uploadImage(imageFile);
+                const onProgress = (progress: number) => {
+                    toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh bìa...", description: `Tiến trình: ${Math.round(progress)}%` });
+                };
+                imageUrl = await uploadImage(imageFile, onProgress);
                 toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
             } catch (error: any) {
                 console.error("Lỗi khi tải ảnh lên:", error);
