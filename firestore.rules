@@ -22,21 +22,18 @@ service cloud.firestore {
     }
     
     // ================================
-    // PUBLIC & ADMIN-WRITE COLLECTIONS
+    // GENERIC TOP-LEVEL COLLECTIONS
     // ================================
 
-    match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    // ================================
-    // ADMIN-ONLY COLLECTIONS
-    // ================================
-
-    match /ingredients/{ingredientId} {
-      // Explicitly grant list, get, and write permissions to admins.
-      allow get, list, write: if isAdmin();
+    match /{collection}/{docId} {
+        // Public collections can be read by anyone.
+        // Ingredients can only be read by an admin.
+        allow read: if (collection in ['cakes', 'categories', 'news_articles', 'quiz_questions'])
+                     || (collection == 'ingredients' && isAdmin());
+        
+        // Public collections and ingredients can only be written to by an admin.
+        allow write: if (collection in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients']) 
+                      && isAdmin();
     }
 
     // ===========================================
