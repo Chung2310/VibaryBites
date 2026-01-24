@@ -22,12 +22,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
     }
 
+    // NEW: Explicit rule for collection group queries on 'orders'.
+    // This allows an admin to perform a list operation across all 'orders' collections.
+    match /{path=**}/orders/{orderId} {
+        allow list: if isAdmin();
+    }
+
     // --------------------------------
     // Public & Admin Writable Collections
     // --------------------------------
 
-    // Cakes, Categories, News, Ingredients, and Quiz questions can be read by anyone.
-    // Only administrators can create, update, or delete them.
     match /(cakes|categories|news_articles|quiz_questions|ingredients)/{docId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -37,8 +41,6 @@ service cloud.firestore {
     // User-Generated Content
     // --------------------------------
 
-    // Reviews can be read by anyone.
-    // Users can create reviews and can only modify or delete their own reviews.
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
@@ -49,23 +51,16 @@ service cloud.firestore {
     // User & Customer Data
     // --------------------------------
 
-    // Rules for the 'customers' collection
     match /customers/{customerId} {
-      // Admins can get any specific customer document and list all customers.
       allow get, list: if isAdmin();
-      // A user can create, read, and update their OWN customer document. They cannot delete it.
       allow create, get, update: if isOwner(customerId);
 
-      // Rules for the 'orders' subcollection within a customer document
       match /orders/{orderId} {
-          // Admins can list all orders via collection group query.
-          allow list: if isAdmin();
-          // Owners and Admins can get/write individual documents.
+          // The 'list' rule for collection group is handled above.
+          // This rule now only needs to cover direct access (get) and writes.
           allow get, write: if isOwner(customerId) || isAdmin();
 
-          // Rules for the nested 'order_items' subcollection
           match /order_items/{orderItemId} {
-              // Permissions are inherited. Admins and owners can read/write order items.
               allow read, write: if isOwner(customerId) || isAdmin();
           }
       }
