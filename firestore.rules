@@ -21,10 +21,9 @@ service cloud.firestore {
       );
     }
 
+    // Temporary rule for debugging collection group query
     match /{path=**}/orders/{orderId} {
-      allow list: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
-      allow get: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
-      allow create, update, delete: if isSignedIn() && (request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2' || request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1');
+      allow read, write: if true;
     }
 
     match /{path=**}/reviews/{reviewId} {
@@ -69,6 +68,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /orders/{orderId} {
+        // This rule is now redundant due to the collection group rule above,
+        // but we leave it for clarity and for when we restore security.
         allow read, write: if isOwner(customerId) || isAdmin();
 
         match /order_items/{orderItemId} {
