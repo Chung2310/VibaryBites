@@ -50,6 +50,8 @@ service cloud.firestore {
       match /orders/{orderId} {
         // Admins or the owner can access an order.
         allow get, write: if isOwner(customerId) || isAdmin();
+        // Admins can list orders for collection group queries.
+        allow list: if isAdmin();
 
         // Nested Order Items
         match /order_items/{orderItemId} {
