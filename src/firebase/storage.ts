@@ -1,11 +1,10 @@
 'use client';
 
 const MAX_IMAGE_DIMENSION = 1200; // Max width/height of 1200px
-const IMAGE_QUALITY = 0.85; // JPEG quality
 
 /**
- * Converts an image file to a resized, compressed JPEG Data URL.
- * This is crucial to avoid exceeding Firestore's 1 MiB document size limit.
+ * Converts an image file to a resized PNG Data URL.
+ * This helps to keep file sizes reasonable while preserving transparency.
  *
  * @param file The image file to convert.
  * @param onProgress Optional callback to report progress.
@@ -59,8 +58,8 @@ export const uploadImage = (
         onProgress?.(60);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Get the data URL from the canvas as a JPEG
-        const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+        // Get the data URL from the canvas as a PNG to preserve transparency
+        const dataUrl = canvas.toDataURL('image/png');
         onProgress?.(100);
 
         resolve(dataUrl);
