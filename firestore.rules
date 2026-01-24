@@ -25,10 +25,9 @@ service cloud.firestore {
     // PUBLIC-READABLE COLLECTIONS
     // ================================
 
-    // Cakes, Categories, News, and Quizzes are readable by anyone.
     match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
       allow read: if true;
-      allow write: if isAdmin(); // Only admins can write to public data.
+      allow write: if isAdmin();
     }
     
     // ================================
@@ -40,49 +39,37 @@ service cloud.firestore {
     }
 
     // ================================
-    // USER-SPECIFIC & MIXED-ACCESS
+    // USER-SPECIFIC DATA (TOP-LEVEL)
     // ================================
     
-    // Customer profiles:
-    // - Users can read/create/update their own profile.
-    // - Admins can read/update any profile and list all profiles.
     match /customers/{customerId} {
       allow get: if isOwner(customerId) || isAdmin();
       allow list, delete: if isAdmin();
       allow create: if isOwner(customerId);
       allow update: if isOwner(customerId) || isAdmin();
-
-      // Nested Orders:
-      // - This rule handles direct access to a specific order document.
-      // - It does NOT cover collection group queries.
-      match /orders/{orderId} {
-        allow read, write: if isOwner(customerId) || isAdmin();
-        
-        // Order Items nested under orders
-        match /order_items/{orderItemId} {
-           allow read, write: if isOwner(customerId) || isAdmin();
-        }
-      }
+      // NOTE: Subcollection rules are now handled by collection group matches below.
     }
 
-    // Cake Reviews:
-    // - Anyone can read.
-    // - Signed-in users can create their own reviews.
-    // - Owners or Admins can update/delete.
+    // ================================
+    // NESTED & USER-GENERATED CONTENT (VIA COLLECTION GROUPS)
+    // ================================
+    
     match /cakes/{cakeId}/reviews/{reviewId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
       allow update, delete: if (resource.data.customerId == request.auth.uid) || isAdmin();
     }
     
-    // ================================
-    // COLLECTION GROUP RULES
-    // ================================
-    
-    // This is the critical rule that was missing.
-    // It allows an admin to perform a 'list' or 'get' query across the entire 'orders' collection group.
+    // This single rule governs all 'orders' collections, wherever they are nested.
     match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
+      // Allow access if the user is an admin OR if they are the owner of the parent customer document.
+      allow read, write: if isAdmin() || (path[0] == 'customers' && isOwner(path[1]));
+    }
+    
+    // This rule governs all 'order_items' collections.
+    match /{path=**}/order_items/{orderItemId} {
+      // Similar logic: check for admin or ownership via the path.
+      allow read, write: if isAdmin() || (path[0] == 'customers' && isOwner(path[1]));
     }
   }
 }
