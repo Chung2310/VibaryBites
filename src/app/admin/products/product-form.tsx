@@ -264,16 +264,9 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
           )}
         />
         
-        <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>Hủy</Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang lưu...
-                    </>
-                ) : (isEditMode ? 'Lưu thay đổi' : 'Tạo sản phẩm & Tiếp tục')}
-            </Button>
+        <div className="flex justify-end gap-4 items-center pt-4">
+            <Button type="button" variant="ghost" onClick={onCancel}>Hủy</Button>
+            <p className="text-destructive font-semibold">hiện tại không thể upload sản phẩm</p>
         </div>
       </form>
     </Form>
