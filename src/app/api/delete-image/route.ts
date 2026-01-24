@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-const storage = new Storage();
+const storage = new Storage({ projectId: "gen-lang-client-0850828234" });
 const bucketName = 'gen-lang-client-0850828234.appspot.com';
 const bucket = storage.bucket(bucketName);
 
 export async function POST(request: Request) {
+  let imageUrl: string | undefined;
   try {
-    const { imageUrl } = await request.json();
+    const body = await request.json();
+    imageUrl = body.imageUrl;
 
     if (!imageUrl || !imageUrl.startsWith(`https://storage.googleapis.com/${bucketName}/`)) {
       return NextResponse.json({ error: 'Invalid image URL provided.' }, { status: 400 });
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
     console.error('Delete API error:', error);
     // It's common to try to delete a non-existent file, so we can be lenient.
     if (error.code === 404) {
-        console.warn(`Attempted to delete an image that does not exist: ${ (await request.json()).imageUrl }`);
+        console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
         return NextResponse.json({ success: true, message: 'File not found, but considered successful.' });
     }
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';

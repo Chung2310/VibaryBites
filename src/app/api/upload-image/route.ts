@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // This is secure because this code only runs on the server.
 // The App Hosting environment provides default credentials.
-const storage = new Storage();
+const storage = new Storage({ projectId: "gen-lang-client-0850828234" });
 const bucketName = 'gen-lang-client-0850828234.appspot.com';
 const bucket = storage.bucket(bucketName);
 
