@@ -29,40 +29,41 @@ export default function NewProductPage() {
 
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
-
-        let imageUrl = '';
-        if (imageFile) {
-            try {
-                const onProgress = (progress: number) => {
-                    toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh...", description: `Tiến trình: ${Math.round(progress)}%` });
-                };
-                imageUrl = await uploadImage(imageFile, onProgress);
-                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-            } catch (error) {
-                console.error("Lỗi khi tải ảnh lên:", error);
-                imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=Image+Upload+Failed`;
-                toast({
-                    variant: 'destructive',
-                    title: 'Lỗi tải ảnh lên!',
-                    description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
-                    duration: 9000,
-                });
-            }
-        } else {
-             imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
-             toast({
-                title: 'Không có ảnh',
-                description: 'Đang sử dụng ảnh mặc định cho sản phẩm.'
-             });
-        }
-
-
+        
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
+        let newProduct: Product | null = null;
+
         try {
+            let imageUrl = '';
+            if (imageFile) {
+                try {
+                    const onProgress = (progress: number) => {
+                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh...", description: `Tiến trình: ${Math.round(progress)}%` });
+                    };
+                    imageUrl = await uploadImage(imageFile, onProgress);
+                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                } catch (error) {
+                    console.error("Lỗi khi tải ảnh lên:", error);
+                    imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=Image+Upload+Failed`;
+                    toast({
+                        variant: 'destructive',
+                        title: 'Lỗi tải ảnh lên!',
+                        description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
+                        duration: 9000,
+                    });
+                }
+            } else {
+                 imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
+                 toast({
+                    title: 'Không có ảnh',
+                    description: 'Đang sử dụng ảnh mặc định cho sản phẩm.'
+                 });
+            }
+
             toastControl.update({ id: toastControl.id, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            const newProduct: Product = {
+            newProduct = {
                 id: productId,
                 slug: generateSlug(values.name),
                 name: values.name,
@@ -99,7 +100,7 @@ export default function NewProductPage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: values
+                requestResourceData: newProduct
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({

@@ -29,39 +29,40 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
-        let imageUrl = '';
-        if (imageFile) {
-            try {
-                const onProgress = (progress: number) => {
-                    toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh bìa...", description: `Tiến trình: ${Math.round(progress)}%` });
-                };
-                imageUrl = await uploadImage(imageFile, onProgress);
-                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-            } catch (error: any) {
-                console.error("Lỗi khi tải ảnh lên:", error);
-                imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=Image+Upload+Failed`;
-                 toast({
-                    variant: 'destructive',
-                    title: 'Lỗi tải ảnh lên!',
-                    description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa bài viết để tải lại ảnh sau.`,
-                    duration: 9000,
-                });
-            }
-        } else {
-            imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
-             toast({
-                title: 'Không có ảnh bìa',
-                description: 'Đang sử dụng ảnh mặc định cho bài viết.'
-             });
-        }
-
-
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
+        let newArticle: NewsArticle | null = null;
+
         try {
+            let imageUrl = '';
+            if (imageFile) {
+                try {
+                    const onProgress = (progress: number) => {
+                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh bìa...", description: `Tiến trình: ${Math.round(progress)}%` });
+                    };
+                    imageUrl = await uploadImage(imageFile, onProgress);
+                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                } catch (error: any) {
+                    console.error("Lỗi khi tải ảnh lên:", error);
+                    imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=Image+Upload+Failed`;
+                     toast({
+                        variant: 'destructive',
+                        title: 'Lỗi tải ảnh lên!',
+                        description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa bài viết để tải lại ảnh sau.`,
+                        duration: 9000,
+                    });
+                }
+            } else {
+                imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
+                 toast({
+                    title: 'Không có ảnh bìa',
+                    description: 'Đang sử dụng ảnh mặc định cho bài viết.'
+                 });
+            }
+
             toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            const newArticle: NewsArticle = {
+            newArticle = {
                 id: articleId,
                 slug: generateSlug(values.title),
                 title: values.title,
@@ -88,7 +89,7 @@ export default function NewNewsArticlePage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: values
+                requestResourceData: newArticle // Use the final object for error reporting
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({

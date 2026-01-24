@@ -45,6 +45,8 @@ export default function EditProductPage() {
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." });
         const docRef = doc(firestore, 'cakes', product.id);
+        
+        let updatedProductData: Partial<Product> = {};
 
         try {
             let finalImageUrl = product.imageUrl;
@@ -76,7 +78,7 @@ export default function EditProductPage() {
             }
             
             toastControl.update({ id: toastControl.id, title: "Đang lưu thông tin sản phẩm...", description: "" });
-            const updatedProductData: Partial<Product> = {
+            updatedProductData = {
                 name: values.name,
                 subtitle: values.subtitle,
                 description: values.description,
@@ -111,7 +113,7 @@ export default function EditProductPage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
-                requestResourceData: values
+                requestResourceData: updatedProductData
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({

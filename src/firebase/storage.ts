@@ -1,6 +1,6 @@
 'use client';
 
-const MAX_IMAGE_DIMENSION = 1200; // Max width/height of 1200px
+const MAX_IMAGE_DIMENSION = 800; // Max width/height of 800px
 
 /**
  * Converts an image file to a resized PNG Data URL.

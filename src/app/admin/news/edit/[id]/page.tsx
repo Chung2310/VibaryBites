@@ -44,6 +44,8 @@ export default function EditNewsArticlePage() {
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." });
         const docRef = doc(firestore, 'news_articles', article.id);
+        
+        let updatedArticleData: Partial<NewsArticle> = {};
 
         try {
             let finalImageUrl = article.imageUrl;
@@ -77,7 +79,7 @@ export default function EditNewsArticlePage() {
 
             toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "" });
 
-            const updatedArticleData: Partial<NewsArticle> = {
+            updatedArticleData = {
                 title: values.title,
                 author: values.author,
                 category: values.category,
@@ -101,7 +103,7 @@ export default function EditNewsArticlePage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
-                requestResourceData: values
+                requestResourceData: updatedArticleData
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({
