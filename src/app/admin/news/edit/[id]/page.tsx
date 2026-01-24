@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { getAuth } from 'firebase/auth';
 
 export default function EditNewsArticlePage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -31,12 +32,20 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
+        const auth = getAuth();
+        if (!auth.currentUser) {
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Bạn phải đăng nhập để thực hiện hành động này.' });
+            setIsSubmitting(false);
+            return;
+        }
+
         if (!firestore || !article) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
                 description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy bài viết.',
             });
+            setIsSubmitting(false);
             return;
         }
         

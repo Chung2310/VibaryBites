@@ -3,6 +3,7 @@
 import { getApp } from 'firebase/app';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Uploads an image file to Firebase Storage.
@@ -11,6 +12,11 @@ import { v4 as uuidv4 } from 'uuid';
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
 export const uploadImage = async (file: File): Promise<string> => {
+  const auth = getAuth();
+  if (!auth.currentUser) {
+    throw new Error("User is not authenticated. Cannot upload image.");
+  }
+  
   if (!file) {
     throw new Error("No file provided for upload.");
   }
@@ -45,6 +51,12 @@ export const uploadImage = async (file: File): Promise<string> => {
  * @returns A promise that resolves when the image is deleted.
  */
 export const deleteImage = async (imageUrl: string): Promise<void> => {
+    const auth = getAuth();
+    if (!auth.currentUser) {
+      console.warn("User is not authenticated. Skipping image deletion.");
+      return;
+    }
+
   if (!imageUrl) {
     console.warn("No image URL provided for deletion.");
     return;

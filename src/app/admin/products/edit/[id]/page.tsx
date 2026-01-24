@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { getAuth } from 'firebase/auth';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -31,12 +32,20 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+        const auth = getAuth();
+        if (!auth.currentUser) {
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Bạn phải đăng nhập để thực hiện hành động này.' });
+            setIsSubmitting(false);
+            return;
+        }
+
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
                 description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy sản phẩm.',
             });
+            setIsSubmitting(false);
             return;
         }
         

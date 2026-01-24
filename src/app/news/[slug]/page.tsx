@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore } from '@/firebase';
-import { doc, collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { NewsArticle } from '@/lib/types';
