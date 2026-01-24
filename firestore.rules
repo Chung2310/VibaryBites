@@ -41,7 +41,7 @@ service cloud.firestore {
     
     match /cakes/{cakeId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if request.auth != null && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
       
       match /reviews/{reviewId} {
         allow read: if true;

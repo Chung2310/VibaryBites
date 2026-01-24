@@ -45,14 +45,13 @@ export default function NewProductPage() {
         
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
+        let newProduct: Product | null = null;
 
         try {
-            // Step 1: Upload images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
-            // Step 2: Prepare product data
-            const newProduct: Product = {
+            newProduct = {
                 id,
                 slug: generateSlug(values.name),
                 name: values.name,
@@ -76,7 +75,6 @@ export default function NewProductPage() {
                 collection: 'special-occasions',
             };
 
-            // Step 3: Save to Firestore
             await setDoc(docRef, newProduct);
             
             toast({
@@ -88,10 +86,11 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm mới:", error);
+            const resourceData = newProduct || values;
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: values
+                requestResourceData: resourceData
             });
             errorEmitter.emit('permission-error', permissionError);
 
