@@ -45,15 +45,16 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
         const docRef = doc(firestore, 'news_articles', article.id);
 
         try {
+            // If a new image is provided, upload it and delete the old one.
             if (imageFile) {
                 if (article.imageUrl) {
                     await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                 }
                 finalImageUrl = await uploadImage(imageFile);
-            } else if (imageWasRemoved) {
-                if (article.imageUrl) {
-                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
-                }
+            } 
+            // If no new image, but the existing one was removed.
+            else if (imageWasRemoved && article.imageUrl) {
+                await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
                 finalImageUrl = '';
             }
 
@@ -75,6 +76,7 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
                 content: values.content,
                 imageUrl: finalImageUrl,
                 slug: generateSlug(values.title),
+                // publicationDate is not updated on edit
             };
 
             await setDoc(docRef, updatedArticleData, { merge: true });
@@ -86,13 +88,19 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
             
             router.push('/admin/news');
 
-        } catch (error) {
+        } catch (error: any) {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Không thể cập nhật bài viết',
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                duration: 9000,
+            });
         } finally {
             setIsSubmitting(false);
         }

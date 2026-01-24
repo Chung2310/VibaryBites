@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -23,12 +22,15 @@ export default function NewNewsArticlePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
+        setIsSubmitting(true);
+        
         if (!firestore) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
                 description: 'Không thể kết nối tới cơ sở dữ liệu.',
             });
+            setIsSubmitting(false);
             return;
         }
 
@@ -38,18 +40,17 @@ export default function NewNewsArticlePage() {
                 title: "Lỗi",
                 description: "Vui lòng tải lên ảnh bìa cho bài viết.",
             });
+            setIsSubmitting(false);
             return;
         }
         
-        setIsSubmitting(true);
         const id = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', id);
-        let newArticle: NewsArticle;
 
         try {
             const imageUrl = await uploadImage(imageFile);
             
-            newArticle = {
+            const newArticle: NewsArticle = {
                 id,
                 slug: generateSlug(values.title),
                 title: values.title,
@@ -70,13 +71,20 @@ export default function NewNewsArticlePage() {
             
             router.push('/admin/news');
 
-        } catch (error) {
-            const permissionError = new FirestorePermissionError({
+        } catch (error: any) {
+             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
+
+            toast({
+                variant: 'destructive',
+                title: 'Không thể tạo bài viết',
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                duration: 9000,
+            });
         } finally {
             setIsSubmitting(false);
         }

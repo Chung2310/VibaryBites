@@ -44,12 +44,15 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         const docRef = doc(firestore, 'cakes', product.id);
 
         try {
+            // Determine which images were removed by the user
             const originalUrls = product.imageUrls || [];
             const urlsToDelete = originalUrls.filter(url => !keptImageUrls.includes(url));
 
+            // Upload new images
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const newUploadedUrls = await Promise.all(uploadPromises);
 
+            // Delete removed images
             if (urlsToDelete.length > 0) {
                 const deletePromises = urlsToDelete.map(url => deleteImage(url).catch(err => console.warn(`Failed to delete image ${url}`, err)));
                 await Promise.all(deletePromises);
@@ -87,13 +90,19 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             
             router.push(`/admin/attributes?productId=${product.id}`);
 
-        } catch (error) {
+        } catch (error: any) {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'update',
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Không thể cập nhật sản phẩm',
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                duration: 9000,
+            });
         } finally {
             setIsSubmitting(false);
         }

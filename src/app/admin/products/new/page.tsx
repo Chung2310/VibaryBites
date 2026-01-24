@@ -20,9 +20,9 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Corrected function signature to match the onSubmit prop in ProductForm
-    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
         setIsSubmitting(true);
+        console.log("Submit process started.");
 
         if (!firestore) {
             toast({
@@ -31,6 +31,7 @@ export default function NewProductPage() {
                 description: 'Không thể kết nối tới dịch vụ cơ sở dữ liệu.',
             });
             setIsSubmitting(false);
+            console.error("Firestore service is not available.");
             return;
         }
 
@@ -41,15 +42,19 @@ export default function NewProductPage() {
                 description: "Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.",
             });
             setIsSubmitting(false);
+            console.error("No images provided.");
             return;
         }
 
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
+        console.log(`Generated product ID: ${id}`);
 
         try {
+            console.log(`Uploading ${newImageFiles.length} images...`);
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedImageUrls = await Promise.all(uploadPromises);
+            console.log("Image uploads successful:", uploadedImageUrls);
 
             const newProduct: Product = {
                 id,
@@ -61,15 +66,16 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedImageUrls,
-                // Initialize all fields to avoid Firestore issues with undefined values
                 collection: 'special-occasions', // default collection
                 detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
                 flavorProfile: [],
                 structure: [],
                 recipe: "",
             };
-
+            
+            console.log("Preparing to save product data:", newProduct);
             await setDoc(docRef, newProduct);
+            console.log("Product successfully saved to Firestore.");
             
             toast({
                 title: 'Thêm thành công!',
@@ -81,15 +87,13 @@ export default function NewProductPage() {
         } catch (error: any) {
             console.error("[NewProductPage] An error occurred:", error);
             
-            // This will create a more detailed error for debugging if it's a permission issue
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: values // Using form values for context
+                requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
             
-            // Also show a toast to the user
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
@@ -98,6 +102,7 @@ export default function NewProductPage() {
             });
         } finally {
             setIsSubmitting(false);
+            console.log("Submit process finished.");
         }
     };
 
