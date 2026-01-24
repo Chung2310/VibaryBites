@@ -39,9 +39,9 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import type { Order, OrderStatus, CustomerProfile } from '@/lib/types';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, where, doc } from 'firebase/firestore';
+import { collectionGroup, query, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
@@ -117,16 +117,20 @@ export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
     const firestore = useFirestore();
 
-    const ordersQuery = useMemoFirebase(() => {
+    const allOrdersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        const group = collectionGroup(firestore, 'orders');
-        if (activeTab === 'all') {
-            return query(group);
-        }
-        return query(group, where('orderStatus', '==', activeTab));
-    }, [firestore, activeTab]);
+        return collectionGroup(firestore, 'orders');
+    }, [firestore]);
 
-    const { data: orders, isLoading } = useCollection<Order>(ordersQuery);
+    const { data: allOrders, isLoading } = useCollection<Order>(allOrdersQuery);
+
+    const orders = useMemo(() => {
+        if (!allOrders) return null;
+        if (activeTab === 'all') {
+            return allOrders;
+        }
+        return allOrders.filter(order => order.orderStatus === activeTab);
+    }, [allOrders, activeTab]);
 
     return (
         <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as OrderStatus | 'all')}>

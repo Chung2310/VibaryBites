@@ -32,7 +32,7 @@ import {
 import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, doc, orderBy, query } from 'firebase/firestore';
+import { collection, collectionGroup, doc, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 
@@ -82,7 +82,7 @@ export default function Dashboard() {
   const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
   const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
 
-  const allOrdersQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'orders'), orderBy('orderDate', 'desc')) : null, [firestore]);
+  const allOrdersQuery = useMemoFirebase(() => firestore ? collectionGroup(firestore, 'orders') : null, [firestore]);
   const { data: allOrders, isLoading: isLoadingOrders } = useCollection<Order>(allOrdersQuery);
 
   // --- KPI Calculation ---
@@ -90,6 +90,8 @@ export default function Dashboard() {
     if (!allOrders) {
         return { revenueToday: 0, newOrdersCount: 0, processingOrdersCount: 0, recentOrders: [] };
     }
+    
+    const sortedOrders = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
     const todayStr = new Date().toISOString().split('T')[0];
     
@@ -97,7 +99,7 @@ export default function Dashboard() {
     let newOrdersCount = 0;
     let processingOrdersCount = 0;
 
-    for (const order of allOrders) {
+    for (const order of sortedOrders) {
         if (order.orderDate.startsWith(todayStr)) {
             revenueToday += order.totalAmount;
         }
@@ -109,7 +111,7 @@ export default function Dashboard() {
         }
     }
     
-    const recentOrders = allOrders.slice(0, 5);
+    const recentOrders = sortedOrders.slice(0, 5);
 
     return { revenueToday, newOrdersCount, processingOrdersCount, recentOrders };
   }, [allOrders]);
