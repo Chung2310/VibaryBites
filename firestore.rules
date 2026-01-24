@@ -4,10 +4,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --------------------------------
-    // Helper Functions
-    // --------------------------------
-
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -22,43 +19,49 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
     }
 
-    // --------------------------------
-    // Public & Admin Writable Collections
-    // --------------------------------
-
-    match /(cakes|categories|news_articles|quiz_questions|ingredients)/{docId} {
+    // Public collections are readable by anyone, writable by admins.
+    match /(cakes|categories|news_articles|quiz_questions)/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // --------------------------------
-    // User-Generated Content
-    // --------------------------------
-
-    match /cakes/{cakeId}/reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      allow update, delete: if resource.data.customerId == request.auth.uid;
+    // Ingredients are admin-only
+    match /ingredients/{ingredientId} {
+        allow read, write: if isAdmin();
     }
 
-    // --------------------------------
-    // User & Customer Data
-    // --------------------------------
+    // Reviews are readable by anyone, but only the owner can create/edit/delete.
+    match /cakes/{cakeId}/reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isOwner(request.resource.data.customerId);
+      allow update, delete: if isOwner(resource.data.customerId);
+    }
 
+    // Customer-specific data
     match /customers/{customerId} {
-      allow get, list: if isAdmin();
-      allow create, get, update: if isOwner(customerId);
+      // Users can create their own profile.
+      allow create: if isOwner(customerId);
+      // Admins can get any customer profile. Users can only get/update their own.
+      allow get, update: if isOwner(customerId) || isAdmin();
+      // Only admins can list all customers.
+      allow list: if isAdmin();
 
+      // Nested Orders
       match /orders/{orderId} {
-          // This rule now explicitly allows admins to 'list' for collection group queries,
-          // while also handling get/write for both owners and admins on specific documents.
-          allow list: if isAdmin();
-          allow get, write: if isOwner(customerId) || isAdmin();
+        // Admins or the owner can access an order.
+        allow get, write: if isOwner(customerId) || isAdmin();
 
-          match /order_items/{orderItemId} {
-              allow read, write: if isOwner(customerId) || isAdmin();
-          }
+        // Nested Order Items
+        match /order_items/{orderItemId} {
+          allow read, write: if isOwner(customerId) || isAdmin();
+        }
       }
+    }
+
+    // Rule for collection group query for 'orders'. This is critical for the admin panel.
+    // It allows an admin to list all orders across all customers.
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
     }
   }
 }
