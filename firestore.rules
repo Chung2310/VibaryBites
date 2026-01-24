@@ -55,19 +55,20 @@ service cloud.firestore {
       allow get, list: if isAdmin();
       // A user can create, read, and update their OWN customer document. They cannot delete it.
       allow create, get, update: if isOwner(customerId);
-    }
-    
-    // Rules for the 'orders' subcollection within a customer document
-    match /customers/{customerId}/orders/{orderId} {
-        // An owner can read/write their own orders. An admin can read/write any order.
-        // This combined rule is necessary for admin collection group queries to work.
-        allow read, write: if isOwner(customerId) || isAdmin();
 
-        // Rules for the nested 'order_items' subcollection
-        match /order_items/{orderItemId} {
-            // Permissions are inherited. Admins and owners can read/write order items.
-            allow read, write: if isOwner(customerId) || isAdmin();
-        }
+      // Rules for the 'orders' subcollection within a customer document
+      match /orders/{orderId} {
+          // Admins can list all orders via collection group query.
+          allow list: if isAdmin();
+          // Owners and Admins can get/write individual documents.
+          allow get, write: if isOwner(customerId) || isAdmin();
+
+          // Rules for the nested 'order_items' subcollection
+          match /order_items/{orderItemId} {
+              // Permissions are inherited. Admins and owners can read/write order items.
+              allow read, write: if isOwner(customerId) || isAdmin();
+          }
+      }
     }
   }
 }
