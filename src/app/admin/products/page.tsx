@@ -125,7 +125,12 @@ export default function ProductsPage() {
                   Xuất File
                 </span>
               </Button>
-              <p className="text-sm text-muted-foreground">hiện tại không thể thêm sản phẩm mới</p>
+              <Button size="sm" className="h-8 gap-1" onClick={() => router.push('/admin/products/new')}>
+                <PlusCircle className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Thêm sản phẩm
+                </span>
+              </Button>
             </div>
           </div>
           <TabsContent value="all">
