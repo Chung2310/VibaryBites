@@ -24,41 +24,20 @@ export default function ProductsPage() {
   useEffect(() => {
     if (!productCategories || productCategories.length === 0) return;
 
-    // Set initial active category from hash, or default to the first category
+    // This effect handles the initial scroll based on the URL hash.
     const hash = window.location.hash.substring(1);
-    if (hash && productCategories.some(c => c.slug === hash)) {
-      setActiveCategory(hash);
+    const element = hash ? document.getElementById(hash) : null;
+
+    if (element) {
+        // Scroll to the element after a short delay to allow rendering.
+        setTimeout(() => {
+            element.scrollIntoView({ behavior: 'smooth' });
+            setActiveCategory(hash);
+        }, 150);
     } else {
-      setActiveCategory(productCategories[0].slug);
+        // If no valid hash, default to the first category.
+        setActiveCategory(productCategories[0].slug);
     }
-    
-    // This observer updates the active category in the nav as you scroll
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id);
-          }
-        });
-      },
-      { rootMargin: '-25% 0px -75% 0px', threshold: 0.1 } // A section is "active" when it's near the top
-    );
-
-    productCategories.forEach((category) => {
-      const el = sectionRefs.current[category.slug];
-      if (el) {
-        observer.observe(el);
-      }
-    });
-
-    return () => {
-      productCategories.forEach((category) => {
-        const el = sectionRefs.current[category.slug];
-        if (el) {
-          observer.unobserve(el);
-        }
-      });
-    };
   }, [productCategories]);
 
 
@@ -67,7 +46,7 @@ export default function ProductsPage() {
     const element = document.getElementById(slug);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
-      // Manually update URL hash
+      // Manually update URL hash and active state
       window.history.pushState(null, '', `#${slug}`);
       setActiveCategory(slug);
     }
