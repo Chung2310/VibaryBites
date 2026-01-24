@@ -22,23 +22,13 @@ service cloud.firestore {
     }
 
     // ================================
-    // COLLECTION GROUP RULES
-    // ================================
-    
-    // This rule allows an admin to perform a collection group query on 'orders'.
-    // This is required for the admin dashboard to list all orders.
-    match /{path=**}/orders/{orderId} {
-      allow list: if isAdmin();
-      // Note: 'get', 'create', 'update', 'delete' are NOT granted here.
-      // Those are handled by the more specific rule under /customers/{customerId}.
-    }
-
-    // ================================
-    // PUBLIC-READABLE COLLECTIONS
+    // PUBLIC COLLECTIONS
     // ================================
 
     match /{collection in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
+      // Anyone can read public data.
       allow read: if true;
+      // Only admins can modify public data.
       allow write: if isAdmin();
     }
     
@@ -51,28 +41,37 @@ service cloud.firestore {
     }
 
     // ================================
-    // USER-SPECIFIC DATA
+    // USER & NESTED DATA
     // ================================
     
     match /customers/{customerId} {
-      // Admins can get any customer, owners can only get their own.
-      allow get: if isOwner(customerId) || isAdmin();
-      // Only admins can list all customers.
-      allow list: if isAdmin();
+      // User can create their own profile.
       allow create: if isOwner(customerId);
-      // Owners and admins can update.
+      // User can get their own profile. Admin can get any.
+      allow get: if isOwner(customerId) || isAdmin();
+      // User can update their own profile. Admin can update any.
       allow update: if isOwner(customerId) || isAdmin();
-      // Only admins can delete.
-      allow delete: if isAdmin();
+      // Only admins can list or delete customers.
+      allow list, delete: if isAdmin();
 
-      // Rules for a user accessing their OWN orders, or an admin accessing a SPECIFIC order.
+      // --- ORDERS Subcollection ---
       match /orders/{orderId} {
-        // 'list' is handled by the collection group rule above for admins.
-        allow get: if isOwner(customerId) || isAdmin();
+        // This structure explicitly separates permissions to avoid conflicts
+        // during collection group queries.
+
+        // 1. A user can GET their own order.
+        allow get: if isOwner(customerId);
+        
+        // 2. An admin can READ (get + list) any/all orders.
+        // This rule is what allows the collection group query for the admin dashboard.
+        allow read: if isAdmin();
+        
+        // 3. A user can WRITE to their own order, and an admin can WRITE to any.
         allow write: if isOwner(customerId) || isAdmin();
 
-        // Rule for `order_items` sub-subcollection
+        // --- ORDER ITEMS Sub-subcollection ---
         match /order_items/{orderItemId} {
+          // Inherits parent logic: only owner or admin can access.
           allow read, write: if isOwner(customerId) || isAdmin();
         }
       }
@@ -83,8 +82,11 @@ service cloud.firestore {
     // ================================
     
     match /cakes/{cakeId}/reviews/{reviewId} {
+      // Anyone can read reviews.
       allow read: if true;
+      // Only signed-in users can create a review for themselves.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      // Only the review author or an admin can update/delete.
       allow update, delete: if (resource.data.customerId == request.auth.uid) || isAdmin();
     }
   }
