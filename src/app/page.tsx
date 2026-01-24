@@ -279,7 +279,7 @@ function FeaturedProducts() {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 60,
+                    duration: 20,
                     ease: "linear",
                 },
             },
