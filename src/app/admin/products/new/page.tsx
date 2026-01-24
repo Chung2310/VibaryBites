@@ -22,39 +22,33 @@ export default function NewProductPage() {
 
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
         setIsSubmitting(true);
-        console.log("Submit process started.");
+        const toastId = 'product-creation-toast';
 
+        // 1. Initial Checks
         if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi nghiêm trọng',
-                description: 'Không thể kết nối tới dịch vụ cơ sở dữ liệu.',
-            });
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Dịch vụ cơ sở dữ liệu chưa sẵn sàng.' });
             setIsSubmitting(false);
-            console.error("Firestore service is not available.");
             return;
         }
-
         if (newImageFiles.length === 0) {
-            toast({
-                variant: "destructive",
-                title: "Lỗi",
-                description: "Vui lòng cung cấp ít nhất một ảnh cho sản phẩm.",
-            });
+            toast({ variant: 'destructive', title: 'Thiếu ảnh', description: 'Vui lòng thêm ít nhất một ảnh cho sản phẩm.' });
             setIsSubmitting(false);
-            console.error("No images provided.");
             return;
         }
 
-        const id = `prod-${Date.now()}`;
-        const docRef = doc(firestore, 'cakes', id);
-        console.log(`Generated product ID: ${id}`);
+        toast({ id: toastId, title: 'Đang xử lý...', description: 'Vui lòng chờ trong khi sản phẩm được tạo.' });
 
         try {
-            console.log(`Uploading ${newImageFiles.length} images...`);
+            // 2. Upload Images to Firebase Storage
+            toast({ id: toastId, title: 'Đang tải ảnh lên...', description: `Đang tải lên ${newImageFiles.length} ảnh. Vui lòng không rời khỏi trang.` });
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedImageUrls = await Promise.all(uploadPromises);
-            console.log("Image uploads successful:", uploadedImageUrls);
+
+            // 3. Prepare Product Data
+            toast({ id: toastId, title: 'Đang lưu thông tin...', description: 'Ảnh đã tải lên thành công, đang lưu chi tiết sản phẩm.' });
+            
+            const id = `prod-${Date.now()}`;
+            const docRef = doc(firestore, 'cakes', id);
 
             const newProduct: Product = {
                 id,
@@ -66,17 +60,19 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 imageUrls: uploadedImageUrls,
-                collection: 'special-occasions', // default collection
+                // Initialize optional/complex fields to avoid 'undefined' issues with Firestore
+                collection: 'special-occasions', // default
+                sizes: [],
                 detailedDescription: { flavor: "", ingredients: "", serving: "", storage: "", dimensions: "", accessories: [] },
                 flavorProfile: [],
                 structure: [],
                 recipe: "",
             };
-            
-            console.log("Preparing to save product data:", newProduct);
+
+            // 4. Save to Firestore
             await setDoc(docRef, newProduct);
-            console.log("Product successfully saved to Firestore.");
-            
+
+            // 5. Success
             toast({
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
@@ -85,24 +81,26 @@ export default function NewProductPage() {
             router.push(`/admin/products`);
 
         } catch (error: any) {
-            console.error("[NewProductPage] An error occurred:", error);
-            
+            // 6. Error Handling
+            console.error("Lỗi khi tạo sản phẩm:", error);
+
             const permissionError = new FirestorePermissionError({
-                path: docRef.path,
+                path: 'cakes/new-product-id', // Placeholder path for error context
                 operation: 'create',
-                requestResourceData: values
+                requestResourceData: values 
             });
             errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                description: `Đã xảy ra lỗi không mong muốn. Vui lòng kiểm tra lại quyền truy cập hoặc thử lại sau.`,
                 duration: 9000,
             });
         } finally {
+            // 7. Finalization
+            toast.dismiss(toastId);
             setIsSubmitting(false);
-            console.log("Submit process finished.");
         }
     };
 
