@@ -1,4 +1,3 @@
-
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -7,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,8 +23,9 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-    const slug = params.slug;
+export default function ProductDetailPage() {
+    const params = useParams();
+    const slug = params.slug as string;
     const { products, addToCart } = useAppStore();
     
     const firestore = useFirestore();
