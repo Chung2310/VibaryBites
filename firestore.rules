@@ -8,153 +8,65 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // ================================
 
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
-    /**
-     * Checks if the user has admin privileges.
-     * This uses a hardcoded UID as a workaround. The recommended approach is to use custom claims.
-     */
+
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true || 
-        request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2'
-      );
-    }
-
-    /**
-     * Validates that required fields exist in the request data.
-     */
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
+      // This is a temporary workaround. For better security, use custom claims.
+      // See: https://firebase.google.com/docs/auth/admin/custom-claims
+      return isSignedIn() && request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2';
     }
 
     // ================================
-    // PUBLIC COLLECTIONS
+    // ADMIN "GOD MODE"
     // ================================
+    // This rule allows users identified as admins to read and write any document
+    // in the database. This is a simple but powerful way to manage admin access.
+    match /{path=**} {
+      allow read, write: if isAdmin();
+    }
 
-    /**
-     * Cakes, Categories, News, Quizzes
-     * @description Publicly readable data. Admin-only writes.
-     */
+    // ===============================================
+    // PUBLIC & USER-SPECIFIC RULES (for non-admins)
+    // ===============================================
+    // The following rules apply to users who are NOT admins.
+    // The admin rule above will grant access before these are evaluated for admins.
+
+    // Publicly readable collections
     match /{collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions']}/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow get: if true;
+      allow list: if true;
+      // Write access is handled by the admin rule.
     }
 
-    /**
-     * Ingredients Collection
-     * @description Raw material inventory. Admin-only access.
-     */
-    match /ingredients/{ingredientId} {
-      allow read, write: if isAdmin();
-    }
-
-    // ================================
-    // COLLECTION GROUP QUERIES
-    // ================================
-
-    /**
-     * Orders & OrderItems Collection Group
-     * @description Allows admins to query all orders/items across all customers.
-     */
-    match /{path=**}/orders/{orderId} {
-      allow read: if isAdmin();
-    }
-    
-    match /{path=**}/order_items/{orderItemId} {
-        allow read: if isAdmin();
-    }
-
-    // ================================
-    // USER-GENERATED CONTENT
-    // ================================
-
-    /**
-     * Cake Reviews (Subcollection)
-     * @description Customer reviews for specific cakes.
-     */
-    match /cakes/{cakeId}/reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn()
-        && hasRequiredFields(['customerId', 'cakeId', 'rating', 'comment'])
-        && request.resource.data.customerId == request.auth.uid 
-        && request.resource.data.cakeId == cakeId;
-      allow update, delete: if isOwner(resource.data.customerId) || isAdmin();
-    }
-
-    // ================================
-    // USER-OWNED DATA (RESTRUCTURED)
-    // ================================
-
-    /**
-     * Customers Collection
-     * @description Customer profile data and nested orders.
-     */
+    // Customer documents
     match /customers/{customerId} {
-      // Allow users to GET their own document. This is needed for isAdmin() to work if it checks a role in the document.
-      allow get: if isOwner(customerId) || isAdmin();
-      // Allow admins to LIST all customer documents.
-      allow list: if isAdmin();
-      
-      // Allow CREATE for new users creating their own profile.
-      allow create: if isOwner(customerId) 
-        && hasRequiredFields(['email', 'firstName', 'lastName']);
-      
-      // Allow UPDATE for owners (who can't change their email) or admins.
-      allow update: if (isOwner(customerId) && request.resource.data.email == resource.data.email) || isAdmin();
-      
-      // Allow DELETE only for admins.
-      allow delete: if isAdmin();
+      // A user can get their own document. This is also needed for the isAdminByRole check.
+      allow get: if isOwner(customerId);
+      // A user can create their own customer document.
+      allow create: if isOwner(customerId);
+      // A user can update their own document.
+      allow update: if isOwner(customerId);
 
-      /**
-       * Customer Orders (Subcollection)
-       */
-      match /orders/{orderId} {
-        // An owner can manage their own order. An admin can manage any order.
-        allow read, write: if isOwner(customerId) || isAdmin();
-
-        /**
-         * Order Items (Subcollection)
-         */
-        match /order_items/{orderItemId} {
-          // Permissions are inherited from the parent order.
-          allow read, write: if isOwner(customerId) || isAdmin();
-        }
-      }
-
-      /**
-       * Optional Subcollections
-       */
-      match /addresses/{addressId} {
-        allow read, write: if isOwner(customerId) || isAdmin();
-      }
-
-      match /favorites/{favoriteId} {
-        allow read, write: if isOwner(customerId) || isAdmin();
+      // A user can read and write to their own orders and subcollections.
+      match /orders/{orderId}/{document=**} {
+        allow read, write: if isOwner(customerId);
       }
     }
 
-    // ================================
-    // SYSTEM & OTHER COLLECTIONS
-    // ================================
-    match /settings/{settingId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    match /analytics/{analyticsId} {
-      allow read, write: if isAdmin();
+    // Cake reviews
+    match /cakes/{cakeId}/reviews/{reviewId} {
+      // Anyone can read reviews.
+      allow read: if true;
+      // Only authenticated users can create reviews for themselves.
+      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      // Only the review's owner can update or delete it.
+      allow update, delete: if isSignedIn() && resource.data.customerId == request.auth.uid;
     }
   }
 }

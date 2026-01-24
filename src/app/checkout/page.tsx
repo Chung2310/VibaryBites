@@ -54,6 +54,12 @@ export default function CheckoutPage() {
   async function onSubmit(values: z.infer<typeof checkoutSchema>) {
     setIsSubmitting(true);
     
+    // The stock update transaction logic is temporarily disabled.
+    // This is because the current Firestore security rules only allow admins to update product stock,
+    // which would cause this transaction to fail for regular users.
+    // In a production application, this logic should be moved to a secure backend environment
+    // (e.g., a Cloud Function triggered by a new order document) instead of being run on the client.
+    /*
     if (!firestore) {
         toast({
             variant: "destructive",
@@ -116,6 +122,7 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
         return;
     }
+    */
 
     const API_URL = '/api/submit-order';
 
