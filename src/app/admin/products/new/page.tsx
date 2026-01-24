@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -45,7 +46,7 @@ export default function NewProductPage() {
         
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        let newProduct: Product;
+        let newProduct: Product | undefined = undefined;
         
         try {
             // Step 1: Upload images
@@ -90,15 +91,14 @@ export default function NewProductPage() {
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm mới:", error);
             
-            if (error.code === 'permission-denied') { // Check for native Firestore permission error
+            if (error.code === 'permission-denied' && newProduct) {
                 const permissionError = new FirestorePermissionError({
                     path: docRef.path,
                     operation: 'create',
-                    requestResourceData: values,
+                    requestResourceData: newProduct,
                 });
                 errorEmitter.emit('permission-error', permissionError);
             } else {
-                // Handle other errors (like storage or network issues)
                 toast({
                     variant: 'destructive',
                     title: 'Không thể tạo sản phẩm',
