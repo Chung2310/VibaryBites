@@ -1,12 +1,6 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ================================
-    // HELPER FUNCTIONS
-    // ================================
 
     function isSignedIn() {
       return request.auth != null;
@@ -16,77 +10,95 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // This UID 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1' corresponds to admin@vibary.com
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
-    }
-    
-    // ================================
-    // GENERIC TOP-LEVEL COLLECTIONS
-    // ================================
-
-    match /{collection}/{docId} {
-        // Public collections can be read by anyone.
-        // Ingredients can only be read by an admin.
-        allow read: if (collection in ['cakes', 'categories', 'news_articles', 'quiz_questions'])
-                     || (collection == 'ingredients' && isAdmin());
-        
-        // Public collections and ingredients can only be written to by an admin.
-        allow write: if (collection in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients']) 
-                      && isAdmin();
+      return isSignedIn() && (
+        request.auth.token.admin == true || 
+        request.auth.uid in [
+          'WEM5X92ExuRA6I82nZjRVeCru6i2',
+          'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'
+        ]
+      );
     }
 
-    // ===========================================
-    // COLLECTION GROUP QUERIES (Admin-specific)
-    // ===========================================
-    
-    // This rule allows the admin to perform READ (get, list) queries across all 'orders' collections.
-    // It is critical for the admin dashboard/orders page.
+    // Collection Group Query cho orders - QUAN TRỌNG
     match /{path=**}/orders/{orderId} {
-      allow get, list: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // ================================
-    // USER-OWNED DATA (Specific Paths)
-    // ================================
-    
-    match /customers/{customerId} {
-      // Rules for the customer document itself
-      allow create: if isOwner(customerId);
-      allow get, update: if isOwner(customerId);
-      // Admin has elevated permissions on customer profiles
-      allow get, update, list, delete: if isAdmin();
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if true;
+    }
 
-      // --- ORDERS Subcollection (Single Document Access) ---
-      match /orders/{orderId} {
-        // Admin now has full read/write access.
-        allow read, write: if isAdmin();
-        
-        // Owner can read and write their own order.
-        allow get, write: if isOwner(customerId);
-
-        // --- ORDER ITEMS Sub-subcollection ---
-        match /order_items/{orderItemId} {
-           // Admin has full access to order items.
-           allow read, write: if isAdmin();
-           // Owner has full access to their own order items.
-           allow read, write: if isOwner(customerId);
-        }
+    match /cakes/{cakeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isSignedIn() 
+          && request.resource.data.customerId == request.auth.uid 
+          && request.resource.data.cakeId == cakeId;
+        allow update: if isExistingOwner(resource.data.customerId);
+        allow delete: if isExistingOwner(resource.data.customerId) || isAdmin();
       }
     }
-    
-    // ================================
-    // PUBLIC-READ, USER-WRITE COLLECTIONS
-    // ================================
-    
-    match /cakes/{cakeId}/reviews/{reviewId} {
+
+    match /categories/{categoryId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      
-      // Owner can update/delete their own review
-      allow update, delete: if resource.data.customerId == request.auth.uid;
-      // Admin can update/delete any review
-      allow update, delete: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /news_articles/{newsArticleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /quiz_questions/{quizQuestionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isOwner(customerId) || isAdmin();
+      allow create: if isOwner(customerId);
+      allow update: if isExistingOwner(customerId) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /orders/{orderId} {
+        allow read, write: if isOwner(customerId) || isAdmin();
+
+        match /order_items/{orderItemId} {
+          allow read: if isOwner(customerId) || isAdmin();
+          allow create: if isOwner(customerId) && request.resource.data.orderId == orderId;
+          allow update: if isExistingOwner(customerId) || isAdmin();
+          allow delete: if isExistingOwner(customerId) || isAdmin();
+        }
+      }
+
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(customerId) || isAdmin();
+      }
+
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(customerId);
+      }
+    }
+
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /analytics/{analyticsId} {
+      allow read, write: if isAdmin();
     }
   }
 }
