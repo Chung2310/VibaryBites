@@ -36,20 +36,19 @@ export default function NewNewsArticlePage() {
         }
 
         setIsSubmitting(true);
-        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         let imageUrl = '';
         try {
-            toastCtrl.update({id: toastCtrl.id, title: "Đang tải lên ảnh bìa..." });
+            toastControl.update({ title: "Đang tải lên ảnh bìa..." });
             imageUrl = await uploadImage(imageFile);
-            toastCtrl.update({id: toastCtrl.id, title: "Tải ảnh lên thành công!" });
+            toastControl.update({ title: "Tải ảnh lên thành công!" });
         } catch (error: any) {
             console.error("Lỗi khi tải ảnh lên:", error);
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 variant: 'destructive',
                 title: 'Lỗi tải ảnh lên!',
-                description: `Không thể tải ảnh lên: ${error.message}`,
+                description: `Không thể tải ảnh lên: ${error.message}. Vui lòng kiểm tra cấu hình CORS.`,
             });
             setIsSubmitting(false);
             return;
@@ -58,7 +57,7 @@ export default function NewNewsArticlePage() {
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         try {
-            toastCtrl.update({id: toastCtrl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toastControl.update({ title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newArticle: NewsArticle = {
                 id: articleId,
@@ -74,8 +73,7 @@ export default function NewNewsArticlePage() {
 
             await setDoc(docRef, newArticle);
             
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -90,8 +88,7 @@ export default function NewNewsArticlePage() {
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
                 description: `Không thể lưu bài viết: ${error.message}`,

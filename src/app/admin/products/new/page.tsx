@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -37,20 +36,19 @@ export default function NewProductPage() {
         }
 
         setIsSubmitting(true);
-        const toastCtrl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
 
         let imageUrl = '';
         try {
-            toastCtrl.update({ id: toastCtrl.id, title: "Đang tải lên ảnh..." });
+            toastControl.update({ title: "Đang tải lên ảnh..." });
             imageUrl = await uploadImage(imageFile);
-            toastCtrl.update({ id: toastCtrl.id, title: "Tải ảnh lên thành công!" });
+            toastControl.update({ title: "Tải ảnh lên thành công!" });
         } catch (error: any) {
             console.error("Lỗi khi tải ảnh lên:", error);
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 variant: 'destructive',
                 title: 'Lỗi tải ảnh lên!',
-                description: `Không thể tải ảnh lên: ${error.message}`,
+                description: `Không thể tải ảnh lên. Vui lòng kiểm tra Console để biết chi tiết lỗi CORS.`,
             });
             setIsSubmitting(false);
             return;
@@ -59,7 +57,7 @@ export default function NewProductPage() {
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
         try {
-            toastCtrl.update({ id: toastCtrl.id, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toastControl.update({ title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newProduct: Product = {
                 id: productId,
@@ -86,8 +84,7 @@ export default function NewProductPage() {
 
             await setDoc(docRef, newProduct);
             
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
             });
@@ -102,11 +99,10 @@ export default function NewProductPage() {
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-            toastCtrl.update({
-                id: toastCtrl.id,
+            toastControl.update({
                 variant: 'destructive',
                 title: 'Lỗi lưu sản phẩm!',
-                description: `Không thể lưu sản phẩm.`,
+                description: `Không thể lưu sản phẩm vào cơ sở dữ liệu.`,
             });
         } finally {
             setIsSubmitting(false);
