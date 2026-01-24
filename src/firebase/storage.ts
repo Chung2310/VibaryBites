@@ -1,83 +1,114 @@
 'use client';
 
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+  FirebaseStorage,
+} from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getApp } from 'firebase/app';
+
+// This function assumes the Firebase app has already been initialized elsewhere.
+const getStorageInstance = (): FirebaseStorage => {
+  try {
+    const app = getApp();
+    return getStorage(app);
+  } catch (e) {
+    console.error("Firebase app not initialized. Make sure FirebaseClientProvider is set up correctly.");
+    throw new Error("Firebase not initialized for storage operations.");
+  }
+};
 
 /**
- * Uploads an image file by proxying through the app's backend API.
- * This avoids direct client-side uploads and associated CORS issues.
+ * Uploads an image file using the client-side Firebase Storage SDK.
+ * This function is designed to be called from client components.
+ *
  * @param file The image file to upload.
- * @param onProgress Optional callback to report upload progress. It's simulated for this implementation.
+ * @param onProgress Optional callback to report upload progress (a number from 0 to 100).
  * @returns A promise that resolves with the public download URL of the uploaded image.
  */
-export const uploadImage = async (
+export const uploadImage = (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   if (!file) {
-    throw new Error("No file provided for upload.");
+    return Promise.reject(new Error('No file provided for upload.'));
   }
 
-  const formData = new FormData();
-  formData.append('file', file);
+  const storage = getStorageInstance();
+  const fileExtension = file.name.split('.').pop() || 'jpg';
+  const filePath = `uploads/${uuidv4()}.${fileExtension}`;
+  const storageRef = ref(storage, filePath);
 
-  // Simulate initial progress
-  onProgress?.(10);
+  const uploadTask = uploadBytesResumable(storageRef, file);
 
-  const response = await fetch('/api/upload-image', {
-    method: 'POST',
-    body: formData,
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        // Report progress
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        // Handle unsuccessful uploads
+        console.error('Client-side upload failed:', error);
+        switch (error.code) {
+          case 'storage/unauthorized':
+            reject(new Error('Permission denied. You might need to be logged in to upload files.'));
+            break;
+          case 'storage/canceled':
+            // User canceled the upload
+            break; // Don't reject, just let it be silent
+          default:
+            reject(new Error('An unknown error occurred during upload. Please check storage rules.'));
+            break;
+        }
+      },
+      async () => {
+        // Handle successful uploads on complete
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (e) {
+          console.error('Could not get download URL:', e);
+          reject(new Error('Upload succeeded, but failed to get the download URL.'));
+        }
+      }
+    );
   });
-  
-  // Simulate completion progress
-  onProgress?.(100);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Failed to upload image. The server returned an invalid response.' }));
-    throw new Error(errorData.error || 'Server responded with an error during upload.');
-  }
-
-  const { imageUrl } = await response.json();
-  if (!imageUrl) {
-    throw new Error('API did not return an image URL.');
-  }
-
-  return imageUrl;
 };
 
 /**
- * Deletes an image from Firebase Storage by proxying through the app's backend API.
- * @param imageUrl The public download URL of the image to delete.
- * @returns A promise that resolves when the image is deleted.
+ * Deletes an image from Firebase Storage using the client-side SDK.
+ *
+ * @param imageUrl The public HTTPS download URL of the image to delete.
+ * @returns A promise that resolves when the deletion is complete.
  */
 export const deleteImage = async (imageUrl: string): Promise<void> => {
-  if (!imageUrl) {
-    console.warn("No image URL provided for deletion.");
-    return;
-  }
-  
-  // Only proxy deletion for Google Storage URLs. Other URLs (placeholders) can be ignored.
-  if (!imageUrl.includes('storage.googleapis.com')) {
-    console.log(`Skipping deletion for non-storage URL: ${imageUrl}`);
+  // Only attempt to delete URLs that point to Firebase Storage.
+  if (!imageUrl || !imageUrl.includes('firebasestorage.googleapis.com')) {
+    console.log(`Skipping deletion for non-Firebase Storage URL: ${imageUrl}`);
     return;
   }
 
   try {
-    const response = await fetch('/api/delete-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ imageUrl }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to delete image.' }));
-      // We log the error but don't re-throw, as a failed deletion isn't critical for UI flow.
-      console.error(errorData.error || 'Server responded with an error during deletion.');
+    const storage = getStorageInstance();
+    // Create a reference from the HTTPS URL. This is a feature of the client SDK.
+    const imageRef = ref(storage, imageUrl);
+    await deleteObject(imageRef);
+  } catch (error: any) {
+    // A common error is trying to delete a file that doesn't exist.
+    // We can safely ignore this, as the end result (the file is not there) is the same.
+    if (error.code === 'storage/object-not-found') {
+      console.warn(`Attempted to delete an image that does not exist: ${imageUrl}`);
+    } else {
+      // For other errors, log them but don't re-throw. A failed delete is often
+      // not a critical UI-blocking error.
+      console.error('Client-side delete failed:', error);
     }
-    
-  } catch (error) {
-    console.error("Delete proxy error:", error);
-    // A failed delete is not a critical user-facing error, so we don't re-throw.
   }
 };
