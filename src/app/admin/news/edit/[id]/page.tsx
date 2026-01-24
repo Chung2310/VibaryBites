@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../../news-form';
@@ -14,7 +14,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { getAuth } from 'firebase/auth';
 
 export default function EditNewsArticlePage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -32,25 +31,18 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        const auth = getAuth();
-        if (!auth.currentUser) {
-            toast({ variant: 'destructive', title: 'Lỗi', description: 'Bạn phải đăng nhập để thực hiện hành động này.' });
-            setIsSubmitting(false);
-            return;
-        }
-
         if (!firestore || !article) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
                 description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy bài viết.',
             });
-            setIsSubmitting(false);
             return;
         }
         
         setIsSubmitting(true);
         let finalImageUrl = article.imageUrl;
+        const docRef = doc(firestore, 'news_articles', article.id);
 
         try {
             if (imageFile) {
@@ -75,8 +67,6 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
                 return;
             }
 
-            const docRef = doc(firestore, 'news_articles', article.id);
-
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
@@ -97,12 +87,12 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
             router.push('/admin/news');
 
         } catch (error) {
-            console.error("Error updating article: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: (error as Error).message || 'Không thể lưu bài viết.',
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: values
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

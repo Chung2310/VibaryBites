@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,20 +41,21 @@ export function RecipeEditor({ product }: RecipeEditorProps) {
     setIsSubmitting(true);
     
     const productRef = doc(firestore, 'cakes', product.id);
+    const dataToSave = { recipe: values.recipe };
 
     try {
-        await setDoc(productRef, { recipe: values.recipe }, { merge: true });
+        await setDoc(productRef, dataToSave, { merge: true });
         toast({
             title: "Thành công!",
             description: `Công thức cho sản phẩm "${product.name}" đã được cập nhật.`
         });
     } catch (error) {
-        console.error("Error saving recipe: ", error);
-        toast({
-            variant: 'destructive',
-            title: "Lỗi",
-            description: "Không thể lưu công thức."
+        const permissionError = new FirestorePermissionError({
+            path: productRef.path,
+            operation: 'update',
+            requestResourceData: dataToSave
         });
+        errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsSubmitting(false);
     }
@@ -97,5 +98,3 @@ export function RecipeEditor({ product }: RecipeEditorProps) {
     </Card>
   );
 }
-
-    

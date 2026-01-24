@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../../product-form';
@@ -14,7 +14,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { getAuth } from 'firebase/auth';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -32,24 +31,17 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
-        const auth = getAuth();
-        if (!auth.currentUser) {
-            toast({ variant: 'destructive', title: 'Lỗi', description: 'Bạn phải đăng nhập để thực hiện hành động này.' });
-            setIsSubmitting(false);
-            return;
-        }
-
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
                 description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy sản phẩm.',
             });
-            setIsSubmitting(false);
             return;
         }
         
         setIsSubmitting(true);
+        const docRef = doc(firestore, 'cakes', product.id);
 
         try {
             const originalUrls = product.imageUrls || [];
@@ -75,8 +67,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 return;
             }
 
-            const docRef = doc(firestore, 'cakes', product.id);
-
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -98,12 +88,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             router.push(`/admin/attributes?productId=${product.id}`);
 
         } catch (error) {
-            console.error("Error updating product: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: (error as Error).message || 'Không thể lưu sản phẩm.',
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: values
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFirestore } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -85,21 +85,22 @@ export function IngredientForm({ isOpen, onClose, ingredient }: IngredientFormPr
 
     const id = ingredient ? ingredient.id : `ing-${Date.now()}`;
     const docRef = doc(firestore, 'ingredients', id);
+    const dataToSave = { id, ...values };
 
     try {
-      await setDoc(docRef, { id, ...values }, { merge: ingredient ? true : false });
+      await setDoc(docRef, dataToSave, { merge: !!ingredient });
       toast({
         title: ingredient ? "Cập nhật thành công!" : "Thêm thành công!",
         description: `Nguyên liệu "${values.name}" đã được lưu.`,
       });
       onClose();
     } catch (error) {
-      console.error("Error saving ingredient: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Lỗi',
-        description: (error as Error).message || 'Không thể lưu nguyên liệu.',
+       const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: ingredient ? 'update' : 'create',
+          requestResourceData: dataToSave
       });
+      errorEmitter.emit('permission-error', permissionError);
     } finally {
       setIsSubmitting(false);
     }
@@ -173,4 +174,3 @@ export function IngredientForm({ isOpen, onClose, ingredient }: IngredientFormPr
     </Dialog>
   );
 }
-

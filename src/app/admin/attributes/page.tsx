@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +53,7 @@ export default function AttributesPage() {
         }
 
         setIsSubmitting(true);
-
+        const docRef = doc(firestore, 'cakes', selectedProduct.id);
         const updatedProductData: Partial<Product> = {
             detailedDescription: {
                 ...selectedProduct.detailedDescription,
@@ -69,21 +69,19 @@ export default function AttributesPage() {
         };
 
         try {
-            const docRef = doc(firestore, 'cakes', selectedProduct.id);
             await setDoc(docRef, updatedProductData, { merge: true });
             toast({
                 title: 'Cập nhật thành công!',
                 description: `Thuộc tính của sản phẩm "${selectedProduct.name}" đã được cập nhật.`,
             });
-            // Deselect product to show the list again
             setSelectedProduct(null);
         } catch (error) {
-            console.error("Error updating attributes: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: (error as Error).message || 'Không thể lưu thuộc tính.',
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: updatedProductData
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

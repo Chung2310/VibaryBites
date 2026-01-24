@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     // ================================
-    // USER-OWNED DATA
+    // USER-OWNED DATA (Specific Paths)
     // ================================
     
     match /customers/{customerId} {
@@ -55,19 +55,13 @@ service cloud.firestore {
       allow list, delete: if isAdmin();
 
       // --- ORDERS Subcollection ---
+      // This rule only applies to direct access by the owner.
+      // Admin access is handled by the collection group rule below.
       match /orders/{orderId} {
-        // Admin can perform any read operation (get, list).
-        // This is evaluated independently and is safe for collection group queries.
-        allow read: if isAdmin();
-
-        // An owner can get their own order and write to it.
-        // This rule is separate to avoid wildcard errors during admin list queries.
         allow get, write: if isOwner(customerId);
 
         // --- ORDER ITEMS Sub-subcollection ---
         match /order_items/{orderItemId} {
-          // Same logic as orders: Separate rules for admin and owner.
-          allow read: if isAdmin();
           allow get, write: if isOwner(customerId);
         }
       }
@@ -81,9 +75,26 @@ service cloud.firestore {
       // Anyone can read reviews.
       allow read: if true;
       // Only signed-in users can create a review for themselves.
+      // Make sure incoming data has the correct customerId.
       allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
       // Only the review author or an admin can update/delete.
+      // Check existing data for ownership.
       allow update, delete: if isAdmin() || (resource.data.customerId == request.auth.uid);
+    }
+    
+    // ==================================
+    // COLLECTION GROUP QUERIES (ADMIN)
+    // ==================================
+    
+    // This rule allows admins to list ALL orders from ALL customers.
+    // It's evaluated for collectionGroup queries on 'orders'.
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
+    }
+    
+    // This rule allows admins to list ALL order_items.
+    match /{path=**}/order_items/{orderItemId} {
+        allow read: if isAdmin();
     }
   }
 }

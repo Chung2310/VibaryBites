@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -78,21 +78,19 @@ export default function ProductsPage() {
         if (!selectedProduct || !firestore) return;
 
         setIsDeleting(true);
+        const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
             // Delete associated images from Firebase Storage
             if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
                 const deletePromises = selectedProduct.imageUrls.map(url => 
                     deleteImage(url).catch(err => {
-                        // Log error for individual image deletion but don't fail the whole process
                         console.warn(`Failed to delete image at ${url}`, err);
                     })
                 );
                 await Promise.all(deletePromises);
             }
 
-            // Delete the product document from Firestore
-            const docRef = doc(firestore, 'cakes', selectedProduct.id);
             await deleteDoc(docRef);
 
             toast({
@@ -101,14 +99,12 @@ export default function ProductsPage() {
                 variant: 'destructive',
             });
         } catch (error) {
-            console.error("Error deleting product:", error);
-            toast({
-                variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: (error as Error).message || "Could not delete product.",
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete',
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
-            // Reset state regardless of success or failure
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
             setSelectedProduct(undefined);

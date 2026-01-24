@@ -35,7 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
@@ -87,12 +87,11 @@ export default function NewsPage() {
                 variant: 'destructive',
             });
         } catch (error) {
-            console.error("Error deleting article: ", error);
-             toast({
-                variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: `Không thể xóa bài viết. Vui lòng thử lại.`,
+             const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete',
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);

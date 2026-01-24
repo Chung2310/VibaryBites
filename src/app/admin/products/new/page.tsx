@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
@@ -40,15 +40,15 @@ export default function NewProductPage() {
         }
         
         setIsSubmitting(true);
+        const id = `prod-${Date.now()}`;
+        const docRef = doc(firestore, 'cakes', id);
+        let newProduct: Product;
 
         try {
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedUrls = await Promise.all(uploadPromises);
 
-            const id = `prod-${Date.now()}`;
-            const docRef = doc(firestore, 'cakes', id);
-
-            const newProduct: Product = {
+            newProduct = {
                 id,
                 slug: generateSlug(values.name),
                 name: values.name,
@@ -82,12 +82,12 @@ export default function NewProductPage() {
             router.push(`/admin/attributes?productId=${id}`);
 
         } catch (error) {
-            console.error("Error creating product: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: (error as Error).message || 'Không thể lưu sản phẩm.',
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

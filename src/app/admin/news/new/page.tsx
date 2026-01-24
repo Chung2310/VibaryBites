@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../news-form';
@@ -42,14 +42,14 @@ export default function NewNewsArticlePage() {
         }
         
         setIsSubmitting(true);
+        const id = `news-${Date.now()}`;
+        const docRef = doc(firestore, 'news_articles', id);
+        let newArticle: NewsArticle;
 
         try {
             const imageUrl = await uploadImage(imageFile);
             
-            const id = `news-${Date.now()}`;
-            const docRef = doc(firestore, 'news_articles', id);
-            
-            const newArticle: NewsArticle = {
+            newArticle = {
                 id,
                 slug: generateSlug(values.title),
                 title: values.title,
@@ -71,12 +71,12 @@ export default function NewNewsArticlePage() {
             router.push('/admin/news');
 
         } catch (error) {
-            console.error("Error creating article: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Uh oh! Something went wrong.',
-                description: (error as Error).message || 'Không thể lưu bài viết.',
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
             });
+            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

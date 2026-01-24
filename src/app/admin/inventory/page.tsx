@@ -25,12 +25,13 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useState } from 'react';
 import type { Ingredient } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { IngredientForm } from './ingredient-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
 
 export default function InventoryPage() {
   const firestore = useFirestore();
@@ -41,7 +42,7 @@ export default function InventoryPage() {
   const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [ingredientToDelete, setIngredientToDelete] = useState<Ingredient | null>(null);
-
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const handleAdd = () => {
@@ -61,16 +62,22 @@ export default function InventoryPage() {
 
   const handleDelete = async () => {
     if (!ingredientToDelete || !firestore) return;
+    setIsDeleting(true);
+    const docRef = doc(firestore, 'ingredients', ingredientToDelete.id);
+    
     try {
-        const docRef = doc(firestore, 'ingredients', ingredientToDelete.id);
         await deleteDoc(docRef);
         toast({ title: "Thành công", description: `Đã xóa nguyên liệu "${ingredientToDelete.name}".`});
-    } catch (error) {
-        console.error("Error deleting ingredient: ", error);
-        toast({ variant: "destructive", title: "Lỗi", description: "Không thể xóa nguyên liệu." });
-    } finally {
         setIsDeleteConfirmOpen(false);
         setIngredientToDelete(null);
+    } catch (error) {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsDeleting(false);
     }
   };
 
@@ -157,7 +164,7 @@ export default function InventoryPage() {
         ingredient={selectedIngredient}
       />
 
-       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
@@ -168,9 +175,9 @@ export default function InventoryPage() {
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Hủy</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                        Xóa
+                    <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isDeleting}>Hủy</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+                        {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang xóa...</> : 'Xóa'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -178,4 +185,3 @@ export default function InventoryPage() {
     </>
   )
 }
-
