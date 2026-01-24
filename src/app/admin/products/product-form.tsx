@@ -122,9 +122,9 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     }
   };
 
-  const handleFormSubmit = (values: ProductFormValues) => {
-    // Call the parent onSubmit with the correctly separated files and URLs
-    onSubmit(values, newImageFiles, existingImageUrls);
+  const handleFormSubmit = async (values: ProductFormValues) => {
+    // Call the parent onSubmit with the correctly separated files and URLs, and wait for it to complete.
+    await onSubmit(values, newImageFiles, existingImageUrls);
   };
 
   return (
