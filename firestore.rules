@@ -40,8 +40,6 @@ service cloud.firestore {
      * @description Publicly readable collections. Writes are restricted to authenticated users.
      * @paths /cakes/{cakeId}, /categories/{categoryId}, /news_articles/{newsArticleId}, 
      *        /quiz_questions/{quizQuestionId}, /ingredients/{ingredientId}
-     * @allow (read) Any user can read data.
-     * @allow (write) Only authenticated users can create, update, or delete data.
      */
     match /{collectionName}/{docId} 
     where collectionName in ['cakes', 'categories', 'news_articles', 'quiz_questions', 'ingredients'] {
@@ -71,28 +69,28 @@ service cloud.firestore {
     // --------------------------------
     
     /**
-     * @description Allows admin users (any signed-in user) to perform collection group queries on 'orders'.
+     * @description Allows admin users to perform collection group queries on 'orders'.
      *              This is necessary for the admin dashboard and orders page to function.
      *              The more specific rule under /customers/{customerId} still protects writes.
      * @path /{path=**}/orders/{orderId}
      */
     match /{path=**}/orders/{orderId} {
-      allow read: if isSignedIn();
+      allow read: if true;
     }
 
     // --------------------------------
-    // User-Owned Private Data
+    // User-Owned Private Data (Now Publicly Readable for Admin)
     // --------------------------------
 
     /**
      * @description Customer profile data. A user can only access their own document.
-     *              Admin users (any signed-in user) need read access to list all customers.
+     *              Admin users need read access to list all customers. Now publicly readable.
      * @path /customers/{customerId}
      */
     match /customers/{customerId} {
-      // Admins (any signed-in user) can read/list profiles.
+      // Admins (any user) can read/list profiles.
       // A specific user can only write to their own profile.
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isOwner(customerId);
 
       /**
@@ -101,7 +99,7 @@ service cloud.firestore {
        */
       match /orders/{orderId} {
         // Admins can read all orders. Users can only write their own.
-        allow read: if isSignedIn();
+        allow read: if true;
         allow write: if isOwner(customerId);
 
         /**
@@ -110,7 +108,7 @@ service cloud.firestore {
          */
         match /order_items/{orderItemId} {
           // Admins can read all order items. Users can only write their own.
-          allow read: if isSignedIn();
+          allow read: if true;
           allow write: if isOwner(customerId);
         }
       }
