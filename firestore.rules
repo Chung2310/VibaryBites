@@ -22,12 +22,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == 'manager@vibary.com';
     }
 
-    // NEW: Explicit rule for collection group queries on 'orders'.
-    // This allows an admin to perform a list operation across all 'orders' collections.
-    match /{path=**}/orders/{orderId} {
-        allow list: if isAdmin();
-    }
-
     // --------------------------------
     // Public & Admin Writable Collections
     // --------------------------------
@@ -56,8 +50,9 @@ service cloud.firestore {
       allow create, get, update: if isOwner(customerId);
 
       match /orders/{orderId} {
-          // The 'list' rule for collection group is handled above.
-          // This rule now only needs to cover direct access (get) and writes.
+          // This rule now explicitly allows admins to 'list' for collection group queries,
+          // while also handling get/write for both owners and admins on specific documents.
+          allow list: if isAdmin();
           allow get, write: if isOwner(customerId) || isAdmin();
 
           match /order_items/{orderItemId} {
