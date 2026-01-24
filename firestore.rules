@@ -16,9 +16,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // This UID 'WEM5X92ExuRA6I82nZjRVeCru6i2' corresponds to manager@vibary.com
+    // This UID 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1' corresponds to admin@vibary.com
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == 'WEM5X92ExuRA6I82nZjRVeCru6i2';
+      return isSignedIn() && request.auth.uid == 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1';
     }
     
     // ================================
