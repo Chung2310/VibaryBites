@@ -21,89 +21,78 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
-        console.log('Step 1: handleFormSubmit called.');
+    // Corrected function signature to match the one expected by ProductForm
+    const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[], keptImageUrls: string[]) => {
         setIsSubmitting(true);
         
         if (!firestore) {
-            console.error('Step 2: Firestore not available.');
             toast({ variant: 'destructive', title: 'Lỗi kết nối', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
             setIsSubmitting(false);
             return;
         }
-        console.log('Step 2: Firestore is available.');
 
         if (newImageFiles.length === 0) {
-            console.error('Step 3: No image files provided.');
             toast({ variant: "destructive", title: "Thiếu ảnh sản phẩm", description: "Vui lòng tải lên ít nhất một ảnh cho sản phẩm." });
             setIsSubmitting(false);
             return;
         }
-        console.log(`Step 3: ${newImageFiles.length} image file(s) provided.`);
         
         const id = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', id);
-        console.log(`Step 4: Generated product ID: ${id}`);
 
-        console.log('Step 5: Starting image uploads.');
-        const uploadPromises = newImageFiles.map(file => uploadImage(file));
+        try {
+            const uploadPromises = newImageFiles.map(file => uploadImage(file));
+            const uploadedUrls = await Promise.all(uploadPromises);
 
-        Promise.all(uploadPromises)
-            .then(uploadedUrls => {
-                console.log('Step 6: Image uploads successful.', uploadedUrls);
-                const newProduct: Product = {
-                    id,
-                    slug: generateSlug(values.name),
-                    name: values.name,
-                    subtitle: values.subtitle,
-                    description: values.description,
-                    price: Number(values.price),
-                    stock: Number(values.stock),
-                    categorySlug: values.categorySlug,
-                    imageUrls: uploadedUrls,
-                    detailedDescription: {
-                        flavor: "", ingredients: "", serving: "",
-                        storage: "", dimensions: "", accessories: [],
-                    },
-                    flavorProfile: [],
-                    structure: [],
-                    recipe: "",
-                    collection: 'special-occasions',
-                };
+            const newProduct: Product = {
+                id,
+                slug: generateSlug(values.name),
+                name: values.name,
+                subtitle: values.subtitle,
+                description: values.description,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                imageUrls: uploadedUrls,
+                detailedDescription: {
+                    flavor: "", ingredients: "", serving: "",
+                    storage: "", dimensions: "", accessories: [],
+                },
+                flavorProfile: [],
+                structure: [],
+                recipe: "",
+                collection: 'special-occasions',
+            };
 
-                console.log('Step 7: Calling setDoc.');
-                return setDoc(docRef, newProduct).then(() => {
-                    console.log('Step 8: setDoc successful.');
-                    return { newProduct }; // Pass product for the next .then()
-                });
-            })
-            .then(({ newProduct }) => {
-                toast({
-                    title: 'Thêm thành công!',
-                    description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
-                });
-                console.log('Step 9: Redirecting...');
-                router.push(`/admin/attributes?productId=${newProduct.id}`);
-            })
-            .catch((error: any) => {
-                console.error('Step ERROR: An error occurred in the promise chain.', error);
-                const permissionError = new FirestorePermissionError({
+            await setDoc(docRef, newProduct);
+            
+            toast({
+                title: 'Thêm thành công!',
+                description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
+            });
+            router.push(`/admin/attributes?productId=${newProduct.id}`);
+
+        } catch (error: any) {
+            console.error('Error creating product:', error);
+            
+            // Check for permission error specifically
+            if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'storage/unauthorized')) {
+                 const permissionError = new FirestorePermissionError({
                     path: docRef.path,
                     operation: 'create',
                     requestResourceData: values
                 });
                 errorEmitter.emit('permission-error', permissionError);
-
+            } else {
                 toast({
                     variant: 'destructive',
                     title: 'Không thể tạo sản phẩm',
-                    description: error.message || 'Lỗi không xác định. Kiểm tra console.',
+                    description: error.message || 'Đã có lỗi xảy ra. Vui lòng kiểm tra console để biết thêm chi tiết.',
                 });
-            })
-            .finally(() => {
-                console.log('Step FINALLY: Submission process finished.');
-                setIsSubmitting(false);
-            });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
