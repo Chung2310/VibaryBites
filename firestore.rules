@@ -15,16 +15,13 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true || 
-        request.auth.uid in [
-          'WEM5X92ExuRA6I82nZjRVeCru6i2',
-          'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'
-        ]
-      );
+      return isSignedIn() && request.auth.uid in ['WEM5X92ExuRA6I82nZjRVeCru6i2', 'Uljim6Xf6UeAlfEM0VV1lY4vaKm1'];
     }
 
-    // Collection Group Query cho orders - QUAN TRỌNG
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     match /{path=**}/orders/{orderId} {
       allow read, write: if isAdmin();
     }
@@ -39,9 +36,7 @@ service cloud.firestore {
       
       match /reviews/{reviewId} {
         allow read: if true;
-        allow create: if isSignedIn() 
-          && request.resource.data.customerId == request.auth.uid 
-          && request.resource.data.cakeId == cakeId;
+        allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid && request.resource.data.cakeId == cakeId;
         allow update: if isExistingOwner(resource.data.customerId);
         allow delete: if isExistingOwner(resource.data.customerId) || isAdmin();
       }
