@@ -67,6 +67,20 @@ service cloud.firestore {
     }
 
     // --------------------------------
+    // Admin access for collection group queries
+    // --------------------------------
+    
+    /**
+     * @description Allows admin users (any signed-in user) to perform collection group queries on 'orders'.
+     *              This is necessary for the admin dashboard and orders page to function.
+     *              The more specific rule under /customers/{customerId} still protects writes.
+     * @path /{path=**}/orders/{orderId}
+     */
+    match /{path=**}/orders/{orderId} {
+      allow read: if isSignedIn();
+    }
+
+    // --------------------------------
     // User-Owned Private Data
     // --------------------------------
 
