@@ -40,7 +40,7 @@ service cloud.firestore {
     
     match /cakes/{cakeId} {
       allow read: if true;
-      allow write: if true; // Temporarily open for debugging
+      allow write: if isAdmin();
       
       match /reviews/{reviewId} {
         allow read: if true;
@@ -58,7 +58,7 @@ service cloud.firestore {
     
     match /news_articles/{newsArticleId} {
       allow read: if true;
-      allow write: if true; // Temporarily open for debugging
+      allow write: if isAdmin();
     }
     
     match /quiz_questions/{quizQuestionId} {

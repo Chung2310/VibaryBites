@@ -26,38 +26,38 @@ export default function NewNewsArticlePage() {
             return;
         }
         
-        if (!imageFile) {
-            toast({
-                variant: "destructive",
-                title: "Thiếu ảnh",
-                description: "Vui lòng tải lên ảnh bìa cho bài viết.",
-            });
-            return;
-        }
-
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
         
         let imageUrl = '';
-        try {
-            toastControl.update({ title: "Đang tải lên ảnh bìa..." });
-            imageUrl = await uploadImage(imageFile);
-            toastControl.update({ title: "Tải ảnh lên thành công!" });
-        } catch (error: any) {
-            console.error("Lỗi khi tải ảnh lên:", error);
-            toastControl.update({
-                variant: 'destructive',
-                title: 'Lỗi tải ảnh lên!',
-                description: `Không thể tải ảnh lên: ${error.message}. Vui lòng kiểm tra cấu hình CORS.`,
-            });
-            setIsSubmitting(false);
-            return;
+        if (imageFile) {
+            try {
+                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh bìa..." });
+                imageUrl = await uploadImage(imageFile);
+                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+            } catch (error: any) {
+                console.error("Lỗi khi tải ảnh lên:", error);
+                imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=Image+Upload+Failed`;
+                 toast({
+                    variant: 'destructive',
+                    title: 'Lỗi tải ảnh lên!',
+                    description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa bài viết để tải lại ảnh sau.`,
+                    duration: 9000,
+                });
+            }
+        } else {
+            imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
+             toast({
+                title: 'Không có ảnh bìa',
+                description: 'Đang sử dụng ảnh mặc định cho bài viết.'
+             });
         }
+
 
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         try {
-            toastControl.update({ title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newArticle: NewsArticle = {
                 id: articleId,
@@ -74,6 +74,7 @@ export default function NewNewsArticlePage() {
             await setDoc(docRef, newArticle);
             
             toastControl.update({
+                id: toastControl.id,
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -81,7 +82,7 @@ export default function NewNewsArticlePage() {
             router.push('/admin/news');
 
         } catch (error: any) {
-            console.error("Error creating article:", error);
+            console.error("Lỗi khi tạo bài viết:", error);
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
@@ -89,6 +90,7 @@ export default function NewNewsArticlePage() {
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({
+                id: toastControl.id,
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
                 description: `Không thể lưu bài viết: ${error.message}`,

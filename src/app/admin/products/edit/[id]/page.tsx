@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -42,6 +41,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         }
         
         setIsSubmitting(true);
+        const toastControl = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." });
         const docRef = doc(firestore, 'cakes', product.id);
 
         try {
@@ -49,25 +49,33 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
             // Handle image changes
             if (imageFile) { // New image uploaded
-                if (product.imageUrl) { // Delete old one if it exists
-                    await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
+                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới..." });
+                try {
+                    const newImageUrl = await uploadImage(imageFile);
+                    // Delete old one only after new one is successfully uploaded
+                    if (product.imageUrl && (product.imageUrl.includes('firebasestorage') || product.imageUrl.includes('storage.googleapis'))) {
+                        await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
+                    }
+                    finalImageUrl = newImageUrl;
+                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                } catch(e) {
+                    console.error("Lỗi khi tải ảnh lên:", e);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Lỗi tải ảnh lên!',
+                        description: `Không thể thay đổi ảnh. Các thông tin khác sẽ được lưu.`,
+                        duration: 9000,
+                    });
+                    // Keep the old image URL if upload fails
+                    finalImageUrl = product.imageUrl;
                 }
-                finalImageUrl = await uploadImage(imageFile);
-            } else if (imageWasRemoved && product.imageUrl) { // Image removed
+
+            } else if (imageWasRemoved && product.imageUrl) { // Image removed by user
                 await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete removed image ${product.imageUrl}`, err));
-                finalImageUrl = ''; // Set to empty
+                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`; // Set to placeholder
             }
             
-            if (!finalImageUrl) {
-                 toast({
-                    variant: "destructive",
-                    title: "Lỗi",
-                    description: "Sản phẩm phải có một ảnh.",
-                });
-                setIsSubmitting(false);
-                return;
-            }
-
+            toastControl.update({ id: toastControl.id, title: "Đang lưu thông tin sản phẩm..." });
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -78,6 +86,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 imageUrl: finalImageUrl,
                 slug: generateSlug(values.name),
                 detailedDescription: {
+                    ...product.detailedDescription, // preserve any fields not in the form
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
                     serving: values.detailedDescription_serving,
@@ -91,7 +100,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
             await setDoc(docRef, updatedProductData, { merge: true });
             
-            toast({
+            toastControl.update({
+                id: toastControl.id,
                 title: 'Cập nhật thành công!',
                 description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
@@ -106,10 +116,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
+            toastControl.update({
+                id: toastControl.id,
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: `Đã xảy ra lỗi. Vui lòng xem console để biết thêm chi tiết.`,
+                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
                 duration: 9000,
             });
         } finally {

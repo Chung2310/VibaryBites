@@ -41,32 +41,42 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = article.imageUrl;
+        const toastControl = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." });
         const docRef = doc(firestore, 'news_articles', article.id);
 
         try {
-            // If a new image is provided, upload it and delete the old one.
+            let finalImageUrl = article.imageUrl;
+
+            // If a new image is provided, upload it.
             if (imageFile) {
-                if (article.imageUrl) {
-                    await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
+                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới..." });
+                try {
+                    const newImageUrl = await uploadImage(imageFile);
+                     // Delete old one only after new one is successfully uploaded
+                    if (article.imageUrl && (article.imageUrl.includes('firebasestorage') || article.imageUrl.includes('storage.googleapis'))) {
+                        await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
+                    }
+                    finalImageUrl = newImageUrl;
+                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                } catch(e) {
+                     console.error("Lỗi khi tải ảnh lên:", e);
+                     toast({
+                        variant: 'destructive',
+                        title: 'Lỗi tải ảnh lên!',
+                        description: `Không thể thay đổi ảnh bìa. Các thông tin khác sẽ được lưu.`,
+                        duration: 9000,
+                    });
+                    // Keep the old image URL if upload fails
+                    finalImageUrl = article.imageUrl;
                 }
-                finalImageUrl = await uploadImage(imageFile);
             } 
             // If no new image, but the existing one was removed.
             else if (imageWasRemoved && article.imageUrl) {
                 await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
-                finalImageUrl = '';
+                finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 
-             if (!finalImageUrl) {
-                 toast({
-                    variant: "destructive",
-                    title: "Lỗi",
-                    description: "Bài viết phải có ảnh bìa.",
-                });
-                setIsSubmitting(false);
-                return;
-            }
+            toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết..." });
 
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
@@ -81,7 +91,8 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
 
             await setDoc(docRef, updatedArticleData, { merge: true });
             
-            toast({
+            toastControl.update({
+                id: toastControl.id,
                 title: 'Cập nhật thành công!',
                 description: `Bài viết "${values.title}" đã được cập nhật.`,
             });
@@ -95,7 +106,8 @@ export default function EditNewsArticlePage({ params }: { params: { id: string }
                 requestResourceData: values
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
+            toastControl.update({
+                id: toastControl.id,
                 variant: 'destructive',
                 title: 'Không thể cập nhật bài viết',
                 description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,

@@ -26,38 +26,40 @@ export default function NewProductPage() {
             return;
         }
 
-        if (!imageFile) {
-            toast({
-                variant: "destructive",
-                title: "Thiếu ảnh",
-                description: "Vui lòng tải lên một ảnh cho sản phẩm.",
-            });
-            return;
-        }
-
         setIsSubmitting(true);
         const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
 
         let imageUrl = '';
-        try {
-            toastControl.update({ title: "Đang tải lên ảnh..." });
-            imageUrl = await uploadImage(imageFile);
-            toastControl.update({ title: "Tải ảnh lên thành công!" });
-        } catch (error: any) {
-            console.error("Lỗi khi tải ảnh lên:", error);
-            toastControl.update({
-                variant: 'destructive',
-                title: 'Lỗi tải ảnh lên!',
-                description: `Không thể tải ảnh lên. Vui lòng kiểm tra Console để biết chi tiết lỗi CORS.`,
-            });
-            setIsSubmitting(false);
-            return;
+        if (imageFile) {
+            try {
+                toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh..." });
+                imageUrl = await uploadImage(imageFile);
+                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+            } catch (error) {
+                console.error("Lỗi khi tải ảnh lên:", error);
+                // Assign a placeholder and notify the user, but don't stop the process.
+                imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=Image+Upload+Failed`;
+                toast({
+                    variant: 'destructive',
+                    title: 'Lỗi tải ảnh lên!',
+                    description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
+                    duration: 9000,
+                });
+            }
+        } else {
+             // If no image is provided at all, use a placeholder.
+             imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
+             toast({
+                title: 'Không có ảnh',
+                description: 'Đang sử dụng ảnh mặc định cho sản phẩm.'
+             });
         }
+
 
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
         try {
-            toastControl.update({ title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toastControl.update({ id: toastControl.id, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
             const newProduct: Product = {
                 id: productId,
@@ -85,6 +87,7 @@ export default function NewProductPage() {
             await setDoc(docRef, newProduct);
             
             toastControl.update({
+                id: toastControl.id,
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
             });
@@ -100,9 +103,10 @@ export default function NewProductPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({
+                id: toastControl.id,
                 variant: 'destructive',
                 title: 'Lỗi lưu sản phẩm!',
-                description: `Không thể lưu sản phẩm vào cơ sở dữ liệu.`,
+                description: `Không thể lưu sản phẩm vào cơ sở dữ liệu. Lỗi: ${error.message}`,
             });
         } finally {
             setIsSubmitting(false);
