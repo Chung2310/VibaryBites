@@ -1,4 +1,3 @@
-
 'use client';
 import {
   File,
@@ -74,27 +73,31 @@ export default function ProductsPage() {
         setSelectedProduct(product);
         setIsDeleteConfirmOpen(true);
     }
-
-    const closeDeleteConfirm = () => {
-        setIsDeleteConfirmOpen(false);
-        setSelectedProduct(undefined);
-    }
     
     const handleDelete = async () => {
         if (!selectedProduct || !firestore) return;
 
         setIsDeleting(true);
-        const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
+            // Delete associated images from Firebase Storage
             if (selectedProduct.imageUrls && selectedProduct.imageUrls.length > 0) {
-                const deletePromises = selectedProduct.imageUrls.map(url => deleteImage(url));
+                const deletePromises = selectedProduct.imageUrls.map(url => 
+                    deleteImage(url).catch(err => {
+                        // Log error for individual image deletion but don't fail the whole process
+                        console.warn(`Failed to delete image at ${url}`, err);
+                    })
+                );
                 await Promise.all(deletePromises);
             }
+
+            // Delete the product document from Firestore
+            const docRef = doc(firestore, 'cakes', selectedProduct.id);
             await deleteDoc(docRef);
+
             toast({
                 title: "Xóa thành công",
-                description: `Sản phẩm "${selectedProduct.name}" và các ảnh liên quan đã được xóa.`,
+                description: `Sản phẩm "${selectedProduct.name}" đã được xóa.`,
                 variant: 'destructive',
             });
         } catch (error) {
@@ -105,8 +108,10 @@ export default function ProductsPage() {
                 description: (error as Error).message || "Could not delete product.",
             });
         } finally {
+            // Reset state regardless of success or failure
             setIsDeleting(false);
-            closeDeleteConfirm();
+            setIsDeleteConfirmOpen(false);
+            setSelectedProduct(undefined);
         }
     }
 
@@ -255,7 +260,7 @@ export default function ProductsPage() {
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel onClick={closeDeleteConfirm} disabled={isDeleting}>Hủy</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setIsDeleteConfirmOpen(false)} disabled={isDeleting}>Hủy</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
                     {isDeleting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang xóa...</>) : 'Xóa'}
                 </AlertDialogAction>
