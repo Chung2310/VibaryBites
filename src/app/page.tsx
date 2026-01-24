@@ -252,7 +252,7 @@ function WorkshopSection() {
           <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
              <video 
                 className="h-full w-full object-cover"
-                src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0850828234.appspot.com/o/videos%2Fcake-video.mp4?alt=media&token=a8e8f8c9-5a5f-47d3-9f1c-7f5b2447de31" 
+                src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0850828234.appspot.com/o/videos%2Fcake-video-2.mp4?alt=media&token=f7e5e3a3-4b6d-4e9e-9b3a-2a1e7b8e1e1e" 
                 autoPlay 
                 loop 
                 muted 
