@@ -22,14 +22,13 @@ export default function NewProductPage() {
 
     const handleFormSubmit = async (values: ProductFormValues, newImageFiles: File[]) => {
         setIsSubmitting(true);
-        const { toast } = useToast();
         const toastId = toast({
             title: "Đang xử lý...",
             description: "Bắt đầu quá trình tạo sản phẩm mới.",
         });
 
         if (!firestore) {
-            toast({
+            toastId.update({
                 id: toastId.id,
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -40,7 +39,7 @@ export default function NewProductPage() {
         }
 
         if (newImageFiles.length === 0) {
-            toast({
+            toastId.update({
                 id: toastId.id,
                 variant: 'destructive',
                 title: 'Thiếu ảnh',
@@ -51,7 +50,7 @@ export default function NewProductPage() {
         }
 
         try {
-            toast({
+            toastId.update({
                 id: toastId.id,
                 title: "Đang tải ảnh lên...",
                 description: `Đang tải lên ${newImageFiles.length} ảnh. Vui lòng chờ...`,
@@ -59,7 +58,7 @@ export default function NewProductPage() {
             const uploadPromises = newImageFiles.map(file => uploadImage(file));
             const uploadedImageUrls = await Promise.all(uploadPromises);
 
-            toast({
+            toastId.update({
                 id: toastId.id,
                 title: "Đang lưu thông tin...",
                 description: "Ảnh đã được tải lên. Đang lưu chi tiết sản phẩm.",
@@ -94,7 +93,7 @@ export default function NewProductPage() {
 
             await setDoc(docRef, newProduct);
 
-            toast({
+            toastId.update({
                 id: toastId.id,
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${newProduct.name}" đã được tạo.`,
@@ -110,7 +109,7 @@ export default function NewProductPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
             
-            toast({
+            toastId.update({
                 id: toastId.id,
                 variant: 'destructive',
                 title: 'Không thể tạo sản phẩm',
