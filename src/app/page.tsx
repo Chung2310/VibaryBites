@@ -76,6 +76,20 @@ const heroBanners = [
   }
 ];
 
+const marqueeVariantsReverse = {
+  animate: {
+    x: ['-50%', '0%'],
+    transition: {
+      x: {
+        repeat: Infinity,
+        repeatType: "loop",
+        duration: 30,
+        ease: "linear",
+      },
+    },
+  },
+};
+
 
 function Hero() {
   const [api, setApi] = React.useState<CarouselApi>()
@@ -273,25 +287,11 @@ function WorkshopSection() {
     );
 }
 
-const marqueeVariantsReverse = {
-  animate: {
-    x: ['-50%', '0%'],
-    transition: {
-      x: {
-        repeat: Infinity,
-        repeatType: "loop",
-        duration: 40,
-        ease: "linear",
-      },
-    },
-  },
-};
-
 function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-        <div className="relative mx-12 flex-shrink-0 w-96">
-            <Link href={`/products/${sanitizedSlug}`} className="group block">
+        <div className="mx-8 flex-shrink-0 w-[500px]">
+            <Link href={`/products/${sanitizedSlug}`} className="group block relative">
                 <Image
                     src={product.imageUrl}
                     alt={product.name}
@@ -299,11 +299,11 @@ function MarqueeProductCard({ product }: { product: Product }) {
                     height={800}
                     className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 transform">
-                    <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
-                        {product.name}
-                    </div>
-                </div>
+                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 transform">
+                   <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
+                       {product.name}
+                   </div>
+               </div>
             </Link>
         </div>
     );
@@ -317,7 +317,7 @@ function FeaturedProducts() {
 
     if (isLoadingProducts && featuredDisplayProducts.length === 0) {
       return (
-        <section className="py-12 sm:py-20 bg-white">
+        <section className="py-16 sm:py-24 bg-white">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <Skeleton className="h-10 w-3/4 mx-auto" />
@@ -327,7 +327,7 @@ function FeaturedProducts() {
             <div className="w-full overflow-hidden mt-8">
                 <div className="flex">
                     {Array.from({length: 4}).map((_, i) => (
-                        <div key={i} className="relative mx-12 flex-shrink-0 w-96 aspect-square">
+                        <div key={i} className="relative mx-8 flex-shrink-0 w-[500px] aspect-square">
                             <Skeleton className="h-full w-full"/>
                         </div>
                     ))}
@@ -349,7 +349,7 @@ function FeaturedProducts() {
     return (
         <section className="overflow-x-clip bg-white py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mb-24 text-center">
+                <div className="mb-16 text-center">
                     <h2 className="font-headline text-4xl md:text-5xl">
                         Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
                     </h2>
