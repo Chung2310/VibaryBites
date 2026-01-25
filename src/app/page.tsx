@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React from 'react';
+import React, {useRef, useEffect} from 'react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
@@ -222,6 +222,12 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
+     const videoRef = useRef<HTMLVideoElement>(null);
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.play().catch(error => console.error("Autoplay was prevented:", error));
+        }
+    }, []);
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -244,6 +250,7 @@ function WorkshopSection() {
                     </div>
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
                         <video
+                            ref={videoRef}
                             className="h-full w-full object-cover"
                             src="https://res.cloudinary.com/dqhgnzmtk/video/upload/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
                             loop
@@ -314,7 +321,7 @@ function FeaturedProducts() {
             
             <div className="w-full overflow-x-auto mt-8">
                 <div className="flex animate-marquee hover:pause">
-                    {[...birthdayCakes, ...birthdayCakes, ...birthdayCakes, ...birthdayCakes].map((product, index) => (
+                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
                        <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
                     ))}
                 </div>
