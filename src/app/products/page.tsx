@@ -34,11 +34,13 @@ export default function ProductsPage() {
     
     setActiveCategory(slugToHandle);
     
-    const element = document.getElementById(slugToHandle);
-    if (element) {
-        setTimeout(() => {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+    if (categorySlugFromQuery) {
+        const element = sectionRefs.current[categorySlugFromQuery];
+        if (element) {
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
     }
   }, [searchParams, productCategories]);
 

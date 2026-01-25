@@ -222,25 +222,6 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
-    const videoRef = React.useRef<HTMLVideoElement>(null);
-
-    React.useEffect(() => {
-        const video = videoRef.current;
-        if (video) {
-            // Ensure it's muted, as this is often a requirement for autoplay
-            video.muted = true; 
-            // Attempt to play the video
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    // Autoplay was prevented. This is common in some browsers.
-                    // The user might need to interact with the page first.
-                    console.error("Video autoplay was prevented:", error);
-                });
-            }
-        }
-    }, []);
-
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -263,7 +244,6 @@ function WorkshopSection() {
                     </div>
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
                         <video
-                            ref={videoRef}
                             className="h-full w-full object-cover"
                             src="https://videos.pexels.com/video-files/4782845/4782845-hd_1920_1080_25fps.mp4"
                             loop
