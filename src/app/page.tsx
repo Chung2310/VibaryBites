@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter, usePathname } from 'next/navigation';
-import { ProductCard } from '@/components/product-card';
 
 const heroBanners = [
   {
@@ -227,7 +226,6 @@ function WorkshopSection() {
 
     useEffect(() => {
         if (videoRef.current) {
-            videoRef.current.muted = true;
             videoRef.current.play().catch(error => {
                 console.error("Autoplay was prevented:", error);
             });
@@ -273,11 +271,48 @@ function WorkshopSection() {
     );
 }
 
+function FeaturedProductCard({ product }: { product: Product }) {
+  const thumbnailUrl = product.imageUrl || '';
+  const sanitizedSlug = product.slug || generateSlug(product.name);
+
+  return (
+    <Link href={`/products/${sanitizedSlug}`} className="group relative block aspect-square w-full overflow-hidden rounded-lg">
+      <Image
+        src={thumbnailUrl}
+        alt={product.name}
+        fill
+        className="object-contain transition-transform duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      <div className="absolute bottom-6 left-4 right-4">
+        <h3 className="font-headline text-2xl text-white text-center uppercase">
+          {product.name}
+        </h3>
+      </div>
+    </Link>
+  );
+}
 
 function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
 
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 4);
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 8);
+    
+    const CakeList = ({ items }: { items: Product[] }) => (
+        <>
+            {isLoadingProducts
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="w-64 flex-shrink-0 px-4">
+                    <Skeleton className="w-full aspect-square rounded-lg" />
+                  </div>
+                ))
+              : items.map((product) => (
+                  <div key={product.id} className="w-64 flex-shrink-0 px-4">
+                    <FeaturedProductCard product={product} />
+                  </div>
+                ))}
+        </>
+    );
 
     return (
         <section className="py-12 sm:py-20 bg-white">
@@ -291,29 +326,16 @@ function FeaturedProducts() {
                     </p>
                     <div className="text-center mt-8">
                         <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
-                            <Link href="/products">ĐẶT BÁNH NGAY</Link>
+                            <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
                         </Button>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                    {isLoadingProducts ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="flex flex-col h-full">
-                                <div className="p-4 space-y-3">
-                                    <Skeleton className="h-7 w-3/4" />
-                                    <Skeleton className="h-4 w-1/2" />
-                                    <Skeleton className="h-5 w-1/3" />
-                                </div>
-                                <div className="relative w-full aspect-square mt-auto">
-                                    <Skeleton className="h-full w-full" />
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        birthdayCakes.map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))
-                    )}
+            </div>
+            
+            <div className="w-full overflow-x-hidden">
+                <div className="flex animate-marquee-reverse">
+                    <div className="flex flex-shrink-0 py-4"> <CakeList items={birthdayCakes} /> </div>
+                    <div className="flex flex-shrink-0 py-4" aria-hidden="true"> <CakeList items={birthdayCakes} /> </div>
                 </div>
             </div>
         </section>
