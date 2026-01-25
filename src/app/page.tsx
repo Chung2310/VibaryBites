@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import React from 'react';
-import { motion } from 'framer-motion';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
@@ -163,7 +162,7 @@ function CategorySection() {
         'banh-nuong': 'category-other-cakes',
         'banh-tea-break': 'category-drinks',
     };
-
+    
     const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
         e.preventDefault();
         router.push(`/products?category=${slug}`);
@@ -223,62 +222,63 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
-  return (
-    <section className="bg-[#F9F7F5] py-16 sm:py-24">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-          <div className="text-center lg:text-left">
-            <p className="font-body text-sm uppercase tracking-widest text-muted-foreground">
-              MỘT NGÀY TẠI XƯỞNG
-            </p>
-            <h2 className="mt-4 font-headline text-4xl md:text-5xl">
-              Công việc mà chúng tôi yêu thích mỗi ngày
-            </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg font-fraunces text-muted-foreground">
-              Ghé thăm Tiktok của VIBARY để xem những tư liệu chân thực
-              nhất – về cách mà chúng tôi hoàn thiện một chiếc bánh thật tinh tế
-              gửi trao tới bạn.
-            </p>
-            <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
-              <Link href="#">THEO DÕI NGAY</Link>
-            </Button>
-          </div>
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
-             <video 
-                className="h-full w-full object-cover"
-                src="https://videos.pexels.com/video-files/853805/853805-sd_640_360_25fps.mp4" 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+
+    React.useEffect(() => {
+        const video = videoRef.current;
+        if (video) {
+            video.muted = true;
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Video autoplay was prevented by browser policy:", error);
+                });
+            }
+        }
+    }, []);
+
+    return (
+        <section className="bg-[#F9F7F5] py-16 sm:py-24">
+            <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+                    <div className="text-center lg:text-left">
+                        <p className="font-body text-sm uppercase tracking-widest text-muted-foreground">
+                            MỘT NGÀY TẠI XƯỞNG
+                        </p>
+                        <h2 className="mt-4 font-headline text-4xl md:text-5xl">
+                            Công việc mà chúng tôi yêu thích mỗi ngày
+                        </h2>
+                        <p className="mx-auto mt-6 max-w-xl text-lg font-fraunces text-muted-foreground">
+                            Ghé thăm Tiktok của VIBARY để xem những tư liệu chân thực
+                            nhất – về cách mà chúng tôi hoàn thiện một chiếc bánh thật tinh tế
+                            gửi trao tới bạn.
+                        </p>
+                        <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
+                            <Link href="#">THEO DÕI NGAY</Link>
+                        </Button>
+                    </div>
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
+                        <video
+                            ref={videoRef}
+                            className="h-full w-full object-cover"
+                            src="https://videos.pexels.com/video-files/853805/853805-sd_640_360_25fps.mp4"
+                            loop
+                            muted
+                            playsInline
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+        </section>
+    );
 }
 
 
 function FeaturedProducts() {
     const { products } = useAppStore();
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-
-    const marqueeVariants = {
-        animate: {
-            x: ["-50%", "0%"],
-            transition: {
-                x: {
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 20,
-                    ease: "linear",
-                },
-            },
-        },
-    };
     
     const ProductMarqueeItem = ({ product }: { product: Product }) => {
         const sanitizedSlug = product.slug || generateSlug(product.name);
@@ -327,16 +327,12 @@ function FeaturedProducts() {
                 </div>
             </div>
             
-            <div className="w-full overflow-hidden mt-8">
-                <motion.div
-                    className="flex"
-                    variants={marqueeVariants}
-                    animate="animate"
-                >
+            <div className="w-full overflow-x-auto mt-8">
+                <div className="flex animate-marquee hover:pause">
                     {[...birthdayCakes, ...birthdayCakes, ...birthdayCakes, ...birthdayCakes].map((product, index) => (
                        <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
                     ))}
-                </motion.div>
+                </div>
             </div>
         </section>
     );
@@ -419,5 +415,3 @@ export default function Home() {
     </>
   );
 }
-
-    
