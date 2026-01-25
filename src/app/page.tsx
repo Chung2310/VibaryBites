@@ -262,7 +262,7 @@ function WorkshopSection() {
              <video 
                 ref={videoRef}
                 className="h-full w-full object-cover"
-                src="https://videos.pexels.com/video-files/3209828/3209828-hd.mp4" 
+                src="https://videos.pexels.com/video-files/4694631/4694631-uhd.mp4" 
                 autoPlay 
                 loop 
                 muted 
