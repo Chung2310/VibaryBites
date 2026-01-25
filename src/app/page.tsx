@@ -156,7 +156,6 @@ function CategorySection() {
     const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
-    const pathname = usePathname();
 
     const categoryImageMap: Record<string, string> = {
         'banh-sinh-nhat': 'category-birthday-cake',
@@ -224,20 +223,6 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-
-  React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn("Video autoplay was prevented by the browser.", error);
-        });
-      }
-    }
-  }, []);
-  
   return (
     <section className="bg-[#F9F7F5] py-16 sm:py-24">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -260,9 +245,8 @@ function WorkshopSection() {
           </div>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
              <video 
-                ref={videoRef}
                 className="h-full w-full object-cover"
-                src="https://videos.pexels.com/video-files/4694631/4694631-uhd.mp4" 
+                src="https://videos.pexels.com/video-files/853805/853805-sd_640_360_25fps.mp4" 
                 autoPlay 
                 loop 
                 muted 
