@@ -216,6 +216,19 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    if (videoRef.current) {
+      // Attempt to play the video programmatically to handle stricter autoplay policies.
+      videoRef.current.play().catch(error => {
+        // This catch is important to prevent unhandled promise rejection errors
+        // if the browser blocks autoplay. The `autoPlay` prop will still be attempted.
+        console.warn("Video autoplay was prevented by the browser. The `autoPlay` attribute will still be attempted.", error);
+      });
+    }
+  }, []);
+  
   return (
     <section className="bg-[#F9F7F5] py-16 sm:py-24">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -238,6 +251,7 @@ function WorkshopSection() {
           </div>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
              <video 
+                ref={videoRef}
                 className="h-full w-full object-cover"
                 src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0850828234.appspot.com/o/videos%2Fcake-video-3.mp4?alt=media&token=4f0bde55-7977-4c4d-9e66-63c65eacc350" 
                 autoPlay 
