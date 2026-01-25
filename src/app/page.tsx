@@ -271,24 +271,27 @@ function WorkshopSection() {
     );
 }
 
-function FeaturedProductCard({ product }: { product: Product }) {
-  const thumbnailUrl = product.imageUrl || '';
+function FeaturedProductCard({ product, labelClassName }: { product: Product, labelClassName?: string }) {
   const sanitizedSlug = product.slug || generateSlug(product.name);
 
   return (
-    <Link href={`/products/${sanitizedSlug}`} className="group relative block aspect-square w-full overflow-hidden rounded-lg">
-      <Image
-        src={thumbnailUrl}
-        alt={product.name}
-        fill
-        className="object-contain transition-transform duration-500 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      <div className="absolute bottom-6 left-4 right-4">
-        <h3 className="font-headline text-2xl text-white text-center uppercase">
-          {product.name}
-        </h3>
-      </div>
+    <Link href={`/products/${sanitizedSlug}`} className="group relative block w-full aspect-square">
+        <div className="relative w-full h-full">
+            <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
+            />
+        </div>
+        <div className={cn(
+            "absolute rounded-full border border-black bg-white/80 px-4 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 group-hover:shadow-xl",
+            labelClassName
+        )}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-black whitespace-nowrap">
+                {product.name}
+            </h3>
+        </div>
     </Link>
   );
 }
@@ -296,47 +299,64 @@ function FeaturedProductCard({ product }: { product: Product }) {
 function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
 
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 8);
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 4);
     
-    const CakeList = ({ items }: { items: Product[] }) => (
-        <>
-            {isLoadingProducts
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="w-64 flex-shrink-0 px-4">
-                    <Skeleton className="w-full aspect-square rounded-lg" />
-                  </div>
-                ))
-              : items.map((product) => (
-                  <div key={product.id} className="w-64 flex-shrink-0 px-4">
-                    <FeaturedProductCard product={product} />
-                  </div>
-                ))}
-        </>
-    );
+    // Fallback if specific cakes aren't found
+    const displayProducts = birthdayCakes.length > 0 ? birthdayCakes : products.slice(0, 4);
+
+    if (isLoadingProducts && displayProducts.length === 0) {
+      return (
+        <section className="py-12 sm:py-20 bg-white">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <Skeleton className="h-10 w-3/4 mx-auto" />
+              <Skeleton className="h-8 w-1/2 mx-auto mt-6" />
+              <Skeleton className="h-12 w-48 mx-auto mt-8 rounded-full" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <Skeleton className="w-full aspect-square rounded-lg" />
+              <Skeleton className="w-full aspect-square rounded-lg md:mt-24" />
+              <Skeleton className="w-full aspect-square rounded-lg" />
+              <Skeleton className="w-full aspect-square rounded-lg md:mt-24" />
+            </div>
+          </div>
+        </section>
+      )
+    }
 
     return (
-        <section className="py-12 sm:py-20 bg-white">
+        <section className="py-16 sm:py-24 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-12">
-                    <h2 className="font-headline text-3xl md:text-4xl">
+                <div className="text-center mb-16">
+                    <h2 className="font-headline text-4xl md:text-5xl">
                         Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
                     </h2>
-                    <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
+                    <p className="mx-auto mt-6 max-w-2xl text-lg font-fraunces text-muted-foreground">
                         Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
-                    <div className="text-center mt-8">
-                        <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
+                    <div className="mt-8">
+                        <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
                             <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
                         </Button>
                     </div>
                 </div>
-            </div>
-            
-            <div className="w-full overflow-x-hidden">
-                <div className="flex animate-marquee-reverse">
-                    <div className="flex flex-shrink-0 py-4"> <CakeList items={birthdayCakes} /> </div>
-                    <div className="flex flex-shrink-0 py-4" aria-hidden="true"> <CakeList items={birthdayCakes} /> </div>
-                </div>
+
+                {displayProducts.length > 0 &&
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 lg:gap-x-16 items-center">
+                        <FeaturedProductCard product={displayProducts[0]} labelClassName="top-1/3 left-0" />
+                        <div className="md:mt-24">
+                           <FeaturedProductCard product={displayProducts[1]} labelClassName="top-1/3 right-0" />
+                        </div>
+                        {displayProducts[2] && (
+                             <FeaturedProductCard product={displayProducts[2]} labelClassName="top-1/3 left-0" />
+                        )}
+                        {displayProducts[3] && (
+                            <div className="md:mt-24">
+                               <FeaturedProductCard product={displayProducts[3]} labelClassName="top-1/3 right-0" />
+                            </div>
+                        )}
+                    </div>
+                }
             </div>
         </section>
     );
