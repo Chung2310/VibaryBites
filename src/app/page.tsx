@@ -272,27 +272,26 @@ function WorkshopSection() {
     );
 }
 
-function FeaturedProductMarqueeCard({ product }: { product: Product }) {
-  const sanitizedSlug = product.slug || generateSlug(product.name);
-  return (
-    <div className="inline-block w-64 flex-shrink-0 px-4">
-      <Link href={`/products/${sanitizedSlug}`} className="group block">
-        <div className="relative w-full aspect-square overflow-hidden">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            className="object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
-          />
+function FeaturedProductCard({ product, labelPosition }: { product: Product; labelPosition: string }) {
+    const sanitizedSlug = product.slug || generateSlug(product.name);
+    return (
+        <div className="relative">
+            <Link href={`/products/${sanitizedSlug}`} className="group block">
+                <Image
+                    src={product.imageUrl}
+                    alt={product.name}
+                    width={800}
+                    height={800}
+                    className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className={cn("absolute", labelPosition)}>
+                    <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
+                        {product.name}
+                    </div>
+                </div>
+            </Link>
         </div>
-        <div className="mt-4 text-center">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
-            {product.name}
-          </h3>
-        </div>
-      </Link>
-    </div>
-  );
+    );
 }
 
 
@@ -300,9 +299,9 @@ function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
 
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    const displayProducts = birthdayCakes.length > 0 ? birthdayCakes : products.slice(0, 8);
+    const featuredDisplayProducts = (birthdayCakes.length > 0 ? birthdayCakes : products).slice(0, 3);
 
-    if (isLoadingProducts && displayProducts.length === 0) {
+    if (isLoadingProducts && featuredDisplayProducts.length === 0) {
       return (
         <section className="py-12 sm:py-20 bg-white">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -311,14 +310,10 @@ function FeaturedProducts() {
               <Skeleton className="h-8 w-1/2 mx-auto mt-6" />
               <Skeleton className="h-12 w-48 mx-auto mt-8 rounded-full" />
             </div>
-            <div className="w-full overflow-hidden mt-8">
-                <div className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="inline-block w-64 flex-shrink-0 px-4">
-                            <Skeleton className="w-full aspect-square rounded-lg" />
-                        </div>
-                    ))}
-                </div>
+            <div className="mt-24 grid grid-cols-1 items-center gap-y-24 md:grid-cols-3 md:gap-x-8">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-64 w-full" />
             </div>
           </div>
         </section>
@@ -326,9 +321,9 @@ function FeaturedProducts() {
     }
 
     return (
-        <section className="py-16 sm:py-24 bg-white">
+        <section className="overflow-x-clip bg-white py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
+                <div className="mb-24 text-center">
                     <h2 className="font-headline text-4xl md:text-5xl">
                         Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
                     </h2>
@@ -336,19 +331,29 @@ function FeaturedProducts() {
                         Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
                     <div className="mt-8">
-                        <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
+                        <Button asChild className="rounded-full bg-black text-white hover:bg-black/80 font-bold" size="lg">
                             <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
                         </Button>
                     </div>
                 </div>
             </div>
-            
-            {displayProducts.length > 0 && (
-                <div className="w-full overflow-hidden mt-8">
-                    <div className="flex animate-marquee-reverse">
-                        {[...displayProducts, ...displayProducts].map((product, index) => (
-                            <FeaturedProductMarqueeCard key={`${product.id}-${index}`} product={product} />
-                        ))}
+
+            {featuredDisplayProducts.length >= 3 && (
+                 <div className="w-full">
+                    <div className="relative mx-auto flex max-w-screen-xl flex-col items-center justify-center gap-y-16 px-4 lg:flex-row lg:items-end lg:gap-x-0">
+                        
+                        <div className="relative w-full max-w-md lg:w-1/3">
+                            <FeaturedProductCard product={featuredDisplayProducts[0]} labelPosition="top-1/4 left-8" />
+                        </div>
+
+                        <div className="relative z-10 w-full max-w-lg lg:-mx-20 lg:w-1/2">
+                            <FeaturedProductCard product={featuredDisplayProducts[1]} labelPosition="bottom-1/4 right-8" />
+                        </div>
+
+                        <div className="relative w-full max-w-md lg:w-1/3">
+                            <FeaturedProductCard product={featuredDisplayProducts[2]} labelPosition="top-1/3 left-12" />
+                        </div>
+
                     </div>
                 </div>
             )}
