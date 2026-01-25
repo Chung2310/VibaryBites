@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -271,38 +272,35 @@ function WorkshopSection() {
     );
 }
 
-function FeaturedProductCard({ product, labelClassName }: { product: Product, labelClassName?: string }) {
+function FeaturedProductMarqueeCard({ product }: { product: Product }) {
   const sanitizedSlug = product.slug || generateSlug(product.name);
-
   return (
-    <Link href={`/products/${sanitizedSlug}`} className="group relative block w-full aspect-square">
+    <div className="inline-block w-64 flex-shrink-0 px-4">
+      <Link href={`/products/${sanitizedSlug}`} className="group relative block w-full aspect-square">
         <div className="relative w-full h-full">
-            <Image
-                src={product.imageUrl}
-                alt={product.name}
-                fill
-                className="object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
-            />
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            className="object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
+          />
         </div>
-        <div className={cn(
-            "absolute rounded-full border border-black bg-white/80 px-4 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 group-hover:shadow-xl",
-            labelClassName
-        )}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-black whitespace-nowrap">
-                {product.name}
-            </h3>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-black bg-white/80 px-4 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 group-hover:shadow-xl">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-black whitespace-nowrap">
+            {product.name}
+          </h3>
         </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
+
 
 function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
 
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 4);
-    
-    // Fallback if specific cakes aren't found
-    const displayProducts = birthdayCakes.length > 0 ? birthdayCakes : products.slice(0, 4);
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
+    const displayProducts = birthdayCakes.length > 0 ? birthdayCakes : products.slice(0, 8);
 
     if (isLoadingProducts && displayProducts.length === 0) {
       return (
@@ -313,11 +311,14 @@ function FeaturedProducts() {
               <Skeleton className="h-8 w-1/2 mx-auto mt-6" />
               <Skeleton className="h-12 w-48 mx-auto mt-8 rounded-full" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <Skeleton className="w-full aspect-square rounded-lg" />
-              <Skeleton className="w-full aspect-square rounded-lg md:mt-24" />
-              <Skeleton className="w-full aspect-square rounded-lg" />
-              <Skeleton className="w-full aspect-square rounded-lg md:mt-24" />
+            <div className="w-full overflow-hidden mt-8">
+                <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="inline-block w-64 flex-shrink-0 px-4">
+                            <Skeleton className="w-full aspect-square rounded-lg" />
+                        </div>
+                    ))}
+                </div>
             </div>
           </div>
         </section>
@@ -340,24 +341,17 @@ function FeaturedProducts() {
                         </Button>
                     </div>
                 </div>
-
-                {displayProducts.length > 0 &&
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 lg:gap-x-16 items-center">
-                        <FeaturedProductCard product={displayProducts[0]} labelClassName="top-1/3 left-0" />
-                        <div className="md:mt-24">
-                           <FeaturedProductCard product={displayProducts[1]} labelClassName="top-1/3 right-0" />
-                        </div>
-                        {displayProducts[2] && (
-                             <FeaturedProductCard product={displayProducts[2]} labelClassName="top-1/3 left-0" />
-                        )}
-                        {displayProducts[3] && (
-                            <div className="md:mt-24">
-                               <FeaturedProductCard product={displayProducts[3]} labelClassName="top-1/3 right-0" />
-                            </div>
-                        )}
-                    </div>
-                }
             </div>
+            
+            {displayProducts.length > 0 && (
+                <div className="w-full overflow-hidden mt-8">
+                    <div className="flex animate-marquee-reverse">
+                        {[...displayProducts, ...displayProducts].map((product, index) => (
+                            <FeaturedProductMarqueeCard key={`${product.id}-${index}`} product={product} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
