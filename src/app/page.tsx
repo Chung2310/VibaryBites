@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -283,7 +284,9 @@ function FeaturedProducts() {
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h2 className="font-headline text-3xl md:text-4xl">Mang tới trải nghiệm đặt bánh Pháp cao cấp trực tuyến</h2>
+                    <h2 className="font-headline text-3xl md:text-4xl">
+                        Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
+                    </h2>
                     <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
                         Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
