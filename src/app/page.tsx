@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -290,6 +289,11 @@ function FeaturedProducts() {
                     <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
                         Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
+                    <div className="text-center mt-8">
+                        <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
+                            <Link href="/products">ĐẶT BÁNH NGAY</Link>
+                        </Button>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                     {isLoadingProducts ? (
@@ -310,11 +314,6 @@ function FeaturedProducts() {
                             <ProductCard key={product.id} product={product} />
                         ))
                     )}
-                </div>
-                 <div className="text-center mt-12">
-                    <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
-                        <Link href="/products?category=banh-sinh-nhat">Xem tất cả Bánh sinh nhật</Link>
-                    </Button>
                 </div>
             </div>
         </section>
