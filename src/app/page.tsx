@@ -155,6 +155,7 @@ function CategorySection() {
     const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
+    const pathname = usePathname();
 
     const categoryImageMap: Record<string, string> = {
         'banh-sinh-nhat': 'category-birthday-cake',
@@ -165,7 +166,7 @@ function CategorySection() {
     
     const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
         e.preventDefault();
-        router.push(`/products?category=${slug}`);
+        router.push(`${pathname}products?category=${slug}`);
     };
   
     return (
@@ -223,11 +224,14 @@ function CategorySection() {
 
 function WorkshopSection() {
      const videoRef = useRef<HTMLVideoElement>(null);
+
     useEffect(() => {
         if (videoRef.current) {
+            videoRef.current.muted = true;
             videoRef.current.play().catch(error => console.error("Autoplay was prevented:", error));
         }
     }, []);
+
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -249,7 +253,7 @@ function WorkshopSection() {
                         </Button>
                     </div>
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
-                        <video
+                         <video
                             ref={videoRef}
                             className="h-full w-full object-cover"
                             src="https://res.cloudinary.com/dqhgnzmtk/video/upload/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
@@ -269,42 +273,6 @@ function WorkshopSection() {
 
 
 function FeaturedProducts() {
-    const { products } = useAppStore();
-    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    
-    const ProductMarqueeItem = ({ product }: { product: Product }) => {
-        const sanitizedSlug = product.slug || generateSlug(product.name);
-        const thumbnailUrl = product.imageUrl || '';
-
-        return (
-            <div className="flex-shrink-0 w-64 sm:w-72 mx-4">
-                 <Link href={`/products/${sanitizedSlug}`} className="group block text-center">
-                    <div className="relative w-full overflow-hidden aspect-square rounded-lg shadow-sm">
-                        {thumbnailUrl ? (
-                             <Image
-                                src={thumbnailUrl}
-                                alt={product.name}
-                                fill
-                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                                <span className="text-muted-foreground text-sm">No Image</span>
-                            </div>
-                        )}
-                    </div>
-                    <h3 className="mt-4 font-headline text-xl uppercase group-hover:text-primary transition-colors truncate">
-                        {product.name}
-                    </h3>
-                </Link>
-            </div>
-        );
-    };
-
-    if (birthdayCakes.length === 0) {
-        return null;
-    }
-
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -316,14 +284,6 @@ function FeaturedProducts() {
                     <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
                         <Link href="/products">ĐẶT BÁNH NGAY</Link>
                     </Button>
-                </div>
-            </div>
-            
-            <div className="w-full overflow-x-auto mt-8">
-                <div className="flex animate-marquee hover:pause">
-                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
-                       <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
-                    ))}
                 </div>
             </div>
         </section>
