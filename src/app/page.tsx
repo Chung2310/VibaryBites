@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter, usePathname } from 'next/navigation';
+import { ProductCard } from '@/components/product-card';
 
 const heroBanners = [
   {
@@ -275,16 +275,42 @@ function WorkshopSection() {
 
 
 function FeaturedProducts() {
+    const { products, isLoadingProducts } = useAppStore();
+
+    const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat').slice(0, 4);
+
     return (
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h2 className="font-headline text-3xl md:text-4xl">Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến</h2>
+                    <h2 className="font-headline text-3xl md:text-4xl">Bánh Sinh Nhật Nổi Bật</h2>
                     <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
-                        VIBARY có mặt tại đây là để mang tới cho bạn trải nghiệm thưởng thức bánh ngọt Pháp hiện đại, dành cho người Việt.
+                        Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
-                    <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
-                        <Link href="/products">ĐẶT BÁNH NGAY</Link>
+                </div>
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                    {isLoadingProducts ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="flex flex-col h-full">
+                                <div className="p-4 space-y-3">
+                                    <Skeleton className="h-7 w-3/4" />
+                                    <Skeleton className="h-4 w-1/2" />
+                                    <Skeleton className="h-5 w-1/3" />
+                                </div>
+                                <div className="relative w-full aspect-square mt-auto">
+                                    <Skeleton className="h-full w-full" />
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        birthdayCakes.map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                        ))
+                    )}
+                </div>
+                 <div className="text-center mt-12">
+                    <Button asChild className="bg-black text-white hover:bg-black/80 rounded-full font-bold" variant="default" size="lg">
+                        <Link href="/products?category=banh-sinh-nhat">Xem tất cả Bánh sinh nhật</Link>
                     </Button>
                 </div>
             </div>
