@@ -180,7 +180,7 @@ function CategorySection() {
                 return (
                     <div key={category.slug}>
                         <Link
-                        href={`/products#${category.slug}`}
+                        href={`/products?category=${category.slug}`}
                         className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
                         >
                         {image && (

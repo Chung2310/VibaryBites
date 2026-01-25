@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ProductCard } from "@/components/product-card";
@@ -10,10 +11,14 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 export default function ProductsPage() {
   const { products } = useAppStore();
   const firestore = useFirestore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
   const { data: productCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
@@ -24,32 +29,22 @@ export default function ProductsPage() {
   useEffect(() => {
     if (!productCategories || productCategories.length === 0) return;
 
-    // This effect handles the initial scroll based on the URL hash.
-    const hash = window.location.hash.substring(1);
-    const element = hash ? document.getElementById(hash) : null;
-
+    const categorySlugFromQuery = searchParams.get('category');
+    const slugToHandle = categorySlugFromQuery || productCategories[0].slug;
+    
+    setActiveCategory(slugToHandle);
+    
+    const element = document.getElementById(slugToHandle);
     if (element) {
-        // Scroll to the element after a short delay to allow rendering.
         setTimeout(() => {
-            element.scrollIntoView({ behavior: 'smooth' });
-            setActiveCategory(hash);
-        }, 150);
-    } else {
-        // If no valid hash, default to the first category.
-        setActiveCategory(productCategories[0].slug);
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     }
-  }, [productCategories]);
-
+  }, [searchParams, productCategories]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
     e.preventDefault();
-    const element = document.getElementById(slug);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      // Manually update URL hash and active state
-      window.history.pushState(null, '', `#${slug}`);
-      setActiveCategory(slug);
-    }
+    router.push(`${pathname}?category=${slug}`, { scroll: false });
   };
 
 
@@ -63,7 +58,7 @@ export default function ProductsPage() {
                     {productCategories?.map(category => (
                         <a
                             key={category.slug}
-                            href={`#${category.slug}`}
+                            href={`/products?category=${category.slug}`}
                             onClick={(e) => handleNavClick(e, category.slug)}
                             className={cn(
                                 "text-sm font-lexend uppercase text-[#0A0A0A] hover:opacity-70 transition-all whitespace-nowrap pb-1",
