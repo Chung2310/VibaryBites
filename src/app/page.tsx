@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter, usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 const heroBanners = [
   {
@@ -272,10 +272,24 @@ function WorkshopSection() {
     );
 }
 
-function FeaturedProductCard({ product, labelPosition }: { product: Product; labelPosition: string }) {
+const marqueeVariantsReverse = {
+  animate: {
+    x: ['-50%', '0%'],
+    transition: {
+      x: {
+        repeat: Infinity,
+        repeatType: "loop",
+        duration: 80,
+        ease: "linear",
+      },
+    },
+  },
+};
+
+function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-        <div className="relative">
+        <div className="relative mx-8 flex-shrink-0 w-80">
             <Link href={`/products/${sanitizedSlug}`} className="group block">
                 <Image
                     src={product.imageUrl}
@@ -284,7 +298,7 @@ function FeaturedProductCard({ product, labelPosition }: { product: Product; lab
                     height={800}
                     className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className={cn("absolute", labelPosition)}>
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
                     <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
                         {product.name}
                     </div>
@@ -294,12 +308,11 @@ function FeaturedProductCard({ product, labelPosition }: { product: Product; lab
     );
 }
 
-
 function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
 
     const birthdayCakes = products.filter(p => p.categorySlug === 'banh-sinh-nhat');
-    const featuredDisplayProducts = (birthdayCakes.length > 0 ? birthdayCakes : products).slice(0, 3);
+    const featuredDisplayProducts = (birthdayCakes.length > 0 ? birthdayCakes : products).slice(0, 6);
 
     if (isLoadingProducts && featuredDisplayProducts.length === 0) {
       return (
@@ -310,15 +323,27 @@ function FeaturedProducts() {
               <Skeleton className="h-8 w-1/2 mx-auto mt-6" />
               <Skeleton className="h-12 w-48 mx-auto mt-8 rounded-full" />
             </div>
-            <div className="mt-24 grid grid-cols-1 items-center gap-y-24 md:grid-cols-3 md:gap-x-8">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-80 w-full" />
-                <Skeleton className="h-64 w-full" />
+            <div className="w-full overflow-hidden mt-8">
+                <div className="flex">
+                    {Array.from({length: 4}).map((_, i) => (
+                        <div key={i} className="relative mx-8 flex-shrink-0 w-80 aspect-square">
+                            <Skeleton className="h-full w-full"/>
+                        </div>
+                    ))}
+                </div>
             </div>
           </div>
         </section>
       )
     }
+
+    const MarqueeItems = ({ items }: { items: Product[] }) => (
+        <>
+            {items.map((product) => (
+                <MarqueeProductCard key={product.id} product={product} />
+            ))}
+        </>
+    );
 
     return (
         <section className="overflow-x-clip bg-white py-16 sm:py-24">
@@ -337,24 +362,17 @@ function FeaturedProducts() {
                     </div>
                 </div>
             </div>
-
-            {featuredDisplayProducts.length >= 3 && (
-                 <div className="w-full">
-                    <div className="relative mx-auto flex max-w-screen-xl flex-col items-center justify-center gap-y-16 px-4 lg:flex-row lg:items-end lg:gap-x-0">
-                        
-                        <div className="relative w-full max-w-md lg:w-1/3">
-                            <FeaturedProductCard product={featuredDisplayProducts[0]} labelPosition="top-1/4 left-8" />
-                        </div>
-
-                        <div className="relative z-10 w-full max-w-lg lg:-mx-20 lg:w-1/2">
-                            <FeaturedProductCard product={featuredDisplayProducts[1]} labelPosition="bottom-1/4 right-8" />
-                        </div>
-
-                        <div className="relative w-full max-w-md lg:w-1/3">
-                            <FeaturedProductCard product={featuredDisplayProducts[2]} labelPosition="top-1/3 left-12" />
-                        </div>
-
-                    </div>
+            
+            {featuredDisplayProducts.length > 0 && (
+                <div className="w-full overflow-hidden">
+                    <motion.div
+                        className="flex"
+                        variants={marqueeVariantsReverse}
+                        animate="animate"
+                    >
+                        <MarqueeItems items={featuredDisplayProducts} />
+                        <MarqueeItems items={featuredDisplayProducts} />
+                    </motion.div>
                 </div>
             )}
         </section>
