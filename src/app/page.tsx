@@ -155,7 +155,6 @@ function CategorySection() {
     const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
-    const pathname = usePathname();
 
     const categoryImageMap: Record<string, string> = {
         'banh-sinh-nhat': 'category-birthday-cake',
@@ -166,7 +165,7 @@ function CategorySection() {
     
     const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
         e.preventDefault();
-        router.push(`${pathname}products?category=${slug}`);
+        router.push(`/products?category=${slug}`);
     };
   
     return (
@@ -227,8 +226,11 @@ function WorkshopSection() {
 
     useEffect(() => {
         if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(error => console.error("Autoplay was prevented:", error));
+            videoRef.current.play().catch(error => {
+                // Autoplay was prevented.
+                // This can happen if the video is not muted.
+                console.error("Autoplay was prevented:", error);
+            });
         }
     }, []);
 
@@ -293,7 +295,7 @@ function FeaturedProducts() {
 function NewsArticleCard({ article }: { article: NewsArticle }) {
   const sanitizedSlug = article.slug || generateSlug(article.title);
   return (
-    <Link href={`/news/${sanitizedSlug}`} className="flex-shrink-0 w-64 md:w-80 group">
+    <Link href={`/news/${sanitizedSlug}`} className="group">
       <div className="overflow-hidden rounded-lg">
         <Image
           src={article.imageUrl}
@@ -332,9 +334,9 @@ function HotNews() {
             <h2 className="font-headline text-3xl md:text-4xl">Tin tức “nóng hổi”</h2>
         </div>
 
-        <div className="flex space-x-8 overflow-x-auto pb-4 -mx-4 px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {isLoading && Array.from({length: 4}).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-64 md:w-80 space-y-4">
+                <div key={i} className="space-y-4">
                     <Skeleton className="w-full aspect-[4/3] rounded-lg" />
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-4 w-full" />
@@ -344,8 +346,6 @@ function HotNews() {
             {latestArticles?.map((article, index) => (
               <NewsArticleCard key={`${article.id}-${index}`} article={article} />
             ))}
-             {/* Add an empty div for spacing at the end of the scroll */}
-            <div className="flex-shrink-0 w-1"></div>
         </div>
       </div>
     </section>
