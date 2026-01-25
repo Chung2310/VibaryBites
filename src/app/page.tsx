@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -279,7 +280,7 @@ const marqueeVariantsReverse = {
       x: {
         repeat: Infinity,
         repeatType: "loop",
-        duration: 80,
+        duration: 40,
         ease: "linear",
       },
     },
@@ -289,7 +290,7 @@ const marqueeVariantsReverse = {
 function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-        <div className="relative mx-8 flex-shrink-0 w-80">
+        <div className="relative mx-12 flex-shrink-0 w-96">
             <Link href={`/products/${sanitizedSlug}`} className="group block">
                 <Image
                     src={product.imageUrl}
@@ -298,7 +299,7 @@ function MarqueeProductCard({ product }: { product: Product }) {
                     height={800}
                     className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 transform">
                     <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
                         {product.name}
                     </div>
@@ -326,7 +327,7 @@ function FeaturedProducts() {
             <div className="w-full overflow-hidden mt-8">
                 <div className="flex">
                     {Array.from({length: 4}).map((_, i) => (
-                        <div key={i} className="relative mx-8 flex-shrink-0 w-80 aspect-square">
+                        <div key={i} className="relative mx-12 flex-shrink-0 w-96 aspect-square">
                             <Skeleton className="h-full w-full"/>
                         </div>
                     ))}
