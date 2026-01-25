@@ -155,6 +155,7 @@ function CategorySection() {
     const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
+    const pathname = usePathname();
 
     const categoryImageMap: Record<string, string> = {
         'banh-sinh-nhat': 'category-birthday-cake',
@@ -226,9 +227,8 @@ function WorkshopSection() {
 
     useEffect(() => {
         if (videoRef.current) {
+            videoRef.current.muted = true;
             videoRef.current.play().catch(error => {
-                // Autoplay was prevented.
-                // This can happen if the video is not muted.
                 console.error("Autoplay was prevented:", error);
             });
         }
@@ -283,7 +283,7 @@ function FeaturedProducts() {
         <section className="py-12 sm:py-20 bg-white">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h2 className="font-headline text-3xl md:text-4xl">Bánh Sinh Nhật Nổi Bật</h2>
+                    <h2 className="font-headline text-3xl md:text-4xl">Mang tới trải nghiệm đặt bánh Pháp cao cấp trực tuyến</h2>
                     <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
                         Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
                     </p>
