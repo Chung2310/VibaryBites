@@ -83,7 +83,7 @@ const marqueeVariantsReverse = {
       x: {
         repeat: Infinity,
         repeatType: "loop",
-        duration: 30,
+        duration: 20,
         ease: "linear",
       },
     },
@@ -299,8 +299,8 @@ function MarqueeProductCard({ product }: { product: Product }) {
                     height={800}
                     className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 transform">
-                   <div className="whitespace-nowrap rounded-full border border-black bg-white/80 px-4 py-2 text-center text-xs font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
+                 <div className="absolute inset-x-0 bottom-8">
+                   <div className="whitespace-nowrap text-center text-xs font-semibold uppercase tracking-wider text-black transition-all group-hover:text-black">
                        {product.name}
                    </div>
                </div>
