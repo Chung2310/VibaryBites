@@ -227,11 +227,15 @@ function WorkshopSection() {
     React.useEffect(() => {
         const video = videoRef.current;
         if (video) {
-            video.muted = true;
+            // Ensure it's muted, as this is often a requirement for autoplay
+            video.muted = true; 
+            // Attempt to play the video
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.error("Video autoplay was prevented by browser policy:", error);
+                    // Autoplay was prevented. This is common in some browsers.
+                    // The user might need to interact with the page first.
+                    console.error("Video autoplay was prevented:", error);
                 });
             }
         }
@@ -261,10 +265,11 @@ function WorkshopSection() {
                         <video
                             ref={videoRef}
                             className="h-full w-full object-cover"
-                            src="https://videos.pexels.com/video-files/853805/853805-sd_640_360_25fps.mp4"
+                            src="https://videos.pexels.com/video-files/4782845/4782845-hd_1920_1080_25fps.mp4"
                             loop
                             muted
                             playsInline
+                            autoPlay
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                         </div>
