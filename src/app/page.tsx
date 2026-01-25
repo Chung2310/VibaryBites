@@ -21,6 +21,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+import { useRouter, usePathname } from 'next/navigation';
 
 const heroBanners = [
   {
@@ -154,13 +155,19 @@ function CategorySection() {
     const firestore = useFirestore();
     const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
+    const router = useRouter();
+    const pathname = usePathname();
 
-    // This map connects the slug from the DB to the imageId from placeholder-images.json
     const categoryImageMap: Record<string, string> = {
         'banh-sinh-nhat': 'category-birthday-cake',
         'banh-le': 'category-sweet-cake',
         'banh-nuong': 'category-other-cakes',
         'banh-tea-break': 'category-drinks',
+    };
+
+    const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
+        e.preventDefault();
+        router.push(`/products?category=${slug}`);
     };
   
     return (
@@ -175,13 +182,14 @@ function CategorySection() {
                 ))
             ) : (
                 categories?.map((category) => {
-                const imageId = categoryImageMap[category.slug] || 'category-birthday-cake'; // Default image
+                const imageId = categoryImageMap[category.slug] || 'category-birthday-cake';
                 const image = PlaceHolderImages.find(p => p.id === imageId);
                 return (
                     <div key={category.slug}>
                         <Link
-                        href={`/products?category=${category.slug}`}
-                        className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
+                            href={`/products?category=${category.slug}`}
+                            onClick={(e) => handleCategoryClick(e, category.slug)}
+                            className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
                         >
                         {image && (
                             <Image
@@ -193,15 +201,15 @@ function CategorySection() {
                                 data-ai-hint={image.imageHint}
                             />
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4">
-                            <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
-                            <div>
-                                <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
-                                    {category.title}
-                                </h3>
-                                <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.subtitle}</p>
-                            </div>
-                            
+                            <div className="flex items-center justify-between rounded-lg bg-white/90 backdrop-blur-sm p-4 shadow-md">
+                                <div>
+                                    <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
+                                        {category.title}
+                                    </h3>
+                                    <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.subtitle}</p>
+                                </div>
                             </div>
                         </div>
                         </Link>
@@ -220,12 +228,18 @@ function WorkshopSection() {
 
   React.useEffect(() => {
     if (videoRef.current) {
-      // Attempt to play the video programmatically to handle stricter autoplay policies.
-      videoRef.current.play().catch(error => {
-        // This catch is important to prevent unhandled promise rejection errors
-        // if the browser blocks autoplay. The `autoPlay` prop will still be attempted.
-        console.warn("Video autoplay was prevented by the browser. The `autoPlay` attribute will still be attempted.", error);
-      });
+      // Ensure the video is muted, which is crucial for autoplay policies
+      videoRef.current.muted = true;
+      
+      // Attempt to play the video programmatically.
+      const playPromise = videoRef.current.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          // Autoplay was prevented.
+          console.warn("Video autoplay was prevented by the browser.", error);
+        });
+      }
     }
   }, []);
   
@@ -280,7 +294,7 @@ function FeaturedProducts() {
                 x: {
                     repeat: Infinity,
                     repeatType: "loop",
-                    duration: 10,
+                    duration: 20,
                     ease: "linear",
                 },
             },
@@ -340,8 +354,7 @@ function FeaturedProducts() {
                     variants={marqueeVariants}
                     animate="animate"
                 >
-                    {/* Render items twice for seamless loop */}
-                    {[...birthdayCakes, ...birthdayCakes].map((product, index) => (
+                    {[...birthdayCakes, ...birthdayCakes, ...birthdayCakes, ...birthdayCakes].map((product, index) => (
                        <ProductMarqueeItem key={`${product.id}-${index}`} product={product} />
                     ))}
                 </motion.div>
