@@ -276,8 +276,8 @@ function FeaturedProductMarqueeCard({ product }: { product: Product }) {
   const sanitizedSlug = product.slug || generateSlug(product.name);
   return (
     <div className="inline-block w-64 flex-shrink-0 px-4">
-      <Link href={`/products/${sanitizedSlug}`} className="group relative block w-full aspect-square">
-        <div className="relative w-full h-full">
+      <Link href={`/products/${sanitizedSlug}`} className="group block">
+        <div className="relative w-full aspect-square overflow-hidden">
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -285,8 +285,8 @@ function FeaturedProductMarqueeCard({ product }: { product: Product }) {
             className="object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
           />
         </div>
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-black bg-white/80 px-4 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 group-hover:shadow-xl">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-black whitespace-nowrap">
+        <div className="mt-4 text-center">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-black">
             {product.name}
           </h3>
         </div>
