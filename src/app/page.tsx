@@ -228,15 +228,10 @@ function WorkshopSection() {
 
   React.useEffect(() => {
     if (videoRef.current) {
-      // Ensure the video is muted, which is crucial for autoplay policies
       videoRef.current.muted = true;
-      
-      // Attempt to play the video programmatically.
       const playPromise = videoRef.current.play();
-
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          // Autoplay was prevented.
           console.warn("Video autoplay was prevented by the browser.", error);
         });
       }
@@ -267,7 +262,7 @@ function WorkshopSection() {
              <video 
                 ref={videoRef}
                 className="h-full w-full object-cover"
-                src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0850828234.appspot.com/o/videos%2Fcake-video-3.mp4?alt=media&token=4f0bde55-7977-4c4d-9e66-63c65eacc350" 
+                src="https://videos.pexels.com/video-files/3209828/3209828-hd.mp4" 
                 autoPlay 
                 loop 
                 muted 
@@ -440,3 +435,5 @@ export default function Home() {
     </>
   );
 }
+
+    
