@@ -245,7 +245,7 @@ function WorkshopSection() {
                     <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
                         <video
                             className="h-full w-full object-cover"
-                            src="https://videos.pexels.com/video-files/4782845/4782845-hd_1920_1080_25fps.mp4"
+                            src="https://res.cloudinary.com/dqhgnzmtk/video/upload/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
                             loop
                             muted
                             playsInline
