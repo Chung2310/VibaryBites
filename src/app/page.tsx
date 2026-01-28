@@ -78,7 +78,7 @@ const heroBanners = [
 
 const marqueeVariantsReverse = {
   animate: {
-    x: ['0%', '-50%'],
+    x: ['-50%', '0%'],
     transition: {
       x: {
         repeat: Infinity,
@@ -291,7 +291,7 @@ function WorkshopSection() {
 const MarqueeProductCard = React.memo(function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-      <div className="group relative mx-8 flex-shrink-0 w-80">
+      <div className="group relative mx-8 flex-shrink-0 w-96">
         <Link href={`/products/${sanitizedSlug}`} className="block">
           <div className="relative aspect-square">
             <Image
@@ -339,7 +339,7 @@ function FeaturedProducts() {
             <div className="w-full overflow-hidden mt-8">
                 <div className="flex">
                     {Array.from({length: 4}).map((_, i) => (
-                        <div key={i} className="relative mx-8 flex-shrink-0 w-80 aspect-square">
+                        <div key={i} className="relative mx-8 flex-shrink-0 w-96 aspect-square">
                             <Skeleton className="h-full w-full"/>
                         </div>
                     ))}
