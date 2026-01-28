@@ -38,17 +38,19 @@ export const useAppStore = () => {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const { toast } = useToast();
 
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
   
   // Fetch live data from Firestore
-  const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
+  const { data: firestoreProducts, isLoading: isLoadingFirestore } = useCollection<Product>(productsCollection);
 
-  const products = productsData || [];
-
-  // Load cart from localStorage on initial render
+  // Loading is true only if we have no products yet AND we're still fetching from the server.
+  const isLoadingProducts = products.length === 0 && isLoadingFirestore;
+  
+  // Load cart and products from localStorage on initial client-side render
   useEffect(() => {
     if (typeof window !== 'undefined') {
         try {
@@ -56,12 +58,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (storedCart) {
                 setCartItems(JSON.parse(storedCart));
             }
+            const storedProducts = localStorage.getItem("vibary-products");
+            if (storedProducts) {
+                setProducts(JSON.parse(storedProducts));
+            }
         } catch (e) {
-            console.error("Failed to parse cart from localStorage", e);
-            setCartItems([]);
+            console.error("Failed to parse data from localStorage", e);
         }
     }
   }, []);
+
+  // Effect to update products state and cache in localStorage when new data arrives from Firestore.
+  useEffect(() => {
+    if (firestoreProducts && firestoreProducts.length > 0) {
+      // Only update state and localStorage if the data has actually changed.
+      if (JSON.stringify(products) !== JSON.stringify(firestoreProducts)) {
+        setProducts(firestoreProducts);
+        localStorage.setItem("vibary-products", JSON.stringify(firestoreProducts));
+      }
+    }
+  }, [firestoreProducts, products]);
+
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
@@ -70,9 +87,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems]);
 
-  // Effect to sync cart items with the products from the database
+  // Effect to sync cart items with the products from the database/cache
   useEffect(() => {
-    // This effect runs when live data arrives.
+    // This effect runs when products are loaded from cache or updated from Firestore.
     if (products.length > 0 && cartItems.length > 0) {
       const productMap = new Map(products.map(p => [p.id, p]));
       const validCartItems: CartItem[] = [];
@@ -81,7 +98,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       cartItems.forEach(item => {
         const productInDb = productMap.get(item.id);
         if (productInDb) {
-          // Sync price and image from DB to ensure consistency
+          // Sync price, image, and slug from DB to ensure consistency
           const updatedItem = {
             ...item,
             price: productInDb.sizes?.find(s => s.name === item.size)?.price || productInDb.price,
@@ -102,7 +119,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           description: `${removedItems.length} sản phẩm không còn khả dụng và đã được tự động xóa khỏi giỏ hàng.`,
         });
       } else if (JSON.stringify(cartItems) !== JSON.stringify(validCartItems)) {
-        // Update cart if prices/details changed
+        // Update cart if other details like price changed
         setCartItems(validCartItems);
       }
     }
