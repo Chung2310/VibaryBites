@@ -11,7 +11,6 @@ import {
 import { useToast } from "./use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { products as staticProducts } from "@/data/products";
 
 interface AppContextType {
   // Cart
@@ -40,23 +39,14 @@ export const useAppStore = () => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
-  
-  // Initialize product state with static data to avoid initial loading UI
-  const [products, setProducts] = useState<Product[]>(staticProducts);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
   
-  // Fetch live data from Firestore in the background
-  const { data: productsData } = useCollection<Product>(productsCollection);
+  // Fetch live data from Firestore
+  const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
 
-  // When live data is fetched, update the product state
-  useEffect(() => {
-    if (productsData) {
-      setProducts(productsData);
-    }
-  }, [productsData]);
+  const products = productsData || [];
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -82,7 +72,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect to sync cart items with the products from the database
   useEffect(() => {
-    // This effect runs on initial load with static products, and again when live data arrives.
+    // This effect runs when live data arrives.
     if (products.length > 0 && cartItems.length > 0) {
       const productMap = new Map(products.map(p => [p.id, p]));
       const validCartItems: CartItem[] = [];
