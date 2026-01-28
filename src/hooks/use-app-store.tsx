@@ -50,7 +50,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Loading is true only if we have no products yet AND we're still fetching from the server.
   const isLoadingProducts = products.length === 0 && isLoadingFirestore;
   
-  // Load cart and products from localStorage on initial client-side render
+  // Load cart from localStorage on initial client-side render
   useEffect(() => {
     if (typeof window !== 'undefined') {
         try {
@@ -58,26 +58,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (storedCart) {
                 setCartItems(JSON.parse(storedCart));
             }
-            const storedProducts = localStorage.getItem("vibary-products");
-            if (storedProducts) {
-                setProducts(JSON.parse(storedProducts));
-            }
         } catch (e) {
             console.error("Failed to parse data from localStorage", e);
         }
     }
   }, []);
 
-  // Effect to update products state and cache in localStorage when new data arrives from Firestore.
+  // Effect to update products state when new data arrives from Firestore.
   useEffect(() => {
-    if (firestoreProducts && firestoreProducts.length > 0) {
-      // Only update state and localStorage if the data has actually changed.
-      if (JSON.stringify(products) !== JSON.stringify(firestoreProducts)) {
-        setProducts(firestoreProducts);
-        localStorage.setItem("vibary-products", JSON.stringify(firestoreProducts));
-      }
+    if (firestoreProducts) {
+      setProducts(firestoreProducts);
     }
-  }, [firestoreProducts, products]);
+  }, [firestoreProducts]);
 
 
   // Save cart to localStorage whenever it changes
