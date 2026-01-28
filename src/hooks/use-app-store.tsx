@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { CartItem, Product } from "@/lib/types";
@@ -12,6 +11,7 @@ import {
 import { useToast } from "./use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { products as staticProducts } from "@/data/products";
 
 interface AppContextType {
   // Cart
@@ -41,11 +41,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
   
+  // Initialize product state with static data to avoid initial loading UI
+  const [products, setProducts] = useState<Product[]>(staticProducts);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
-  const { data: productsData, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
+  
+  // Fetch live data from Firestore in the background
+  const { data: productsData } = useCollection<Product>(productsCollection);
 
-  const products = productsData || [];
+  // When live data is fetched, update the product state
+  useEffect(() => {
+    if (productsData) {
+      setProducts(productsData);
+    }
+  }, [productsData]);
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -71,23 +82,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect to sync cart items with the products from the database
   useEffect(() => {
-    // Run only when products have loaded and there are items in the cart
-    if (!isLoadingProducts && products.length > 0 && cartItems.length > 0) {
-      const productIdsFromDb = new Set(products.map(p => p.id));
-      const validCartItems = cartItems.filter(item => productIdsFromDb.has(item.id));
-      
-      const removedItemsCount = cartItems.length - validCartItems.length;
+    // This effect runs on initial load with static products, and again when live data arrives.
+    if (products.length > 0 && cartItems.length > 0) {
+      const productMap = new Map(products.map(p => [p.id, p]));
+      const validCartItems: CartItem[] = [];
+      const removedItems: string[] = [];
 
-      if (removedItemsCount > 0) {
+      cartItems.forEach(item => {
+        const productInDb = productMap.get(item.id);
+        if (productInDb) {
+          // Sync price and image from DB to ensure consistency
+          const updatedItem = {
+            ...item,
+            price: productInDb.sizes?.find(s => s.name === item.size)?.price || productInDb.price,
+            imageUrl: productInDb.imageUrl,
+            slug: productInDb.slug
+          };
+          validCartItems.push(updatedItem);
+        } else {
+          removedItems.push(item.name);
+        }
+      });
+
+      if (removedItems.length > 0) {
         setCartItems(validCartItems);
         toast({
           variant: "destructive",
           title: "Giỏ hàng đã được cập nhật",
-          description: `${removedItemsCount} sản phẩm không còn khả dụng và đã được tự động xóa khỏi giỏ hàng.`,
+          description: `${removedItems.length} sản phẩm không còn khả dụng và đã được tự động xóa khỏi giỏ hàng.`,
         });
+      } else if (JSON.stringify(cartItems) !== JSON.stringify(validCartItems)) {
+        // Update cart if prices/details changed
+        setCartItems(validCartItems);
       }
     }
-  }, [isLoadingProducts, products, cartItems, toast]);
+  }, [products, cartItems, toast]);
 
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
