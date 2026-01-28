@@ -1,40 +1,30 @@
 'use client';
 
-const MAX_IMAGE_DIMENSION = 800; // Max width/height of 800px
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+import { getApp, getApps } from 'firebase/app';
+import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Converts an image file to a resized PNG Data URL.
- * This helps to keep file sizes reasonable while preserving transparency.
- *
- * @param file The image file to convert.
- * @param onProgress Optional callback to report progress.
- * @returns A promise that resolves with the Data URL of the resized image.
- */
-export const uploadImage = (
-  file: File,
-  onProgress?: (progress: number) => void
-): Promise<string> => {
-  if (!file) {
-    return Promise.reject(new Error('No file provided.'));
-  }
-  if (!file.type.startsWith('image/')) {
-    return Promise.reject(new Error('File is not an image.'));
-  }
+// Firebase is initialized in the provider, we can just get the instance.
+const app = getApps().length ? getApp() : undefined;
+const storage = app ? getStorage(app) : undefined;
 
-  onProgress?.(10); // Initial progress
+const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
+const resizeImage = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        onProgress?.(30);
-
         const canvas = document.createElement('canvas');
         let { width, height } = img;
 
-        // Calculate new dimensions
         if (width > height) {
           if (width > MAX_IMAGE_DIMENSION) {
             height *= MAX_IMAGE_DIMENSION / width;
@@ -50,54 +40,91 @@ export const uploadImage = (
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          return reject(new Error('Failed to get canvas context.'));
-        }
-        
-        onProgress?.(60);
+        if (!ctx) return reject(new Error('Failed to get canvas context.'));
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Get the data URL from the canvas as a PNG to preserve transparency
-        const dataUrl = canvas.toDataURL('image/png');
-        onProgress?.(100);
-
-        resolve(dataUrl);
+        // Convert to WebP for better compression
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('Canvas to Blob conversion failed.'));
+            resolve(blob);
+          },
+          'image/webp',
+          0.85 // Quality setting for WebP
+        );
       };
-
-      img.onerror = (error) => {
-        console.error('Image loading error:', error);
-        reject(new Error('Failed to load image for resizing.'));
-      };
-
-      // Start loading the image
-      img.src = e.target?.result as string;
-      onProgress?.(20);
+      img.onerror = (err) => reject(err);
+      if (e.target?.result) {
+        img.src = e.target.result as string;
+      } else {
+        reject(new Error('FileReader did not produce a result.'));
+      }
     };
-
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      reject(new Error('An error occurred while reading the file.'));
-    };
-    
+    reader.onerror = (err) => reject(err);
     reader.readAsDataURL(file);
   });
 };
 
-/**
- * This is a no-op function to match the previous API.
- * Since images are stored as Data URLs in Firestore, there is no separate file
- * in cloud storage to delete. The data is deleted when the Firestore document is deleted.
- *
- * @param imageUrl The Data URL of the image (ignored).
- * @returns A promise that resolves immediately.
- */
-export const deleteImage = async (imageUrl: string): Promise<void> => {
-  // No operation needed as the image is a data URL within the Firestore document.
-  if (imageUrl?.startsWith('data:image')) {
-    // console.log('Skipping deletion for Data URL image.');
-  } else {
-    // console.log(`Skipping deletion for image URL: ${imageUrl}. Deletion is now a no-op.`);
+export const uploadImage = (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  if (!storage) {
+    return Promise.reject(new Error('Firebase Storage is not initialized.'));
   }
-  return Promise.resolve();
+  if (!file) {
+    return Promise.reject(new Error('No file provided.'));
+  }
+  if (!file.type.startsWith('image/')) {
+    return Promise.reject(new Error('File is not an image.'));
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const imageBlob = await resizeImage(file);
+      const fileName = `images/${uuidv4()}.webp`;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, imageBlob);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          onProgress?.(progress);
+        },
+        (error) => {
+          console.error("Upload failed:", error);
+          reject(error);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
+        }
+      );
+    } catch (error) {
+      console.error('Error during image processing or upload:', error);
+      reject(error);
+    }
+  });
+};
+
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  if (!storage) {
+    console.warn('Firebase Storage is not initialized, skipping deletion.');
+    return;
+  }
+  if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
+    // Not a Firebase Storage URL, likely a placeholder or data URI, so do nothing.
+    return;
+  }
+
+  try {
+    const imageRef = ref(storage, imageUrl);
+    await deleteObject(imageRef);
+  } catch (error: any) {
+    if (error.code === 'storage/object-not-found') {
+      console.warn(`Image not found for deletion, but proceeding: ${imageUrl}`);
+    } else {
+      console.error(`Error deleting image ${imageUrl}:`, error);
+    }
+  }
 };

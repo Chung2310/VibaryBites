@@ -78,12 +78,12 @@ const heroBanners = [
 
 const marqueeVariantsReverse = {
   animate: {
-    x: ['-50%', '0%'],
+    x: ['0%', '-50%'],
     transition: {
       x: {
         repeat: Infinity,
         repeatType: "loop",
-        duration: 20,
+        duration: 15,
         ease: "linear",
       },
     },
@@ -132,6 +132,7 @@ function Hero() {
                   fill
                   className="object-cover"
                   priority={index === 0}
+                  sizes="100vw"
                   data-ai-hint={banner.imageHint}
                 />
                 
@@ -287,27 +288,30 @@ function WorkshopSection() {
     );
 }
 
-function MarqueeProductCard({ product }: { product: Product }) {
+const MarqueeProductCard = React.memo(function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-        <div className="mx-8 flex-shrink-0 w-[500px]">
-            <Link href={`/products/${sanitizedSlug}`} className="group block relative">
-                <Image
-                    src={product.imageUrl}
-                    alt={product.name}
-                    width={800}
-                    height={800}
-                    className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                />
-                 <div className="absolute inset-x-0 bottom-8">
-                   <div className="whitespace-nowrap text-center text-xs font-semibold uppercase tracking-wider text-black transition-all group-hover:text-black">
-                       {product.name}
-                   </div>
-               </div>
-            </Link>
-        </div>
+      <div className="group relative mx-8 flex-shrink-0 w-80">
+        <Link href={`/products/${sanitizedSlug}`} className="block">
+          <div className="relative aspect-square">
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              width={500}
+              height={500}
+              className="object-contain transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+          <div className="absolute inset-x-0 bottom-4">
+            <div className="mx-auto w-fit rounded-full bg-white/80 px-4 py-2 text-center text-sm font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
+              {product.name}
+            </div>
+          </div>
+        </Link>
+      </div>
     );
-}
+});
+MarqueeProductCard.displayName = 'MarqueeProductCard';
 
 function FeaturedProducts() {
     const { products, isLoadingProducts } = useAppStore();
@@ -320,14 +324,22 @@ function FeaturedProducts() {
         <section className="py-16 sm:py-24 bg-white">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <Skeleton className="h-10 w-3/4 mx-auto" />
-              <Skeleton className="h-8 w-1/2 mx-auto mt-6" />
-              <Skeleton className="h-12 w-48 mx-auto mt-8 rounded-full" />
+              <h2 className="font-headline text-4xl md:text-5xl">
+                Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
+              </h2>
+              <p className="mx-auto mt-6 max-w-2xl text-lg font-fraunces text-muted-foreground">
+                Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
+              </p>
+               <div className="mt-8">
+                 <Button asChild className="rounded-full bg-black text-white hover:bg-black/80 font-bold" size="lg">
+                    <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
+                </Button>
+              </div>
             </div>
             <div className="w-full overflow-hidden mt-8">
                 <div className="flex">
                     {Array.from({length: 4}).map((_, i) => (
-                        <div key={i} className="relative mx-8 flex-shrink-0 w-[500px] aspect-square">
+                        <div key={i} className="relative mx-8 flex-shrink-0 w-80 aspect-square">
                             <Skeleton className="h-full w-full"/>
                         </div>
                     ))}
