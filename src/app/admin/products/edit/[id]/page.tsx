@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -21,7 +21,6 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +32,7 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore || !product || !productDocRef || !storage) {
+        if (!firestore || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
@@ -46,13 +45,13 @@ export default function EditProductPage() {
             if (values.imageFile) {
                 // Delete old image if it exists and is not a placeholder
                 if (product.imageUrl) {
-                   await deleteImage(storage, product.imageUrl);
+                   await deleteImage(product.imageUrl);
                 }
                 // Upload the new image
-                finalImageUrl = await uploadImage(storage, values.imageFile, 'products');
+                finalImageUrl = await uploadImage(values.imageFile);
             } else if (!values.imageUrl && product.imageUrl) {
                 // Image was removed without a new one being added
-                await deleteImage(storage, product.imageUrl);
+                await deleteImage(product.imageUrl);
                 finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
             }
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -22,7 +22,6 @@ export default function EditNewsArticlePage() {
     const articleId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues) => {
-        if (!firestore || !article || !articleDocRef || !storage) {
+        if (!firestore || !article || !articleDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy bài viết.' });
             return;
         }
@@ -45,11 +44,11 @@ export default function EditNewsArticlePage() {
         try {
             if (values.imageFile) {
                 if (article.imageUrl) {
-                   await deleteImage(storage, article.imageUrl);
+                   await deleteImage(article.imageUrl);
                 }
-                finalImageUrl = await uploadImage(storage, values.imageFile, 'news_images');
+                finalImageUrl = await uploadImage(values.imageFile);
             } else if (!values.imageUrl && article.imageUrl) {
-                await deleteImage(storage, article.imageUrl);
+                await deleteImage(article.imageUrl);
                 finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
             }
 

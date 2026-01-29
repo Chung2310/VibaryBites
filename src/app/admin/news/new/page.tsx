@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -17,12 +17,11 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues) => {
-        if (!firestore || !storage) {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ." });
             return;
         }
@@ -32,7 +31,7 @@ export default function NewNewsArticlePage() {
 
         try {
             if (values.imageFile) {
-                finalImageUrl = await uploadImage(storage, values.imageFile, 'news_images');
+                finalImageUrl = await uploadImage(values.imageFile);
             }
 
             const articleId = `news-${Date.now()}`;

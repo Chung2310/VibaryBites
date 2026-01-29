@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -17,13 +17,12 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore || !storage) {
-            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
 
@@ -33,7 +32,7 @@ export default function NewProductPage() {
         try {
             // Step 1: Handle image upload if a new file is present
             if (values.imageFile) {
-                finalImageUrl = await uploadImage(storage, values.imageFile, 'products');
+                finalImageUrl = await uploadImage(values.imageFile);
             }
 
             // Step 2: Prepare data and save to Firestore
