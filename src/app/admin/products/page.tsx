@@ -224,15 +224,17 @@ export default function ProductsPage() {
                      return (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell">
-                                {imageUrl ? (
-                                    <Image
-                                        alt={product.name}
-                                        className="aspect-square rounded-md object-cover"
-                                        height="64"
-                                        src={imageUrl}
-                                        width="64"
-                                    />
-                                ) : <div className="h-16 w-16 bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">No Image</div>}
+                                {imageUrl && typeof imageUrl === 'string' ? (
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100">
+                                        <Image
+                                            alt={product.name}
+                                            className="aspect-square rounded-md object-contain"
+                                            height="64"
+                                            src={imageUrl}
+                                            width="64"
+                                        />
+                                    </div>
+                                ) : <div className="flex h-16 w-16 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">No Image</div>}
                             </TableCell>
                             <TableCell className="font-medium">
                                 {product.name}
