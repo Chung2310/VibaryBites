@@ -9,7 +9,7 @@ import { cn, generateSlug } from '@/lib/utils';
 import { useAppStore } from '@/hooks/use-app-store';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Product, NewsArticle, ProductCategory } from '@/lib/types';
+import type { Product, NewsArticle } from '@/lib/types';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -19,7 +19,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 const heroBanners = [
@@ -166,18 +166,14 @@ function Hero() {
 }
 
 function CategorySection() {
-    const firestore = useFirestore();
-    const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'categories'), limit(4)) : null, [firestore]);
-    const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
-    const pathname = usePathname();
 
-    const categoryImageMap: Record<string, string> = {
-        'banh-sinh-nhat': 'category-birthday-cake',
-        'banh-le': 'category-sweet-cake',
-        'banh-nuong': 'category-other-cakes',
-        'banh-tea-break': 'category-drinks',
-    };
+    const categories = [
+      { slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật', subtitle: 'Cho ngày đặc biệt', imageId: 'category-birthday-cake' },
+      { slug: 'banh-le', title: 'Bánh lẻ', subtitle: 'Thưởng thức mỗi ngày', imageId: 'category-sweet-cake' },
+      { slug: 'banh-nuong', title: 'Bánh nướng', subtitle: 'Giòn tan, thơm lừng', imageId: 'category-other-cakes' },
+      { slug: 'banh-tea-break', title: 'Bánh Tea-Break', subtitle: 'Cho tiệc trà & sự kiện', imageId: 'category-drinks' },
+    ];
     
     const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
         e.preventDefault();
@@ -188,49 +184,40 @@ function CategorySection() {
       <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="aspect-[3/4] w-full">
-                        <Skeleton className="h-full w-full rounded-2xl" />
-                    </div>
-                ))
-            ) : (
-                categories?.map((category) => {
-                const imageId = categoryImageMap[category.slug] || 'category-birthday-cake';
-                const image = PlaceHolderImages.find(p => p.id === imageId);
-                return (
-                    <div key={category.slug}>
-                        <Link
-                            href={`/products?category=${category.slug}`}
-                            onClick={(e) => handleCategoryClick(e, category.slug)}
-                            className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
-                        >
-                        {image && (
-                            <Image
-                                src={image.imageUrl}
-                                alt={category.title}
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                data-ai-hint={image.imageHint}
-                            />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-4 left-4 right-4">
-                            <div className="flex items-center justify-between rounded-lg bg-white/90 backdrop-blur-sm p-4 shadow-md">
-                                <div>
-                                    <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
-                                        {category.title}
-                                    </h3>
-                                    <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.subtitle}</p>
-                                </div>
+            {categories.map((category) => {
+              const image = PlaceHolderImages.find(p => p.id === category.imageId);
+              return (
+                <div key={category.slug}>
+                    <Link
+                        href={`/products?category=${category.slug}`}
+                        onClick={(e) => handleCategoryClick(e, category.slug)}
+                        className="group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg transition-transform duration-300 hover:scale-105"
+                    >
+                    {image && (
+                        <Image
+                            src={image.imageUrl}
+                            alt={category.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            data-ai-hint={image.imageHint}
+                        />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex items-center justify-between rounded-lg bg-white/90 backdrop-blur-sm p-4 shadow-md">
+                            <div>
+                                <h3 className="font-lexend text-base font-medium tracking-wide text-foreground">
+                                    {category.title}
+                                </h3>
+                                <p className="mt-1 text-sm text-muted-foreground font-fraunces">{category.subtitle}</p>
                             </div>
                         </div>
-                        </Link>
                     </div>
-                )
-                })
-            )}
+                    </Link>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>

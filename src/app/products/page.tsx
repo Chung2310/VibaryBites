@@ -7,28 +7,27 @@ import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/hooks/use-app-store";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
 import type { ProductCategory } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
+const productCategories: ProductCategory[] = [
+    { id: 'cat-banh-sinh-nhat', slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật', subtitle: 'Cho ngày đặc biệt', description: 'Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.' },
+    { id: 'cat-banh-le', slug: 'banh-le', title: 'Bánh lẻ', subtitle: 'Thưởng thức mỗi ngày', description: 'Các loại bánh nhỏ, entremet, và bánh ngọt để bạn tự thưởng cho bản thân.' },
+    { id: 'cat-banh-nuong', slug: 'banh-nuong', title: 'Bánh nướng', subtitle: 'Giòn tan, thơm lừng', description: 'Các loại bánh nướng cổ điển như bánh sừng bò, bánh tart, và nhiều hơn nữa.' },
+    { id: 'cat-banh-tea-break', slug: 'banh-tea-break', title: 'Bánh Tea-Break', subtitle: 'Cho tiệc trà & sự kiện', description: 'Set bánh nhỏ gọn, đa dạng cho các buổi tiệc trà công ty hoặc sự kiện đặc biệt.' },
+  ];
+
 export default function ProductsPage() {
-  const { products } = useAppStore();
-  const firestore = useFirestore();
+  const { products, isLoadingProducts } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
-  const { data: productCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
-    if (!productCategories || productCategories.length === 0) return;
-
     const categorySlugFromQuery = searchParams.get('category');
     const slugToHandle = categorySlugFromQuery || productCategories[0].slug;
     
@@ -42,7 +41,7 @@ export default function ProductsPage() {
             }, 100);
         }
     }
-  }, [searchParams, productCategories]);
+  }, [searchParams]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
     e.preventDefault();
@@ -56,8 +55,7 @@ export default function ProductsPage() {
         <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
-                    {isLoadingCategories && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-4 w-24" />)}
-                    {productCategories?.map(category => (
+                    {productCategories.map(category => (
                         <a
                             key={category.slug}
                             href={`/products?category=${category.slug}`}
@@ -75,8 +73,7 @@ export default function ProductsPage() {
         </nav>
 
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {isLoadingCategories && <p>Đang tải danh mục...</p>}
-        {productCategories?.map((category, index) => {
+        {productCategories.map((category, index) => {
           const categoryProducts = products.filter(p => p.categorySlug === category.slug);
 
           return (
@@ -98,7 +95,20 @@ export default function ProductsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
-                {categoryProducts.length > 0 ? (
+                {isLoadingProducts ? (
+                   Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="sm:px-8">
+                      <div className="space-y-4">
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-6 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-4 w-1/4" />
+                        </div>
+                        <Skeleton className="relative w-full aspect-square" />
+                      </div>
+                    </div>
+                  ))
+                ) : categoryProducts.length > 0 ? (
                     categoryProducts.map((product) => (
                         <div key={product.id} className="sm:px-8">
                             <ProductCard product={product} hideDescription={true} />
