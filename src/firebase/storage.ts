@@ -33,11 +33,11 @@ export async function uploadImage(
     return new Promise((resolve, reject) => {
         const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
-        // Set a 60-second timeout for the upload
+        // Set a 120-second timeout for the upload
         const timeoutId = setTimeout(() => {
             uploadTask.cancel();
-            reject(new Error('Upload timed out after 60 seconds. Please check your network connection and try again.'));
-        }, 60000); // 60-second timeout
+            reject(new Error('Upload timed out after 120 seconds. Please check your network connection and try again.'));
+        }, 120000); // 120-second timeout
 
         uploadTask.on('state_changed',
             (snapshot) => {
