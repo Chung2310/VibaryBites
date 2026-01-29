@@ -8,7 +8,9 @@ service firebase.storage {
     match /{allPaths=**} {
       allow read;
       
-      // DEBUG: Temporarily allow writes from anyone to diagnose upload issues.
+      // DEBUG: Temporarily allowing writes from anyone to diagnose upload issues.
+      // This is insecure for a production environment. Once the issue is resolved,
+      // this should be changed back to `allow write: if request.auth != null;`
       allow write: if true;
     }
   }
