@@ -16,6 +16,11 @@ export async function POST(request: Request) {
     // 1. Get the form data from the client's request.
     const formData = await request.json();
     
+    // Prepend a single quote to the phone number to force Google Sheets to treat it as a string.
+    if (formData.phone) {
+        formData.phone = `'${formData.phone}`;
+    }
+
     // 2. Re-create the payload in the format the Google Script expects (URLSearchParams).
     const payload = new URLSearchParams();
     for (const key in formData) {
