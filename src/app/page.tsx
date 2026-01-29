@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -29,7 +30,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "https://picsum.photos/seed/h-banner-1/1920/1080",
+    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/v1769694694/659b70c2531ac2845a273377_L1000281_m54va0.avif",
     description: "Beautifully crafted entremet cake on a platter.",
     imageHint: "entremet cake"
   },
@@ -39,7 +40,7 @@ const heroBanners = [
     subtitle: "Bánh Trái Cây Nhiệt Đới",
     buttonText: "THỬ NGAY",
     buttonLink: "/products",
-    imageUrl: "https://picsum.photos/seed/h-banner-2/1920/1080",
+    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/v1769694693/aMgSLmGNHVfTPPcR_120A8985_nof9r9.avif",
     description: "Close up shot of a slice of layered mousse cake.",
     imageHint: "mousse cake"
   },
@@ -49,7 +50,7 @@ const heroBanners = [
     subtitle: "Hộp Bánh Entremet Mini",
     buttonText: "XEM QUÀ TẶNG",
     buttonLink: "/products?category=banh-le",
-    imageUrl: "https://picsum.photos/seed/h-banner-3/1920/1080",
+    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/v1769694763/aC309ydWJ-7kSZ7y_LAFUONG_1.6_Cover_01_gejq78.avif",
     description: "A variety of colorful French pastries on display.",
     imageHint: "french pastry"
   },
@@ -59,19 +60,9 @@ const heroBanners = [
     subtitle: "Tạo nên từ tâm huyết",
     buttonText: "VỀ CHÚNG TÔI",
     buttonLink: "/about",
-    imageUrl: "https://picsum.photos/seed/h-banner-4/1920/1080",
+    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/v1769694693/aFeOnnfc4bHWil8I_LF_Cover_Lovers_kccgcv.avif",
     description: "A baker decorating a modern cake with precision.",
     imageHint: "cake decorating"
-  },
-  {
-    id: "hero-banner-5",
-    title: "SANG TRỌNG & ĐẲNG CẤP",
-    subtitle: "Bánh Sô-cô-la Bỉ",
-    buttonText: "KHÁM PHÁ SÔ-CÔ-LA",
-    buttonLink: "/products/summer-calling",
-    imageUrl: "https://picsum.photos/seed/h-banner-5/1920/1080",
-    description: "Luxurious chocolate entremet with a glossy finish.",
-    imageHint: "chocolate entremet"
   }
 ];
 
