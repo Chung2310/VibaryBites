@@ -93,7 +93,7 @@ export const products: Product[] = [
     },
     price: 380000,
     imageUrl: '/images/product/ALittleGrace2.avif',
-    categorySlug: 'banh-tea-break',
+    categorySlug: 'banh-le',
     flavorProfile: ['Đậm vị trà', 'Chua nhẹ', 'Thanh lịch'],
      structure: [
         'Phủ bột matcha',
