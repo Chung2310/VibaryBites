@@ -38,7 +38,7 @@ service cloud.firestore {
     
     match /cakes/{cakeId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
       
       match /reviews/{reviewId} {
         allow read: if true;
@@ -50,32 +50,32 @@ service cloud.firestore {
     
     match /categories/{categoryId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     match /news_articles/{newsArticleId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     match /quiz_questions/{quizQuestionId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     match /ingredients/{ingredientId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     match /settings/{settingId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     match /analytics/{analyticsId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow write: if true; // DEBUG: Temporarily open write access
     }
     
     // ============================================
