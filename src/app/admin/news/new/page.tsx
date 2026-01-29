@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -12,17 +12,15 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage';
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
+    const handleFormSubmit = async (values: NewsFormValues) => {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ." });
             return;
         }
@@ -30,16 +28,8 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
-        let finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
-
+        
         try {
-            // Step 1: Upload image if it exists
-            if (imageFile) {
-                toast({ description: "Đang tải ảnh lên..." });
-                finalImageUrl = await uploadImage(storage, `news/${articleId}`, imageFile);
-            }
-
-            // Step 2: Prepare data
             const newArticleData: NewsArticle = {
                 id: articleId,
                 slug: generateSlug(values.title),
@@ -48,23 +38,25 @@ export default function NewNewsArticlePage() {
                 category: values.category,
                 excerpt: values.excerpt,
                 content: values.content,
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image',
                 publicationDate: new Date().toISOString(),
             };
 
-            // Step 3: Save to Firestore
-            toast({ description: "Đang lưu bài viết..." });
             await setDoc(docRef, newArticleData);
             
-            // Step 4: Success
             toast({ title: "Tạo bài viết thành công!", description: `"${values.title}" đã được tạo.` });
             router.push('/admin/news');
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const errorMessage = (error.code?.includes('permission-denied')) 
-                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
-                : error.message || 'Đã có lỗi không xác định xảy ra.';
+            let errorMessage = 'Đã có lỗi không xác định xảy ra.';
+            if (error.code?.includes('permission-denied')) {
+                errorMessage = 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.';
+            } else if (error.message.includes('entity too large') || (error.code && error.code.includes('resource-exhausted'))) { // Firestore can return this
+                errorMessage = 'Tệp ảnh quá lớn để lưu trực tiếp. Vui lòng chọn ảnh có dung lượng nhỏ hơn (dưới 1MB).';
+            } else {
+                errorMessage = error.message;
+            }
 
             toast({
                 variant: 'destructive',

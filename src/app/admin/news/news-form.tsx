@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { RichTextEditor } from './rich-text-editor';
 import { useDropzone } from 'react-dropzone';
@@ -36,6 +36,7 @@ const formSchema = z.object({
   category: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn một danh mục."),
   excerpt: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
   content: z.string().min(20, "Nội dung phải có ít nhất 20 ký tự."),
+  imageUrl: z.string().optional(),
 });
 
 export type NewsFormValues = z.infer<typeof formSchema>;
@@ -46,16 +47,13 @@ const articleCategories = [
 
 interface NewsFormProps {
   article?: NewsArticle;
-  onSubmit: (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => void;
+  onSubmit: (values: NewsFormValues) => void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
 }
 
 export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode }: NewsFormProps) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(article?.imageUrl || null);
-  
   const form = useForm<NewsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: article ? {
@@ -64,43 +62,30 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
         category: article.category,
         excerpt: article.excerpt,
         content: article.content,
+        imageUrl: article.imageUrl || "",
     } : {
         title: "",
         author: "Vibary Team",
         category: "",
         excerpt: "",
         content: "",
+        imageUrl: "",
     },
   });
 
-  // When component unmounts, revoke the object URL to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-
-  // Effect to update preview if article changes (e.g., when form is for editing)
-  useEffect(() => {
-    if (article?.imageUrl && !imageFile) {
-      setImagePreview(article.imageUrl);
-    }
-  }, [article, imageFile]);
+  const imageUrl = form.watch("imageUrl");
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      // Revoke the old object URL if it exists to prevent memory leaks
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
-      }
-      setImageFile(file);
-      // Create a new object URL for the preview, which is very lightweight
-      setImagePreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        form.setValue('imageUrl', dataUrl, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
     }
-  }, [imagePreview]);
+  }, [form]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -109,22 +94,12 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
   });
 
   const removeImage = () => {
-    // Revoke the object URL if it exists
-    if (imagePreview && imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setImageFile(null);
-    setImagePreview(null);
+    form.setValue('imageUrl', '', { shouldValidate: true });
   };
-
-  const handleFormSubmit = (values: NewsFormValues) => {
-    const imageWasRemoved = isEditMode && !!article?.imageUrl && !imagePreview;
-    onSubmit(values, imageFile, imageWasRemoved);
-  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="md:col-span-2 space-y-6">
@@ -173,9 +148,9 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
           <div className="md:col-span-1 space-y-6">
             <FormItem>
               <FormLabel>Ảnh bìa</FormLabel>
-              {imagePreview ? (
+              {imageUrl ? (
                 <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden">
-                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-cover" />
+                  <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
                   <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ const productSchema = z.object({
     stock: z.coerce.number().int().min(0, { message: "Số lượng tồn kho phải là số nguyên không âm." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn danh mục."),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
+    imageUrl: z.string().optional(),
 
     // Detailed Description
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
@@ -59,7 +60,7 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => void;
+  onSubmit: (values: ProductFormValues) => void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -70,9 +71,6 @@ Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị 
 Sử dụng trong vòng 03 ngày`;
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
-  
   const firestore = useFirestore();
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
@@ -86,6 +84,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         stock: product.stock ?? 0,
         categorySlug: product.categorySlug,
         description: product.description,
+        imageUrl: product.imageUrl || "",
         detailedDescription_flavor: product.detailedDescription?.flavor || "",
         detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
         detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
@@ -100,6 +99,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         stock: 10,
         categorySlug: "",
         description: "",
+        imageUrl: "",
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
         detailedDescription_storage: defaultStorageInstructions,
@@ -110,33 +110,19 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
-  // When component unmounts, revoke the object URL to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
-  
-  useEffect(() => {
-    if (product?.imageUrl && !imageFile) {
-      setImagePreview(product.imageUrl);
-    }
-  }, [product, imageFile]);
+  const imageUrl = form.watch("imageUrl");
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      // Revoke the old object URL if it exists to prevent memory leaks
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
-      }
-      setImageFile(file);
-      // Create a new object URL for the preview, which is very lightweight
-      setImagePreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        form.setValue('imageUrl', dataUrl, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
     }
-  }, [imagePreview]);
+  }, [form]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -145,22 +131,12 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const removeImage = () => {
-    // Revoke the object URL if it exists
-    if (imagePreview && imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setImageFile(null);
-    setImagePreview(null);
+    form.setValue('imageUrl', '', { shouldValidate: true });
   };
   
-  const handleFormSubmit = (values: ProductFormValues) => {
-    const imageWasRemoved = isEditMode && !!product?.imageUrl && !imagePreview;
-    onSubmit(values, imageFile, imageWasRemoved);
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
         {/* --- Main Product Info --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -200,9 +176,9 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         {/* --- Image Uploader --- */}
         <div className="space-y-2">
             <FormLabel>Ảnh sản phẩm</FormLabel>
-             {imagePreview ? (
+             {imageUrl ? (
                 <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden">
-                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-cover" />
+                  <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
                   <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

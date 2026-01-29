@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -12,17 +12,15 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage';
 
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage) {
+    const handleFormSubmit = async (values: ProductFormValues) => {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
@@ -30,16 +28,8 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
-        let finalImageUrl = 'https://placehold.co/800x600/F4DDDD/333333?text=No+Image';
-
+        
         try {
-            // Step 1: Upload image if it exists
-            if (imageFile) {
-                toast({ description: "Đang tải ảnh lên..." });
-                finalImageUrl = await uploadImage(storage, `products/${productId}`, imageFile);
-            }
-
-            // Step 2: Prepare data
             const newProductData: Product = {
                 id: productId,
                 slug: generateSlug(values.name),
@@ -49,7 +39,7 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 description: values.description,
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image',
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -61,19 +51,21 @@ export default function NewProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            // Step 3: Save to Firestore
-            toast({ description: "Đang lưu thông tin sản phẩm..." });
             await setDoc(docRef, newProductData);
 
-            // Step 4: Success
             toast({ title: 'Thêm thành công!', description: `Sản phẩm "${values.name}" đã được tạo.` });
             router.push('/admin/products');
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const errorMessage = (error.code?.includes('permission-denied'))
-                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
-                : error.message || 'Đã có lỗi không xác định xảy ra.';
+            let errorMessage = 'Đã có lỗi không xác định xảy ra.';
+            if (error.code?.includes('permission-denied')) {
+                errorMessage = 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.';
+            } else if (error.message.includes('entity too large') || (error.code && error.code.includes('resource-exhausted'))) {
+                errorMessage = 'Tệp ảnh quá lớn để lưu trực tiếp. Vui lòng chọn ảnh có dung lượng nhỏ hơn (dưới 1MB).';
+            } else {
+                errorMessage = error.message;
+            }
 
             toast({
                 variant: 'destructive',

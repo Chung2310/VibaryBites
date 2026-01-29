@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -21,7 +20,6 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,32 +30,15 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage || !product || !productDocRef) {
+    const handleFormSubmit = async (values: ProductFormValues) => {
+        if (!firestore || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = product.imageUrl; // Start with existing URL
-
+        
         try {
-            // Step 1: Handle image changes
-            if (imageFile) {
-                toast({ description: "Đang tải ảnh mới lên..." });
-                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
-                    await deleteImage(storage, product.imageUrl);
-                }
-                finalImageUrl = await uploadImage(storage, `products/${product.id}`, imageFile);
-            } else if (imageWasRemoved) {
-                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
-                    toast({ description: "Đang xóa ảnh cũ..." });
-                    await deleteImage(storage, product.imageUrl);
-                }
-                finalImageUrl = 'https://placehold.co/800x600/F4DDDD/333333?text=No+Image';
-            }
-            
-            // Step 2: Prepare data
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -66,7 +47,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 slug: generateSlug(values.name),
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image',
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -78,19 +59,21 @@ export default function EditProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            // Step 3: Save to Firestore
-            toast({ description: "Đang lưu thay đổi..." });
             await setDoc(productDocRef, updatedProductData, { merge: true });
 
-            // Step 4: Success
             toast({ title: 'Cập nhật thành công!', description: `Sản phẩm "${values.name}" đã được cập nhật.` });
             router.push(`/admin/products`);
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const errorMessage = (error.code?.includes('permission-denied'))
-                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
-                : error.message || 'Đã có lỗi không xác định xảy ra.';
+            let errorMessage = 'Đã có lỗi không xác định xảy ra.';
+             if (error.code?.includes('permission-denied')) {
+                errorMessage = 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.';
+            } else if (error.message.includes('entity too large') || (error.code && error.code.includes('resource-exhausted'))) {
+                errorMessage = 'Tệp ảnh quá lớn để lưu trực tiếp. Vui lòng chọn ảnh có dung lượng nhỏ hơn (dưới 1MB).';
+            } else {
+                errorMessage = error.message;
+            }
             
             toast({
                 variant: 'destructive',

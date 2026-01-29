@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -21,7 +20,6 @@ export default function EditNewsArticlePage() {
     const articleId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,34 +30,15 @@ export default function EditNewsArticlePage() {
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage || !article || !articleDocRef) {
+    const handleFormSubmit = async (values: NewsFormValues) => {
+        if (!firestore || !article || !articleDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy bài viết.' });
             return;
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = article.imageUrl; // Start with the existing URL
-
+        
         try {
-            // Step 1: Handle image changes
-            if (imageFile) {
-                toast({ description: "Đang tải ảnh mới lên..." });
-                // Delete the old image if it exists and is a Firebase image
-                if (article.imageUrl && article.imageUrl.includes('firebasestorage')) {
-                    await deleteImage(storage, article.imageUrl);
-                }
-                finalImageUrl = await uploadImage(storage, `news/${article.id}`, imageFile);
-            } else if (imageWasRemoved) {
-                // Delete the old image if it exists and is a Firebase image
-                if (article.imageUrl && article.imageUrl.includes('firebasestorage')) {
-                    toast({ description: "Đang xóa ảnh cũ..." });
-                    await deleteImage(storage, article.imageUrl);
-                }
-                finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
-            }
-
-            // Step 2: Prepare data
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
@@ -67,22 +46,24 @@ export default function EditNewsArticlePage() {
                 excerpt: values.excerpt,
                 content: values.content,
                 slug: generateSlug(values.title),
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image',
             };
 
-            // Step 3: Save to Firestore
-            toast({ description: "Đang lưu thay đổi..." });
             await setDoc(articleDocRef, updatedArticleData, { merge: true });
 
-            // Step 4: Success
             toast({ title: "Cập nhật thành công!", description: `"${values.title}" đã được cập nhật.` });
             router.push('/admin/news');
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật bài viết:", error);
-            const errorMessage = (error.code?.includes('permission-denied'))
-                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
-                : error.message || 'Đã có lỗi không xác định xảy ra.';
+            let errorMessage = 'Đã có lỗi không xác định xảy ra.';
+            if (error.code?.includes('permission-denied')) {
+                errorMessage = 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.';
+            } else if (error.message.includes('entity too large') || (error.code && error.code.includes('resource-exhausted'))) {
+                errorMessage = 'Tệp ảnh quá lớn để lưu trực tiếp. Vui lòng chọn ảnh có dung lượng nhỏ hơn (dưới 1MB).';
+            } else {
+                errorMessage = error.message;
+            }
             
             toast({
                 variant: 'destructive',
