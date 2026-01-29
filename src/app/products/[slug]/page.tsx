@@ -1,4 +1,3 @@
-
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -25,12 +24,11 @@ import { collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage() {
-    const params = useParams();
-    const slug = params.slug as string;
+    const slug = (useParams().slug || '') as string;
     const { products, addToCart } = useAppStore();
     
     const firestore = useFirestore();
-    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
     const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection);
 
     const product = products.find((p) => {

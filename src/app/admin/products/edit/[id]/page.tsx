@@ -17,8 +17,7 @@ import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
-    const params = useParams();
-    const productId = params.id as string;
+    const productId = (useParams().id || '') as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -50,13 +49,21 @@ export default function EditProductPage() {
 
             if (imageFile) {
                 if (product.imageUrl) {
-                    await deleteImage(product.imageUrl);
+                    try {
+                        await deleteImage(product.imageUrl);
+                    } catch (e) {
+                        console.warn("Failed to delete old image, proceeding with upload.", e)
+                    }
                 }
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
                 finalImageUrl = await uploadImage(imageFile, `products/${product.id}`);
                 toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } else if (imageWasRemoved && product.imageUrl) {
-                await deleteImage(product.imageUrl);
+                 try {
+                    await deleteImage(product.imageUrl);
+                } catch (e) {
+                    console.warn("Failed to delete old image.", e)
+                }
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             } else if (imagePreview) {
                 finalImageUrl = imagePreview;

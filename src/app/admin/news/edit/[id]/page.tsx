@@ -17,8 +17,7 @@ import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
-    const params = useParams();
-    const articleId = params.id as string;
+    const articleId = (useParams().id || '') as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -50,14 +49,22 @@ export default function EditNewsArticlePage() {
 
             if (imageFile) {
                 if (article.imageUrl) {
-                    await deleteImage(article.imageUrl);
+                    try {
+                        await deleteImage(article.imageUrl);
+                    } catch (e) {
+                         console.warn("Failed to delete old image, proceeding with upload.", e)
+                    }
                 }
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
                 finalImageUrl = await uploadImage(imageFile, `news/${article.id}`);
                 toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } 
             else if (imageWasRemoved && article.imageUrl) {
-                await deleteImage(article.imageUrl);
+                try {
+                    await deleteImage(article.imageUrl);
+                } catch(e) {
+                    console.warn("Failed to delete old image.", e)
+                }
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 
