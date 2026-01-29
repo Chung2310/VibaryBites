@@ -21,75 +21,77 @@ export default function NewNewsArticlePage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
+    const handleFormSubmit = (values: NewsFormValues, imageFile: File | null) => {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ." });
             return;
         }
         
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang tạo bài viết...", description: "Vui lòng đợi." });
-        
+
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         
-        try {
-            let imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
+        // Create the document with a placeholder URL immediately
+        const newArticleData: NewsArticle = {
+            id: articleId,
+            slug: generateSlug(values.title),
+            title: values.title,
+            author: values.author,
+            category: values.category,
+            excerpt: values.excerpt,
+            content: values.content,
+            imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=Uploading...`,
+            publicationDate: new Date().toISOString(),
+        };
 
-            // Step 1: Upload image if it exists
-            if (imageFile) {
-                toast({ id: toastId, title: "Đang tải ảnh lên...", description: "Bước 1/2: Xử lý ảnh bìa." });
-                imageUrl = await uploadImage(storage, `news/${articleId}`, imageFile);
-            }
-
-            // Step 2: Prepare and save document data
-            toast({ id: toastId, title: "Đang lưu bài viết...", description: "Bước 2/2: Lưu nội dung." });
-            const newArticleData: NewsArticle = {
-                id: articleId,
-                slug: generateSlug(values.title),
-                title: values.title,
-                author: values.author,
-                category: values.category,
-                excerpt: values.excerpt,
-                content: values.content,
-                imageUrl: imageUrl, // Use the final URL
-                publicationDate: new Date().toISOString(),
-            };
-
-            await setDoc(docRef, newArticleData);
-
-            // Step 3: Final success notification and navigation
-            toast({
-                id: toastId,
-                title: "Tạo thành công!",
-                description: `Bài viết "${values.title}" đã được tạo.`,
-            });
-            router.push('/admin/news');
-
-        } catch (error: any) {
-            console.error("Lỗi khi tạo bài viết:", error);
-            
-            // This is a Firestore permission error
-            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'create',
-                    requestResourceData: values
+        setDoc(docRef, newArticleData)
+            .then(() => {
+                // Navigate immediately after initial save
+                toast({
+                    title: "Đã lưu bài viết!",
+                    description: `Đang tải ảnh lên trong nền...`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Lỗi tạo bài viết!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                router.push('/admin/news');
+
+                // If there's an image, handle upload in the background
+                if (imageFile && storage) {
+                    uploadImage(storage, `news/${articleId}`, imageFile)
+                        .then(downloadURL => {
+                            // Update the doc with the real image URL
+                            return setDoc(docRef, { imageUrl: downloadURL }, { merge: true });
+                        })
+                        .catch(uploadError => {
+                            console.error("Background image upload failed:", uploadError);
+                            // Update the doc to show a failed state
+                            setDoc(docRef, { imageUrl: `https://placehold.co/1200x800/FF0000/FFFFFF?text=Upload+Failed` }, { merge: true });
+                        });
+                } else {
+                    // If no image file, set to the default "No Image" placeholder
+                    setDoc(docRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
+                }
+            })
+            .catch((error: any) => {
+                // Handle errors from the initial setDoc
+                console.error("Lỗi khi tạo bài viết:", error);
+                
+                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
+                    const permissionError = new FirestorePermissionError({
+                        path: docRef.path,
+                        operation: 'create',
+                        requestResourceData: newArticleData
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                
+                toast({
+                    variant: 'destructive',
+                    title: 'Lỗi tạo bài viết!',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+                 setIsSubmitting(false); // Re-enable form on initial save failure
             });
-        } finally {
-            // This is guaranteed to run, preventing the UI from getting stuck.
-            setIsSubmitting(false);
-        }
     };
 
     return (

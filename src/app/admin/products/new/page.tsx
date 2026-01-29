@@ -21,87 +21,77 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
-        if (!firestore || !storage) {
+    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
 
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang tạo sản phẩm...", description: "Vui lòng đợi." });
         
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
         
-        try {
-            let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
-
-            // Step 1: Upload image if it exists
-            if (imageFile) {
-                toast({ id: toastId, title: "Đang tải ảnh lên...", description: "Bước 1/2: Xử lý ảnh sản phẩm." });
-                imageUrl = await uploadImage(storage, `products/${productId}`, imageFile);
-            } else if (imagePreview) {
-                // This case handles when a URL is pasted directly without uploading a file
-                imageUrl = imagePreview;
-            }
-
-            // Step 2: Prepare and save document data
-            toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Bước 2/2: Lưu dữ liệu." });
-
-            const newProductData: Product = {
-                id: productId,
-                slug: generateSlug(values.name),
-                name: values.name,
-                subtitle: values.subtitle,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                categorySlug: values.categorySlug,
-                description: values.description,
-                imageUrl: imageUrl,
-                detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
-                },
-                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-                structure: values.structure?.split('\n').filter(Boolean) || [],
-            };
-
-            await setDoc(docRef, newProductData);
-            
-            // Step 3: Final success notification and navigation
-            toast({
-                id: toastId,
-                title: 'Thêm thành công!',
-                description: `Sản phẩm "${values.name}" đã được tạo.`,
-            });
-            router.push('/admin/products');
-
-        } catch (error: any) {
-            console.error("Lỗi khi tạo sản phẩm:", error);
-
-            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'create',
-                    requestResourceData: values
+        const newProductData: Product = {
+            id: productId,
+            slug: generateSlug(values.name),
+            name: values.name,
+            subtitle: values.subtitle,
+            price: Number(values.price),
+            stock: Number(values.stock),
+            categorySlug: values.categorySlug,
+            description: values.description,
+            imageUrl: imageFile ? `https://placehold.co/800x600/F4DDDD/333333?text=Uploading...` : (imagePreview || `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`),
+            detailedDescription: {
+                flavor: values.detailedDescription_flavor,
+                ingredients: values.detailedDescription_ingredients,
+                storage: values.detailedDescription_storage,
+                dimensions: values.detailedDescription_dimensions,
+                accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+            },
+            flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+            structure: values.structure?.split('\n').filter(Boolean) || [],
+        };
+        
+        setDoc(docRef, newProductData)
+            .then(() => {
+                toast({
+                    title: 'Thêm thành công!',
+                    description: `Sản phẩm "${values.name}" đã được tạo. Đang xử lý ảnh...`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Lỗi tạo sản phẩm!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                router.push('/admin/products');
+
+                if (imageFile && storage) {
+                    uploadImage(storage, `products/${productId}`, imageFile)
+                        .then(downloadURL => {
+                            return setDoc(docRef, { imageUrl: downloadURL }, { merge: true });
+                        })
+                        .catch(uploadError => {
+                            console.error("Background product image upload failed:", uploadError);
+                            setDoc(docRef, { imageUrl: `https://placehold.co/800x600/FF0000/FFFFFF?text=Upload+Failed` }, { merge: true });
+                        });
+                }
+            })
+            .catch((error: any) => {
+                console.error("Lỗi khi tạo sản phẩm:", error);
+
+                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
+                    const permissionError = new FirestorePermissionError({
+                        path: docRef.path,
+                        operation: 'create',
+                        requestResourceData: newProductData
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                
+                toast({
+                    variant: 'destructive',
+                    title: 'Lỗi tạo sản phẩm!',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+                 setIsSubmitting(false);
             });
-        } finally {
-            // This is guaranteed to run, preventing the UI from getting stuck.
-            setIsSubmitting(false);
-        }
     };
     
     return (

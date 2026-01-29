@@ -32,84 +32,87 @@ export default function EditNewsArticlePage() {
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage || !article || !articleDocRef) {
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Không thể kết nối tới dịch vụ hoặc không tìm thấy bài viết.',
-            });
+    const handleFormSubmit = (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
+        if (!firestore || !article || !articleDocRef) {
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy bài viết.' });
             return;
         }
         
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi." });
+        
+        // 1. Update textual data first
+        const updatedArticleData: Partial<NewsArticle> = {
+            title: values.title,
+            author: values.author,
+            category: values.category,
+            excerpt: values.excerpt,
+            content: values.content,
+            slug: generateSlug(values.title),
+        };
 
-        try {
-            let finalImageUrl = article.imageUrl; // Start with the existing URL
-
-            // Step 1: Handle image operations
-            if (imageFile) {
-                toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Bước 1/2: Xử lý ảnh bìa." });
-                // Delete old image if it exists and is a Firebase Storage URL
-                if (article.imageUrl && article.imageUrl.includes('firebasestorage')) {
-                    await deleteImage(storage, article.imageUrl);
-                }
-                finalImageUrl = await uploadImage(storage, `news/${article.id}`, imageFile);
-            } 
-            else if (imageWasRemoved && article.imageUrl && article.imageUrl.includes('firebasestorage')) {
-                toast({ id: toastId, title: "Đang xóa ảnh cũ...", description: "Bước 1/2: Xử lý ảnh bìa." });
-                await deleteImage(storage, article.imageUrl);
-                finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
-            }
-
-            // Step 2: Prepare and save the final document data
-            toast({ id: toastId, title: "Đang cập nhật bài viết...", description: "Bước 2/2: Lưu nội dung." });
-            
-            const updatedArticleData: Partial<NewsArticle> = {
-                title: values.title,
-                author: values.author,
-                category: values.category,
-                excerpt: values.excerpt,
-                content: values.content,
-                slug: generateSlug(values.title),
-                imageUrl: finalImageUrl,
-            };
-
-            await setDoc(articleDocRef, updatedArticleData, { merge: true });
-
-            // Step 3: Final success notification and navigation
-            toast({
-                id: toastId,
-                title: "Thành công!",
-                description: `Bài viết "${values.title}" đã được cập nhật.`,
-            });
-            router.push('/admin/news');
-
-        } catch (error: any) {
-            console.error("Lỗi khi cập nhật bài viết:", error);
-            
-            // This is a Firestore permission error
-            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
-                 const permissionError = new FirestorePermissionError({
-                    path: articleDocRef.path,
-                    operation: 'update',
-                    requestResourceData: values
+        setDoc(articleDocRef, updatedArticleData, { merge: true })
+            .then(() => {
+                // 2. Navigate away immediately
+                toast({
+                    title: "Đã lưu thay đổi!",
+                    description: `Đang xử lý ảnh trong nền...`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
+                router.push('/admin/news');
 
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Cập nhật thất bại',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                // 3. Handle image operations in the background
+                if (imageFile && storage) {
+                    // New image uploaded
+                    const oldImageUrl = article.imageUrl;
+                    uploadImage(storage, `news/${article.id}`, imageFile)
+                        .then(newImageUrl => {
+                            // Update doc with new URL
+                            setDoc(articleDocRef, { imageUrl: newImageUrl }, { merge: true });
+                            // Delete old image if it existed and was a firebase url
+                            if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
+                                deleteImage(storage, oldImageUrl);
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Background image upload failed:", err);
+                            toast({ variant: 'destructive', title: 'Lỗi tải ảnh lên', description: 'Dữ liệu văn bản đã được lưu. Vui lòng thử sửa và tải lại ảnh.'});
+                        });
+                } else if (imageWasRemoved && storage) {
+                    // Image was removed by the user
+                    const oldImageUrl = article.imageUrl;
+                     if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
+                        deleteImage(storage, oldImageUrl)
+                            .then(() => {
+                                setDoc(articleDocRef, { imageUrl: 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image' }, { merge: true });
+                            })
+                            .catch(err => {
+                                console.error("Background image deletion failed:", err);
+                                toast({ variant: 'destructive', title: 'Lỗi xóa ảnh', description: 'Không thể xóa ảnh cũ.'});
+                            });
+                     } else {
+                        // If it was not a firebase URL, just update the doc
+                        setDoc(articleDocRef, { imageUrl: 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image' }, { merge: true });
+                     }
+                }
+            })
+            .catch((error: any) => {
+                // Handle errors from the initial setDoc
+                console.error("Lỗi khi cập nhật bài viết:", error);
+                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
+                    const permissionError = new FirestorePermissionError({
+                        path: articleDocRef.path,
+                        operation: 'update',
+                        requestResourceData: updatedArticleData
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                toast({
+                    variant: 'destructive',
+                    title: 'Cập nhật thất bại',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+                setIsSubmitting(false); // Re-enable form
             });
-        } finally {
-            // This is guaranteed to run, preventing the UI from getting stuck.
-            setIsSubmitting(false);
-        }
     };
     
     if (isLoading) {

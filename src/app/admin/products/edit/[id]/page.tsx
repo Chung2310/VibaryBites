@@ -32,96 +32,89 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
+    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
         if (!firestore || !storage || !product || !productDocRef) {
-            toast({
-                variant: 'destructive',
-                title: 'Lỗi',
-                description: 'Không thể kết nối tới dịch vụ hoặc không tìm thấy sản phẩm.',
-            });
+            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
         
         setIsSubmitting(true);
-        const { id: toastId } = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi." });
         
-        try {
-            let finalImageUrl = product.imageUrl;
+        const updatedProductData: Partial<Product> = {
+            name: values.name,
+            subtitle: values.subtitle,
+            description: values.description,
+            price: Number(values.price),
+            stock: Number(values.stock),
+            categorySlug: values.categorySlug,
+            slug: generateSlug(values.name),
+            detailedDescription: {
+                flavor: values.detailedDescription_flavor,
+                ingredients: values.detailedDescription_ingredients,
+                storage: values.detailedDescription_storage,
+                dimensions: values.detailedDescription_dimensions,
+                accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+            },
+            flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+            structure: values.structure?.split('\n').filter(Boolean) || [],
+            // Don't update imageUrl here yet
+        };
 
-            // Step 1: Handle image operations
-            if (imageFile) {
-                toast({ id: toastId, title: "Đang xử lý ảnh mới...", description: "Bước 1/2: Tải ảnh sản phẩm." });
-                // Delete old image if it's a firebase URL
-                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
-                    await deleteImage(storage, product.imageUrl);
-                }
-                finalImageUrl = await uploadImage(storage, `products/${product.id}`, imageFile);
-            } 
-            else if (imageWasRemoved && product.imageUrl && product.imageUrl.includes('firebasestorage')) {
-                 toast({ id: toastId, title: "Đang xóa ảnh cũ...", description: "Bước 1/2: Xử lý ảnh sản phẩm." });
-                await deleteImage(storage, product.imageUrl);
-                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
-            } 
-            else if (imagePreview && imagePreview !== product.imageUrl) {
-                // This handles pasting a new URL
-                finalImageUrl = imagePreview;
-            }
-            
-            // Step 2: Save product data
-            toast({ id: toastId, title: "Đang lưu thông tin sản phẩm...", description: "Bước 2/2: Cập nhật dữ liệu." });
-            const updatedProductData: Partial<Product> = {
-                name: values.name,
-                subtitle: values.subtitle,
-                description: values.description,
-                price: Number(values.price),
-                stock: Number(values.stock),
-                categorySlug: values.categorySlug,
-                imageUrl: finalImageUrl,
-                slug: generateSlug(values.name),
-                detailedDescription: {
-                    flavor: values.detailedDescription_flavor,
-                    ingredients: values.detailedDescription_ingredients,
-                    storage: values.detailedDescription_storage,
-                    dimensions: values.detailedDescription_dimensions,
-                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
-                },
-                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-                structure: values.structure?.split('\n').filter(Boolean) || [],
-            };
-
-            await setDoc(productDocRef, updatedProductData, { merge: true });
-
-            // Step 3: Success
-            toast({
-                id: toastId,
-                title: 'Cập nhật thành công!',
-                description: `Sản phẩm "${values.name}" đã được cập nhật.`,
-            });
-            router.push(`/admin/products`);
-
-        } catch (error: any) {
-            console.error("Lỗi khi cập nhật sản phẩm:", error);
-            
-            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
-                 const permissionError = new FirestorePermissionError({
-                    path: productDocRef.path,
-                    operation: 'update',
-                    requestResourceData: values
+        setDoc(productDocRef, updatedProductData, { merge: true })
+            .then(() => {
+                toast({
+                    title: 'Cập nhật thành công!',
+                    description: `Sản phẩm "${values.name}" đã được lưu. Đang xử lý ảnh...`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Không thể cập nhật sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                router.push(`/admin/products`);
+
+                // Handle image operations in the background
+                if (imageFile) {
+                    const oldImageUrl = product.imageUrl;
+                    uploadImage(storage, `products/${product.id}`, imageFile)
+                        .then(newImageUrl => {
+                            setDoc(productDocRef, { imageUrl: newImageUrl }, { merge: true });
+                            if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
+                                deleteImage(storage, oldImageUrl);
+                            }
+                        })
+                        .catch(err => {
+                             console.error("Background product image upload failed:", err);
+                             toast({ variant: 'destructive', title: 'Lỗi tải ảnh lên', description: 'Dữ liệu văn bản đã được lưu. Vui lòng thử sửa và tải lại ảnh.'});
+                        });
+                } else if (imageWasRemoved) {
+                    const oldImageUrl = product.imageUrl;
+                    if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
+                        deleteImage(storage, oldImageUrl)
+                            .then(() => {
+                                setDoc(productDocRef, { imageUrl: `https://placehold.co/800x600/F4DDDD/333333?text=No+Image` }, { merge: true });
+                            });
+                    }
+                } else if (imagePreview && imagePreview !== product.imageUrl) {
+                    // This handles pasting a new URL
+                    setDoc(productDocRef, { imageUrl: imagePreview }, { merge: true });
+                }
+            })
+            .catch((error: any) => {
+                console.error("Lỗi khi cập nhật sản phẩm:", error);
+                
+                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
+                    const permissionError = new FirestorePermissionError({
+                        path: productDocRef.path,
+                        operation: 'update',
+                        requestResourceData: values
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                
+                toast({
+                    variant: 'destructive',
+                    title: 'Không thể cập nhật sản phẩm',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+                 setIsSubmitting(false);
             });
-        } finally {
-            // This is guaranteed to run, preventing the UI from getting stuck.
-            setIsSubmitting(false);
-        }
     };
     
     if (isLoading) {
