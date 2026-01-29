@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Metadata } from "next";
@@ -11,8 +10,8 @@ import { AppProvider } from "@/hooks/use-app-store";
 import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
-import React from "react";
-import { FirebaseClientProvider } from "@/firebase";
+import React, { useMemo } from "react";
+import { FirebaseProvider, initializeFirebaseClient } from "@/firebase";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -28,6 +27,23 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
 });
+
+function AppProviders({ children }: { children: React.ReactNode }) {
+  const { firebaseApp, auth, firestore, storage } = useMemo(() => initializeFirebaseClient(), []);
+
+  return (
+    <FirebaseProvider
+      firebaseApp={firebaseApp}
+      auth={auth}
+      firestore={firestore}
+      storage={storage}
+    >
+      <AppProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </AppProvider>
+    </FirebaseProvider>
+  );
+}
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -74,11 +90,7 @@ export default function RootLayout({
           lexend.variable
         )}
       >
-        <FirebaseClientProvider>
-          <AppProvider>
-            <LayoutContent>{children}</LayoutContent>
-          </AppProvider>
-        </FirebaseClientProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
