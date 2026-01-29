@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../../product-form';
@@ -21,7 +22,6 @@ export default function EditProductPage() {
     const productId = params.id as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,11 +33,11 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !product || !storage) {
+        if (!firestore || !product) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
-                description: 'Không thể kết nối tới cơ sở dữ liệu, lưu trữ hoặc không tìm thấy sản phẩm.',
+                description: 'Không thể kết nối tới cơ sở dữ liệu hoặc không tìm thấy sản phẩm.',
             });
             return;
         }
@@ -56,9 +56,9 @@ export default function EditProductPage() {
                     const onProgress = (progress: number) => {
                         toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới...", description: `Tiến trình: ${Math.round(progress)}%` });
                     };
-                    const newImageUrl = await uploadImage(storage, imageFile, onProgress);
+                    const newImageUrl = await uploadImage(imageFile, onProgress);
                     if (product.imageUrl && (product.imageUrl.includes('firebasestorage') || product.imageUrl.includes('storage.googleapis'))) {
-                        await deleteImage(storage, product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
+                        await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete old image ${product.imageUrl}`, err));
                     }
                     finalImageUrl = newImageUrl;
                     toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
@@ -73,7 +73,7 @@ export default function EditProductPage() {
                     finalImageUrl = product.imageUrl;
                 }
             } else if (imageWasRemoved && product.imageUrl) {
-                await deleteImage(storage, product.imageUrl).catch(err => console.warn(`Failed to delete removed image ${product.imageUrl}`, err));
+                await deleteImage(product.imageUrl).catch(err => console.warn(`Failed to delete removed image ${product.imageUrl}`, err));
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             }
             

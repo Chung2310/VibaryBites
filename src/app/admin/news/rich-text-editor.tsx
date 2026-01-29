@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
@@ -28,7 +29,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useStorage } from '@/firebase';
 import { uploadImage } from '@/firebase/storage';
 
 interface RichTextEditorProps {
@@ -37,7 +37,6 @@ interface RichTextEditorProps {
 }
 
 const EditorToolbar = ({ editor }: { editor: any }) => {
-  const storage = useStorage();
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -73,13 +72,10 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
           toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
           return;
       }
-      if (!storage) {
-          toast({ variant: 'destructive', title: "Lỗi dịch vụ", description: "Dịch vụ lưu trữ chưa sẵn sàng."});
-          return;
-      }
+      
       setIsUploading(true);
       try {
-          const downloadURL = await uploadImage(storage, imageFile);
+          const downloadURL = await uploadImage(imageFile);
           editor.chain().focus().setImage({ src: downloadURL }).run();
           setIsImageModalOpen(false);
           setImageFile(null);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -5,9 +6,9 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
-  FirebaseStorage,
 } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { storage } from '@/firebase/index'; // Import the initialized instance
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -61,13 +62,12 @@ const resizeImage = (file: File): Promise<Blob> => {
 };
 
 export const uploadImage = (
-  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     if (!storage) {
-        return reject(new Error('Firebase Storage instance was not provided.'));
+        return reject(new Error('Firebase Storage instance was not available.'));
     }
     if (!file) {
         return reject(new Error('No file provided.'));
@@ -103,7 +103,7 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
+export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!storage) {
     console.warn('Firebase Storage instance not provided, skipping deletion.');
     return;
