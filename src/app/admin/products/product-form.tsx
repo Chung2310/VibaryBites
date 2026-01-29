@@ -29,7 +29,6 @@ import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 
@@ -73,8 +72,7 @@ Sử dụng trong vòng 03 ngày`;
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
-  const [imageUrlInput, setImageUrlInput] = useState(isEditMode && product?.imageUrl ? product.imageUrl : '');
-
+  
   const firestore = useFirestore();
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
@@ -124,7 +122,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   useEffect(() => {
     if (product?.imageUrl && !imageFile) {
       setImagePreview(product.imageUrl);
-      setImageUrlInput(product.imageUrl)
     }
   }, [product, imageFile]);
 
@@ -138,7 +135,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
       setImageFile(file);
       // Create a new object URL for the preview, which is very lightweight
       setImagePreview(URL.createObjectURL(file));
-      setImageUrlInput('');
     }
   }, [imagePreview]);
 
@@ -155,24 +151,8 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     }
     setImageFile(null);
     setImagePreview(null);
-    setImageUrlInput('');
-  };
-
-  const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setImageUrlInput(e.target.value);
   };
   
-  const handleUseUrl = () => {
-      if(imageUrlInput) {
-          // Revoke any existing blob URL before switching to the new URL
-          if (imagePreview && imagePreview.startsWith('blob:')) {
-            URL.revokeObjectURL(imagePreview);
-          }
-          setImagePreview(imageUrlInput);
-          setImageFile(null);
-      }
-  }
-
   const handleFormSubmit = (values: ProductFormValues) => {
     const imageWasRemoved = isEditMode && !!product?.imageUrl && !imagePreview;
     onSubmit(values, imageFile, imageWasRemoved);
@@ -228,31 +208,17 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                   </Button>
                 </div>
               ) : (
-                <Tabs defaultValue="upload" className="w-full max-w-sm">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="upload">Tải lên</TabsTrigger>
-                        <TabsTrigger value="url">Từ URL</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="upload">
-                         <div
-                            {...getRootProps()}
-                            className={cn(
-                                'mt-2 w-full aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
-                                isDragActive && 'border-primary bg-primary/10'
-                            )}
-                            >
-                            <input {...getInputProps()} />
-                            <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="url">
-                        <div className="mt-2 space-y-2 flex flex-col items-start">
-                            <Input placeholder="https://..." value={imageUrlInput} onChange={handleUrlInputChange} className="w-full" />
-                            <Button type="button" onClick={handleUseUrl}>Sử dụng URL</Button>
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                <div
+                    {...getRootProps()}
+                    className={cn(
+                        'w-full max-w-sm aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
+                        isDragActive && 'border-primary bg-primary/10'
+                    )}
+                    >
+                    <input {...getInputProps()} />
+                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
+                </div>
               )}
             <FormDescription>Ảnh có nền trong suốt (tách nền) sẽ hiển thị tốt nhất với tỉ lệ 1:1.</FormDescription>
         </div>

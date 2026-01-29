@@ -21,14 +21,6 @@ export async function uploadImage(
     path: string, 
     file: File
 ): Promise<string> {
-    // --- DIAGNOSTIC STEP: Return a placeholder immediately to test form submission flow.
-    console.log("DIAGNOSTIC: Skipping actual upload, returning placeholder.");
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate a short delay
-    return `https://placehold.co/1200x800/FEE2E2/B91C1C?text=Upload+Test`;
-    // --- END DIAGNOSTIC STEP
-
-    /*
-    // ORIGINAL CODE:
     try {
         const storageRef = ref(storage, `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`);
         
@@ -59,7 +51,6 @@ export async function uploadImage(
         // Re-throw a more user-friendly error to be caught by the calling function's try-catch block.
         throw new Error(message);
     }
-    */
 }
 
 /**
@@ -68,13 +59,6 @@ export async function uploadImage(
  * @param imageUrl The public URL of the image to delete.
  */
 export async function deleteImage(storage: FirebaseStorage, imageUrl: string): Promise<void> {
-    // --- DIAGNOSTIC STEP: Skip actual deletion.
-    console.log(`DIAGNOSTIC: Skipping deletion for ${imageUrl}`);
-    return;
-    // --- END DIAGNOSTIC STEP
-    
-    /*
-    // ORIGINAL CODE:
     if (!imageUrl || !imageUrl.includes('firebasestorage.googleapis.com')) {
         console.log(`Skipping deletion for non-Firebase URL: ${imageUrl}`);
         return;
@@ -95,5 +79,4 @@ export async function deleteImage(storage: FirebaseStorage, imageUrl: string): P
             throw new Error(`Failed to delete old image. Error: ${error.code || 'Unknown'}`);
         }
     }
-    */
 }
