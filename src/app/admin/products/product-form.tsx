@@ -72,7 +72,7 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
   const firestore = useFirestore();
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
   const [imageFile, setImageFile] = useState<File | null>(null);

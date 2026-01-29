@@ -20,7 +20,7 @@ export default function ProductsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: productCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
   const [activeCategory, setActiveCategory] = useState<string | undefined>();

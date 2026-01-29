@@ -77,7 +77,7 @@ export function CategoryForm({ isOpen, onClose, category }: CategoryFormProps) {
 
     const id = category ? category.id : `cat-${Date.now()}`;
     const slug = generateSlug(values.title);
-    const docRef = doc(firestore, 'product_categories', id);
+    const docRef = doc(firestore, 'categories', id);
     const dataToSave = { id, slug, ...values };
 
     try {

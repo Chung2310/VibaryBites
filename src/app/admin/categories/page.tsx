@@ -35,7 +35,7 @@ import { generateSlug } from '@/lib/utils';
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -62,7 +62,7 @@ export default function CategoriesPage() {
           const promises = defaultCategories.map(cat => {
             const slug = generateSlug(cat.title);
             const id = `cat-${slug}`;
-            const docRef = doc(firestore, 'product_categories', id);
+            const docRef = doc(firestore, 'categories', id);
             const dataToSave: ProductCategory = { id, slug, ...cat };
             return setDoc(docRef, dataToSave);
           });
@@ -73,7 +73,7 @@ export default function CategoriesPage() {
         } catch (error) {
           console.error("Error seeding categories: ", error);
           const permissionError = new FirestorePermissionError({
-            path: 'product_categories',
+            path: 'categories',
             operation: 'create',
           });
           errorEmitter.emit('permission-error', permissionError);
@@ -102,7 +102,7 @@ export default function CategoriesPage() {
   const handleDelete = async () => {
     if (!categoryToDelete || !firestore) return;
     setIsDeleting(true);
-    const docRef = doc(firestore, 'product_categories', categoryToDelete.id);
+    const docRef = doc(firestore, 'categories', categoryToDelete.id);
     
     try {
         await deleteDoc(docRef);

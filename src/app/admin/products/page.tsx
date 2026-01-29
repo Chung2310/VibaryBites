@@ -1,3 +1,4 @@
+
 'use client';
 import {
   File,
@@ -65,7 +66,7 @@ export default function ProductsPage() {
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
-    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'product_categories') : null, [firestore]);
+    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
     const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
     const [activeCategorySlug, setActiveCategorySlug] = useState('all');
 
