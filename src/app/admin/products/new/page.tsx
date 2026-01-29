@@ -20,7 +20,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
         if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
@@ -38,7 +38,10 @@ export default function NewProductPage() {
                 toast({ id: toastId, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
                 imageUrl = await uploadImage(imageFile, `products/${productId}`);
                 toast({ id: toastId, title: "Tải ảnh lên thành công!" });
+            } else if (imagePreview) {
+                imageUrl = imagePreview;
             }
+
 
             toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 

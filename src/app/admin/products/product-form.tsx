@@ -29,10 +29,8 @@ import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
-Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị chảy)
-Sử dụng trong vòng 03 ngày`;
 
 const productSchema = z.object({
     // Basic Info
@@ -60,7 +58,7 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFile: File | null, imageWasRemoved?: boolean) => Promise<void> | void;
+  onSubmit: (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => Promise<void> | void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -73,9 +71,14 @@ const hardcodedCategories = [
     { slug: 'banh-tea-break', title: 'Bánh Tea-Break' },
 ];
 
+const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
+Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị chảy)
+Sử dụng trong vòng 03 ngày`;
+
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
+  const [imageUrlInput, setImageUrlInput] = useState(isEditMode && product?.imageUrl ? product.imageUrl : '');
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -98,7 +101,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         subtitle: "",
         price: 0,
         stock: 10,
-        categorySlug: "",
+        categorySlug: "banh-le",
         description: "",
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
@@ -113,6 +116,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   useEffect(() => {
     if (product?.imageUrl) {
       setImagePreview(product.imageUrl);
+      setImageUrlInput(product.imageUrl)
     }
   }, [product]);
 
@@ -125,6 +129,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setImageUrlInput('');
     }
   }, []);
 
@@ -137,12 +142,23 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setImageUrlInput('');
   };
 
+  const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUrlInput(e.target.value);
+  };
+  
+  const handleUseUrl = () => {
+      if(imageUrlInput) {
+          setImagePreview(imageUrlInput);
+          setImageFile(null);
+      }
+  }
 
   const handleFormSubmit = (values: ProductFormValues) => {
     const imageWasRemoved = isEditMode && !!product?.imageUrl && !imagePreview;
-    onSubmit(values, imageFile, imageWasRemoved);
+    onSubmit(values, imageFile, imagePreview, imageWasRemoved);
   };
 
   return (
@@ -191,17 +207,31 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                   </Button>
                 </div>
               ) : (
-                <div
-                  {...getRootProps()}
-                  className={cn(
-                    'w-full max-w-sm aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
-                    isDragActive && 'border-primary bg-primary/10'
-                  )}
-                >
-                  <input {...getInputProps()} />
-                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
-                </div>
+                <Tabs defaultValue="upload" className="w-full max-w-sm">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="upload">Tải lên</TabsTrigger>
+                        <TabsTrigger value="url">Từ URL</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload">
+                         <div
+                            {...getRootProps()}
+                            className={cn(
+                                'mt-2 w-full aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
+                                isDragActive && 'border-primary bg-primary/10'
+                            )}
+                            >
+                            <input {...getInputProps()} />
+                            <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                            <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="url">
+                        <div className="mt-2 space-y-2 flex flex-col items-start">
+                            <Input placeholder="https://..." value={imageUrlInput} onChange={handleUrlInputChange} className="w-full" />
+                            <Button type="button" onClick={handleUseUrl}>Sử dụng URL</Button>
+                        </div>
+                    </TabsContent>
+                </Tabs>
               )}
             <FormDescription>Ảnh có nền trong suốt (tách nền) sẽ hiển thị tốt nhất với tỉ lệ 1:1.</FormDescription>
         </div>

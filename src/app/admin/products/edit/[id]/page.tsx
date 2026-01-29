@@ -31,7 +31,7 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
@@ -57,6 +57,10 @@ export default function EditProductPage() {
                 toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } else if (imageWasRemoved && product.imageUrl) {
                 await deleteImage(product.imageUrl);
+                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
+            } else if (imagePreview) {
+                finalImageUrl = imagePreview;
+            } else {
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             }
             
