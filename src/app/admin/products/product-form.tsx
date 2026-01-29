@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Product, ProductCategory } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -29,9 +28,6 @@ import React, { useState, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
-import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
@@ -70,11 +66,14 @@ interface ProductFormProps {
   isEditMode: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
-  const firestore = useFirestore();
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
-  const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
+const hardcodedCategories = [
+    { slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật' },
+    { slug: 'banh-le', title: 'Bánh lẻ' },
+    { slug: 'banh-nuong', title: 'Bánh nướng' },
+    { slug: 'banh-tea-break', title: 'Bánh Tea-Break' },
+];
 
+export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   
@@ -167,16 +166,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                 <FormField control={form.control} name="categorySlug" render={({ field }) => (
                     <FormItem>
                     <FormLabel>Danh mục</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories || !categories || categories.length === 0}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Chọn một danh mục" /></SelectTrigger></FormControl>
                         <SelectContent>
-                        {isLoadingCategories ? ( <div className="p-4 text-sm text-muted-foreground">Đang tải danh mục...</div> ) : (
-                            categories && categories.length > 0 ? (
-                            categories.map(cat => ( <SelectItem key={cat.id} value={cat.slug}>{cat.title}</SelectItem> ))
-                            ) : (
-                            <div className="p-4 text-sm text-muted-foreground">Không tìm thấy danh mục. Vui lòng <Link href="/admin/categories" className="underline text-primary hover:text-primary/80">thêm danh mục mới</Link> trước.</div>
-                            )
-                        )}
+                            {hardcodedCategories.map(cat => ( <SelectItem key={cat.slug} value={cat.slug}>{cat.title}</SelectItem> ))}
                         </SelectContent>
                     </Select>
                     <FormMessage />
