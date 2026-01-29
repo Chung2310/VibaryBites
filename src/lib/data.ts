@@ -66,7 +66,6 @@ export const products: Product[] = [
       { name: '18cm (8-10 người)', price: 780000 },
     ],
     imageUrl: '/images/product/BeinBlossom2.avif',
-    collection: 'special-occasions',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Ngọt ngào', 'Thơm ngát', 'Tinh tế'],
     structure: [
@@ -102,7 +101,6 @@ export const products: Product[] = [
       { name: '18cm (8-10 người)', price: 750000 },
     ],
     imageUrl: '/images/product/BelovedDarling2.avif',
-    collection: 'special-occasions',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Chua thanh', 'Nhiệt đới', 'Sảng khoái'],
     structure: [
@@ -134,7 +132,6 @@ export const products: Product[] = [
     },
     price: 380000,
     imageUrl: '/images/product/ALittleGrace2.avif',
-    collection: 'half-entremet',
     categorySlug: 'banh-le',
     flavorProfile: ['Đậm vị trà', 'Chua nhẹ', 'Thanh lịch'],
      structure: [
@@ -170,7 +167,6 @@ export const products: Product[] = [
       { name: '20cm (10-12 người)', price: 850000 },
     ],
     imageUrl: '/images/product/OneSunnyDay2.avif',
-    collection: 'special-occasions',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Đậm đà', 'Sang trọng', 'Giòn tan'],
      structure: [
@@ -202,8 +198,7 @@ export const products: Product[] = [
     },
     price: 680000,
     imageUrl: '/images/product/SecretGarden2.avif',
-    collection: 'heart-shaped',
-    categorySlug: 'banh-le',
+    categorySlug: 'banh-sinh-nhat',
      flavorProfile: ['Ngọt ngào', 'Kinh điển', 'Trái cây tươi'],
      structure: [
         'Trang trí dâu tươi',
@@ -234,7 +229,6 @@ export const products: Product[] = [
     },
     price: 250000,
     imageUrl: '/images/product/baby-mango-bliss.png',
-    collection: 'baby-collection',
     categorySlug: 'banh-le',
      flavorProfile: ['Nhiệt đới', 'Ngọt dịu', 'Dễ thương'],
      structure: [
@@ -266,7 +260,6 @@ export const products: Product[] = [
     },
     price: 420000,
     imageUrl: '/images/product/raspberry-pistachio-half.png',
-    collection: 'half-entremet',
     categorySlug: 'banh-le',
     flavorProfile: ['Bùi', 'Chua thanh', 'Độc đáo'],
     structure: [
@@ -298,7 +291,6 @@ export const products: Product[] = [
     },
     price: 640000,
     imageUrl: '/images/product/summer-berry-cheesecake.png',
-    collection: 'special-occasions',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Béo ngậy', 'Tươi mát', 'Kinh điển'],
     structure: [
@@ -429,7 +421,7 @@ export const articles: Article[] = [
     content: `
       <h2>Sự giao thoa văn hóa ẩm thực</h2>
       <p>Tôn vinh nguồn nguyên liệu địa phương là một phần cốt lõi trong triết lý của Vibary. Chúng tôi tự hào tìm kiếm những loại trái cây tươi ngon nhất từ khắp các vùng miền Việt Nam để đưa vào những chiếc bánh ngọt kiểu Pháp của mình. Từ vị ngọt ngào của vải thiều Lục Ngạn, hương thơm nồng nàn của xoài cát Hòa Lộc, đến vị chua thanh của chanh dây Đà Lạt - mỗi loại quả đều mang một câu chuyện riêng.</p>
-      <img src="https://images.unsplash.com/photo-1550258987-190a2d41a8ba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0cm9waWNhbCUyMGZydWl0c3xlbnwwfHx8fDE3NjY5NTA5OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="Một rổ đầy ắp các loại trái cây nhiệt đới" class="my-8 rounded-lg shadow-lg" data-ai-hint="tropical fruit">
+      <img src="https://images.unsplash.com/photo-1605027990121-cbae9e0642df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx0cm9waWNhbCUyMGZydWl0c3xlbnwwfHx8fDE3NjY5NTA5OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="Một rổ đầy ắp các loại trái cây nhiệt đới" class="my-8 rounded-lg shadow-lg" data-ai-hint="tropical fruits">
       <h2>Thách thức và Sáng tạo</h2>
       <p>Thách thức nằm ở việc cân bằng hương vị. Trái cây nhiệt đới thường có vị ngọt và hương thơm mạnh mẽ. Các đầu bếp của chúng tôi phải khéo léo điều chỉnh công thức, giảm lượng đường và kết hợp các yếu tố khác để làm nổi bật hương vị tự nhiên của trái cây mà không làm lấn át sự tinh tế của các lớp bánh khác. Ví dụ, với bánh chanh dây, chúng tôi kết hợp với vị béo của dừa để làm dịu đi vị chua gắt, tạo ra một sự cân bằng hoàn hảo. Kết quả là những sáng tạo độc đáo, vừa mang đậm dấu ấn Pháp, vừa tôn vinh trọn vẹn hương vị quê nhà.</p>
     `
