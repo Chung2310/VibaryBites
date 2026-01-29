@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -21,7 +20,6 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,8 +30,8 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
-        if (!firestore || !storage || !product || !productDocRef) {
+    const handleFormSubmit = async (values: ProductFormValues) => {
+        if (!firestore || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
@@ -41,19 +39,6 @@ export default function EditProductPage() {
         setIsSubmitting(true);
         
         try {
-            let finalImageUrl = product.imageUrl;
-
-            if (imageFile) {
-                if (product.imageUrl && product.imageUrl.includes('firebasestorage.googleapis.com')) {
-                    try {
-                        await deleteImage(storage, product.imageUrl);
-                    } catch (deleteError: any) {
-                         console.warn(`Could not delete old image: ${deleteError.message}`);
-                    }
-                }
-                finalImageUrl = await uploadImage(storage, 'product_images', imageFile);
-            }
-
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -62,7 +47,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 slug: generateSlug(values.name),
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || product.imageUrl,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -84,7 +69,7 @@ export default function EditProductPage() {
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
                 duration: 9000,
             });
         } finally {

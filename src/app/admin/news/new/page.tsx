@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -12,17 +12,15 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage';
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
+    const handleFormSubmit = async (values: NewsFormValues) => {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ." });
             return;
         }
@@ -30,11 +28,6 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
         
         try {
-            let finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
-            if (imageFile) {
-                finalImageUrl = await uploadImage(storage, 'news_images', imageFile);
-            }
-            
             const articleId = `news-${Date.now()}`;
             const docRef = doc(firestore, 'news_articles', articleId);
         
@@ -46,7 +39,7 @@ export default function NewNewsArticlePage() {
                 category: values.category,
                 excerpt: values.excerpt,
                 content: values.content,
-                imageUrl: finalImageUrl,
+                imageUrl: values.imageUrl || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image',
                 publicationDate: new Date().toISOString(),
             };
 
@@ -60,7 +53,7 @@ export default function NewNewsArticlePage() {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi tạo bài viết!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
                 duration: 9000,
             });
 

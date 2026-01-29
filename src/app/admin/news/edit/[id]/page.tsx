@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -21,7 +20,6 @@ export default function EditNewsArticlePage() {
     const articleId = (params.id || '') as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,8 +30,8 @@ export default function EditNewsArticlePage() {
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage || !article || !articleDocRef) {
+    const handleFormSubmit = async (values: NewsFormValues) => {
+        if (!firestore || !article || !articleDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy bài viết.' });
             return;
         }
@@ -41,21 +39,6 @@ export default function EditNewsArticlePage() {
         setIsSubmitting(true);
         
         try {
-            let finalImageUrl = article.imageUrl; // Start with existing image
-
-            if (imageFile) {
-                // If there's an old image from Firebase Storage, delete it
-                if (article.imageUrl && article.imageUrl.includes('firebasestorage.googleapis.com')) {
-                    try {
-                        await deleteImage(storage, article.imageUrl);
-                    } catch (deleteError: any) {
-                        console.warn(`Could not delete old image: ${deleteError.message}`);
-                    }
-                }
-                // Upload the new image
-                finalImageUrl = await uploadImage(storage, 'news_images', imageFile);
-            }
-            
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
@@ -63,7 +46,7 @@ export default function EditNewsArticlePage() {
                 excerpt: values.excerpt,
                 content: values.content,
                 slug: generateSlug(values.title),
-                imageUrl: finalImageUrl, // Use the new or existing URL
+                imageUrl: values.imageUrl || article.imageUrl,
             };
 
             await setDoc(articleDocRef, updatedArticleData, { merge: true });
@@ -76,7 +59,7 @@ export default function EditNewsArticlePage() {
             toast({
                 variant: 'destructive',
                 title: 'Cập nhật thất bại',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
                 duration: 9000,
             });
         } finally {
