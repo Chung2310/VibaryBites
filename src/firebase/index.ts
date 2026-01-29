@@ -10,12 +10,8 @@ import { getStorage, type FirebaseStorage } from 'firebase/storage';
 export function initializeFirebaseClient() {
     let firebaseApp: FirebaseApp;
 
-    if (!getApps().length) {
-        try {
-            firebaseApp = initializeApp();
-        } catch (e) {
-            firebaseApp = initializeApp(firebaseConfig);
-        }
+    if (getApps().length === 0) {
+        firebaseApp = initializeApp(firebaseConfig);
     } else {
         firebaseApp = getApp();
     }
