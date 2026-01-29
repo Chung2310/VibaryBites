@@ -5,11 +5,20 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
+  getStorage,
   type FirebaseStorage,
 } from 'firebase/storage';
+import { getApp } from 'firebase/app';
 import { v4 as uuidv4 } from 'uuid';
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
+
+const getStorageInstance = (): FirebaseStorage => {
+    // This function ensures we get the storage instance only when needed,
+    // after the Firebase app has been initialized.
+    return getStorage(getApp());
+};
+
 
 const resizeImage = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -61,14 +70,10 @@ const resizeImage = (file: File): Promise<Blob> => {
 };
 
 export const uploadImage = (
-  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    if (!storage) {
-        return reject(new Error('Firebase Storage is not initialized.'));
-    }
     if (!file) {
       return reject(new Error('No file provided.'));
     }
@@ -77,6 +82,7 @@ export const uploadImage = (
     }
 
     try {
+      const storage = getStorageInstance();
       const imageBlob = await resizeImage(file);
       const fileName = `images/${uuidv4()}.webp`;
       const storageRef = ref(storage, fileName);
@@ -103,16 +109,14 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
-   if (!storage) {
-        throw new Error('Firebase Storage is not initialized.');
-   }
+export const deleteImage = async (imageUrl: string): Promise<void> => {
   if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
     // Not a Firebase Storage URL, likely a placeholder or data URI, so do nothing.
     return;
   }
 
   try {
+    const storage = getStorageInstance();
     const imageRef = ref(storage, imageUrl);
     await deleteObject(imageRef);
   } catch (error: any) {
