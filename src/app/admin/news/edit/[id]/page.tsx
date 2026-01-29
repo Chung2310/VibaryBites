@@ -17,7 +17,8 @@ import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
-    const articleId = (useParams().id || '') as string;
+    const params = useParams();
+    const articleId = (params.id || '') as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -30,8 +31,8 @@ export default function EditNewsArticlePage() {
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
-    const handleFormSubmit = (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article) {
+    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
+        if (!firestore || !article || !articleDocRef) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -43,8 +44,7 @@ export default function EditNewsArticlePage() {
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
         
-        const processSubmission = async () => {
-            const docRef = doc(firestore, 'news_articles', article.id);
+        try {
             let finalImageUrl = article.imageUrl;
 
             if (imageFile) {
@@ -72,42 +72,38 @@ export default function EditNewsArticlePage() {
                 slug: generateSlug(values.title),
             };
 
-            await setDoc(docRef, updatedArticleData, { merge: true });
-        };
+            await setDoc(articleDocRef, updatedArticleData, { merge: true });
 
-        processSubmission()
-            .then(() => {
-                toast({
-                    id: toastId,
-                    title: 'Cập nhật thành công!',
-                    description: `Bài viết "${values.title}" đã được cập nhật.`,
-                });
-                router.push('/admin/news');
-            })
-            .catch((error: any) => {
-                console.error("Lỗi khi cập nhật bài viết:", error);
-                const isStorageError = error.message.includes("Failed to upload image");
-
-                if (!isStorageError && articleDocRef) {
-                    const permissionError = new FirestorePermissionError({
-                        path: articleDocRef.path,
-                        operation: 'update',
-                        requestResourceData: values
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
-
-                toast({
-                    id: toastId,
-                    variant: 'destructive',
-                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật bài viết',
-                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                    duration: 9000,
-                });
-            })
-            .finally(() => {
-                setIsSubmitting(false);
+            toast({
+                id: toastId,
+                title: 'Cập nhật thành công!',
+                description: `Bài viết "${values.title}" đã được cập nhật.`,
             });
+            router.push('/admin/news');
+
+        } catch (error: any) {
+            console.error("Lỗi khi cập nhật bài viết:", error);
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+
+            if (!isStorageError) {
+                const permissionError = new FirestorePermissionError({
+                    path: articleDocRef.path,
+                    operation: 'update',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+
+            toast({
+                id: toastId,
+                variant: 'destructive',
+                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật bài viết',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                duration: 9000,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     if (isLoading) {

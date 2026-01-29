@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
   title: z.string().min(3, { message: "Tiêu đề phải có ít nhất 3 ký tự." }),
   author: z.string().min(2, { message: "Tên tác giả phải có ít nhất 2 ký tự." }),
-  category: z.string({ required_error: "Vui lòng chọn danh mục." }),
+  category: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn một danh mục."),
   excerpt: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
   content: z.string().min(20, "Nội dung phải có ít nhất 20 ký tự."),
 });

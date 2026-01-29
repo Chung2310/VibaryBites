@@ -20,7 +20,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
         if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
@@ -29,7 +29,7 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
         
-        const processSubmission = async () => {
+        try {
             const productId = `prod-${Date.now()}`;
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
 
@@ -65,43 +65,37 @@ export default function NewProductPage() {
 
             const docRef = doc(firestore, 'cakes', productId);
             await setDoc(docRef, newProductData);
-        };
-
-        processSubmission()
-            .then(() => {
-                toast({
-                    id: toastId,
-                    title: 'Thêm thành công!',
-                    description: `Sản phẩm "${values.name}" đã được tạo.`,
-                });
-                router.push('/admin/products');
-            })
-            .catch((error: any) => {
-                console.error("Lỗi khi tạo sản phẩm:", error);
-                
-                // Determine if it's a storage or firestore error to show a better message
-                const isStorageError = error.message.includes("Failed to upload image");
-
-                if (!isStorageError && firestore) {
-                     const permissionError = new FirestorePermissionError({
-                        path: `cakes/prod-${Date.now()}`,
-                        operation: 'create',
-                        requestResourceData: values
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
-                
-                toast({
-                    id: toastId,
-                    variant: 'destructive',
-                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi tạo sản phẩm!',
-                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                    duration: 9000,
-                });
-            })
-            .finally(() => {
-                setIsSubmitting(false);
+            
+            toast({
+                id: toastId,
+                title: 'Thêm thành công!',
+                description: `Sản phẩm "${values.name}" đã được tạo.`,
             });
+            router.push('/admin/products');
+
+        } catch (error: any) {
+            console.error("Lỗi khi tạo sản phẩm:", error);
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+
+            if (!isStorageError) {
+                 const permissionError = new FirestorePermissionError({
+                    path: `cakes/prod-${Date.now()}`,
+                    operation: 'create',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+            
+            toast({
+                id: toastId,
+                variant: 'destructive',
+                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi tạo sản phẩm!',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                duration: 9000,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     return (

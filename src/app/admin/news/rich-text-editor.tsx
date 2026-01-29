@@ -70,25 +70,22 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
     setImageFile(null);
   }
 
-  const handleImageUpload = () => {
+  const handleImageUpload = async () => {
       if (!imageFile) {
           toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
           return;
       }
 
       setIsUploading(true);
-      
-      uploadImage(imageFile, 'content_images')
-        .then(downloadURL => {
-            editor.chain().focus().setImage({ src: downloadURL }).run();
-            handleCloseModal();
-        })
-        .catch((error: any) => {
-            toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
-        })
-        .finally(() => {
-            setIsUploading(false);
-        });
+      try {
+        const downloadURL = await uploadImage(imageFile, 'content_images');
+        editor.chain().focus().setImage({ src: downloadURL }).run();
+        handleCloseModal();
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
+      } finally {
+        setIsUploading(false);
+      }
   }
 
   return (

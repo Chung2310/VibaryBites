@@ -17,7 +17,8 @@ import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
-    const productId = (useParams().id || '') as string;
+    const params = useParams();
+    const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -30,8 +31,8 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
-        if (!firestore || !product) {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
+        if (!firestore || !product || !productDocRef) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -43,12 +44,10 @@ export default function EditProductPage() {
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
         
-        const processSubmission = async () => {
-            const docRef = doc(firestore, 'cakes', product.id);
+        try {
             let finalImageUrl = product.imageUrl;
 
             if (imageFile) {
-                // Delete old image if it exists, but don't block if deletion fails
                 if (product.imageUrl) {
                     deleteImage(product.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
                 }
@@ -85,42 +84,37 @@ export default function EditProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            await setDoc(docRef, updatedProductData, { merge: true });
-        };
+            await setDoc(productDocRef, updatedProductData, { merge: true });
 
-        processSubmission()
-            .then(() => {
-                 toast({
-                    id: toastId,
-                    title: 'Cập nhật thành công!',
-                    description: `Sản phẩm "${values.name}" đã được cập nhật.`,
-                });
-                router.push(`/admin/products`);
-            })
-            .catch((error: any) => {
-                console.error("Lỗi khi cập nhật sản phẩm:", error);
-                const isStorageError = error.message.includes("Failed to upload image");
-                
-                if (!isStorageError && productDocRef) {
-                     const permissionError = new FirestorePermissionError({
-                        path: productDocRef.path,
-                        operation: 'update',
-                        requestResourceData: values
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
-                
-                toast({
-                    id: toastId,
-                    variant: 'destructive',
-                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật sản phẩm',
-                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                    duration: 9000,
-                });
-            })
-            .finally(() => {
-                setIsSubmitting(false);
+            toast({
+                id: toastId,
+                title: 'Cập nhật thành công!',
+                description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
+            router.push(`/admin/products`);
+        } catch (error: any) {
+            console.error("Lỗi khi cập nhật sản phẩm:", error);
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+            
+            if (!isStorageError) {
+                 const permissionError = new FirestorePermissionError({
+                    path: productDocRef.path,
+                    operation: 'update',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+            
+            toast({
+                id: toastId,
+                variant: 'destructive',
+                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật sản phẩm',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                duration: 9000,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     if (isLoading) {

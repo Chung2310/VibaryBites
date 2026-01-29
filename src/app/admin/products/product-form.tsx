@@ -38,7 +38,7 @@ const productSchema = z.object({
     subtitle: z.string().optional(),
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Số lượng tồn kho phải là số nguyên không âm." }),
-    categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }),
+    categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn danh mục."),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
 
     // Detailed Description
@@ -101,7 +101,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         subtitle: "",
         price: 0,
         stock: 10,
-        categorySlug: "banh-le",
+        categorySlug: "",
         description: "",
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
