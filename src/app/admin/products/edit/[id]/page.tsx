@@ -13,7 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -38,25 +37,9 @@ export default function EditProductPage() {
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = product.imageUrl;
+        const finalImageUrl = values.imageUrl || product.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
         
         try {
-            // Step 1: Handle image upload/delete if changed
-            if (values.imageFile) {
-                // Delete old image if it exists and is not a placeholder
-                if (product.imageUrl) {
-                   await deleteImage(product.imageUrl);
-                }
-                // Upload the new image
-                finalImageUrl = await uploadImage(values.imageFile);
-            } else if (!values.imageUrl && product.imageUrl) {
-                // Image was removed without a new one being added
-                await deleteImage(product.imageUrl);
-                finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
-            }
-
-
-            // Step 2: Prepare data for Firestore
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -77,7 +60,6 @@ export default function EditProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            // Step 3: Save to Firestore
             await setDoc(productDocRef, updatedProductData, { merge: true });
 
             toast({ title: 'Cập nhật thành công!', description: `Sản phẩm "${values.name}" đã được cập nhật.` });
@@ -85,20 +67,17 @@ export default function EditProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
-
-            if (isPermissionError) {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: productDocRef.path,
-                    operation: 'update',
-                    requestResourceData: values
-                }));
-            }
+            const permissionError = new FirestorePermissionError({
+                path: productDocRef.path,
+                operation: 'update',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

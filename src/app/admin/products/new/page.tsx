@@ -12,7 +12,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage';
 
 export default function NewProductPage() {
     const router = useRouter();
@@ -27,15 +26,9 @@ export default function NewProductPage() {
         }
 
         setIsSubmitting(true);
-        let finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
+        const finalImageUrl = values.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
         
         try {
-            // Step 1: Handle image upload if a new file is present
-            if (values.imageFile) {
-                finalImageUrl = await uploadImage(values.imageFile);
-            }
-
-            // Step 2: Prepare data and save to Firestore
             const productId = `prod-${Date.now()}`;
             const docRef = doc(firestore, 'cakes', productId);
 
@@ -67,20 +60,17 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
-            
-            if (isPermissionError) {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: 'cakes', // Simplified path for creation
-                    operation: 'create',
-                    requestResourceData: values
-                }));
-            }
+            const permissionError = new FirestorePermissionError({
+                path: 'cakes',
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',
                 title: 'Lỗi tạo sản phẩm!',
-                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

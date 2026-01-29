@@ -24,11 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useCallback, useState, useEffect } from "react";
-import { Loader2, Trash2, UploadCloud } from "lucide-react";
+import React from "react";
+import { Loader2 } from "lucide-react";
 import { RichTextEditor } from './rich-text-editor';
-import { useDropzone } from 'react-dropzone';
-import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Tiêu đề phải có ít nhất 3 ký tự." }),
@@ -36,8 +34,7 @@ const formSchema = z.object({
   category: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn một danh mục."),
   excerpt: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
   content: z.string().min(20, "Nội dung phải có ít nhất 20 ký tự."),
-  imageUrl: z.string().optional(),
-  imageFile: z.instanceof(File).optional(),
+  imageUrl: z.string().url({ message: "Vui lòng nhập một URL hình ảnh hợp lệ." }).optional().or(z.literal('')),
 });
 
 export type NewsFormValues = z.infer<typeof formSchema>;
@@ -64,7 +61,6 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
         excerpt: article.excerpt,
         content: article.content,
         imageUrl: article.imageUrl || "",
-        imageFile: undefined,
     } : {
         title: "",
         author: "Vibary Team",
@@ -72,48 +68,10 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
         excerpt: "",
         content: "",
         imageUrl: "",
-        imageFile: undefined,
     },
   });
 
-  const imageFile = form.watch('imageFile');
-  const existingImageUrl = form.watch('imageUrl');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(existingImageUrl || null);
-
-  useEffect(() => {
-    let objectUrl: string | null = null;
-    if (imageFile) {
-        objectUrl = URL.createObjectURL(imageFile);
-        setPreviewUrl(objectUrl);
-    } else {
-        setPreviewUrl(existingImageUrl || null);
-    }
-
-    return () => {
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-        }
-    };
-  }, [imageFile, existingImageUrl]);
-  
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      form.setValue('imageFile', file, { shouldValidate: true });
-      form.setValue('imageUrl', '', { shouldValidate: false });
-    }
-  }, [form]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
-    multiple: false,
-  });
-
-  const removeImage = () => {
-    form.setValue('imageFile', undefined, { shouldValidate: true });
-    form.setValue('imageUrl', '', { shouldValidate: true });
-  };
+  const imageUrl = form.watch('imageUrl');
   
   return (
     <Form {...form}>
@@ -164,30 +122,25 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
 
           {/* Right Column */}
           <div className="md:col-span-1 space-y-6">
-            <FormItem>
-              <FormLabel>Ảnh bìa</FormLabel>
-              {previewUrl ? (
-                <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden">
-                  <Image src={previewUrl} alt="Xem trước ảnh" fill className="object-cover" />
-                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Ảnh bìa</FormLabel>
+                        <FormControl>
+                            <Input placeholder="https://example.com/image.jpg" {...field} />
+                        </FormControl>
+                        <FormDescription>Ảnh bìa cho bài viết, nên có tỉ lệ 4:3</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {imageUrl && (
+                <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden border">
+                    <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
                 </div>
-              ) : (
-                <div
-                  {...getRootProps()}
-                  className={cn(
-                    'w-full aspect-[4/3] border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
-                    isDragActive && 'border-primary bg-primary/10'
-                  )}
-                >
-                  <input {...getInputProps()} />
-                  <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
-                </div>
-              )}
-               <FormDescription>Ảnh bìa cho bài viết, nên có tỉ lệ 4:3</FormDescription>
-            </FormItem>
+            )}
             <FormField
               control={form.control}
               name="author"

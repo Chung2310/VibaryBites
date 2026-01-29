@@ -24,10 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useCallback, useState, useEffect } from "react";
-import { Loader2, Trash2, UploadCloud } from "lucide-react";
-import { useDropzone } from 'react-dropzone';
-import { cn } from "@/lib/utils";
+import React from "react";
+import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
@@ -42,8 +40,7 @@ const productSchema = z.object({
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
     
     // Image Handling
-    imageUrl: z.string().optional(),
-    imageFile: z.instanceof(File).optional(),
+    imageUrl: z.string().url({ message: "Vui lòng nhập một URL hình ảnh hợp lệ." }).optional().or(z.literal('')),
 
     // Detailed Description
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
@@ -87,7 +84,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         categorySlug: product.categorySlug,
         description: product.description,
         imageUrl: product.imageUrl || "",
-        imageFile: undefined,
         detailedDescription_flavor: product.detailedDescription?.flavor || "",
         detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
         detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
@@ -103,7 +99,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         categorySlug: "",
         description: "",
         imageUrl: "",
-        imageFile: undefined,
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
         detailedDescription_storage: defaultStorageInstructions,
@@ -114,44 +109,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
-  const imageFile = form.watch('imageFile');
-  const existingImageUrl = form.watch('imageUrl');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(existingImageUrl || null);
-
-  useEffect(() => {
-    let objectUrl: string | null = null;
-    if (imageFile) {
-        objectUrl = URL.createObjectURL(imageFile);
-        setPreviewUrl(objectUrl);
-    } else {
-        setPreviewUrl(existingImageUrl || null);
-    }
-
-    return () => {
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-        }
-    };
-  }, [imageFile, existingImageUrl]);
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      form.setValue('imageFile', file, { shouldValidate: true });
-      form.setValue('imageUrl', '', { shouldValidate: false }); // Clear old URL so we know to upload
-    }
-  }, [form]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpeg', '.png', '.jpg', '.webp'] },
-    multiple: false,
-  });
-
-  const removeImage = () => {
-    form.setValue('imageFile', undefined, { shouldValidate: true });
-    form.setValue('imageUrl', '', { shouldValidate: true });
-  };
+  const imageUrl = form.watch('imageUrl');
   
   return (
     <Form {...form}>
@@ -192,30 +150,29 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         
         <Separator />
 
-        {/* --- Image Uploader --- */}
+        {/* --- Image URL Input --- */}
         <div className="space-y-2">
-            <FormLabel>Ảnh sản phẩm</FormLabel>
-             {previewUrl ? (
-                <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden">
-                  <Image src={previewUrl} alt="Xem trước ảnh" fill className="object-cover" />
-                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>URL Ảnh sản phẩm</FormLabel>
+                        <FormControl>
+                            <Input placeholder="https://example.com/path/to/your/image.png" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                            Dán đường dẫn URL của ảnh. Ảnh nên có tỉ lệ 1:1 và nền trong suốt để hiển thị tốt nhất.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {imageUrl && (
+                <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden border mt-4">
+                    <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
                 </div>
-              ) : (
-                <div
-                    {...getRootProps()}
-                    className={cn(
-                        'w-full max-w-sm aspect-square border-2 border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary transition-colors',
-                        isDragActive && 'border-primary bg-primary/10'
-                    )}
-                    >
-                    <input {...getInputProps()} />
-                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">Kéo thả hoặc nhấn để chọn ảnh</p>
-                </div>
-              )}
-            <FormDescription>Ảnh có nền trong suốt (tách nền) sẽ hiển thị tốt nhất với tỉ lệ 1:1.</FormDescription>
+            )}
         </div>
 
         <Separator />

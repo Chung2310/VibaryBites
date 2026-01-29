@@ -12,7 +12,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage';
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
@@ -27,13 +26,9 @@ export default function NewNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
+        const finalImageUrl = values.imageUrl || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
 
         try {
-            if (values.imageFile) {
-                finalImageUrl = await uploadImage(values.imageFile);
-            }
-
             const articleId = `news-${Date.now()}`;
             const docRef = doc(firestore, 'news_articles', articleId);
         
@@ -56,20 +51,17 @@ export default function NewNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
-
-            if (isPermissionError) {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: 'news_articles',
-                    operation: 'create',
-                    requestResourceData: values,
-                }));
-            }
+            const permissionError = new FirestorePermissionError({
+                path: 'news_articles',
+                operation: 'create',
+                requestResourceData: values,
+            });
+            errorEmitter.emit('permission-error', permissionError);
 
             toast({
                 variant: 'destructive',
                 title: 'Lỗi tạo bài viết!',
-                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

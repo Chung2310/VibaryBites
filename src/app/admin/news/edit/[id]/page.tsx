@@ -13,8 +13,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage';
-
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -39,19 +37,9 @@ export default function EditNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        let finalImageUrl = article.imageUrl;
+        const finalImageUrl = values.imageUrl || article.imageUrl || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
         
         try {
-            if (values.imageFile) {
-                if (article.imageUrl) {
-                   await deleteImage(article.imageUrl);
-                }
-                finalImageUrl = await uploadImage(values.imageFile);
-            } else if (!values.imageUrl && article.imageUrl) {
-                await deleteImage(article.imageUrl);
-                finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
-            }
-
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
@@ -69,20 +57,17 @@ export default function EditNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật bài viết:", error);
-            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
-
-            if (isPermissionError) {
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: articleDocRef.path,
-                    operation: 'update',
-                    requestResourceData: values,
-                }));
-            }
+            const permissionError = new FirestorePermissionError({
+                path: articleDocRef.path,
+                operation: 'update',
+                requestResourceData: values,
+            });
+            errorEmitter.emit('permission-error', permissionError);
 
             toast({
                 variant: 'destructive',
                 title: 'Cập nhật thất bại',
-                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

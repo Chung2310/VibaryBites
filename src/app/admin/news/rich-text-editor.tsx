@@ -25,10 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { uploadImage } from '@/firebase/storage';
 
 interface EditorToolbarProps {
   editor: any;
@@ -37,8 +35,6 @@ interface EditorToolbarProps {
 const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const setLink = useCallback(() => {
@@ -61,33 +57,17 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
     if (imageUrl) {
       editor.chain().focus().setImage({ src: imageUrl }).run();
       handleCloseModal();
+      toast({ title: 'Thành công', description: 'Ảnh đã được chèn vào bài viết.' });
+    } else {
+        toast({ variant: 'destructive', title: "URL không hợp lệ", description: "Vui lòng nhập một URL hình ảnh."});
     }
   };
 
   const handleCloseModal = () => {
     setIsImageModalOpen(false);
     setImageUrl("");
-    setImageFile(null);
   }
 
-  const handleImageUpload = async () => {
-      if (!imageFile) {
-          toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
-          return;
-      }
-      
-      setIsUploading(true);
-      try {
-        const downloadURL = await uploadImage(imageFile);
-        editor.chain().focus().setImage({ src: downloadURL }).run();
-        handleCloseModal();
-        toast({ title: 'Thành công', description: 'Ảnh đã được tải lên và chèn vào bài viết.' });
-      } catch (error: any) {
-        toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
-      } finally {
-        setIsUploading(false);
-      }
-  }
 
   return (
     <>
@@ -132,30 +112,16 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
        <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Chèn Ảnh</DialogTitle>
+            <DialogTitle>Chèn Ảnh từ URL</DialogTitle>
+             <DialogDescription>Dán đường dẫn URL của ảnh bạn muốn chèn vào.</DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue="upload">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="upload">Tải lên</TabsTrigger>
-              <TabsTrigger value="url">Từ URL</TabsTrigger>
-            </TabsList>
-            <TabsContent value="upload" className="py-4">
-                <DialogDescription>Chọn một ảnh từ máy tính của bạn để tải lên và chèn vào bài viết.</DialogDescription>
-                <div className="mt-4">
-                    <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-                </div>
-            </TabsContent>
-            <TabsContent value="url" className="py-4">
-                 <DialogDescription>Dán đường dẫn URL của ảnh bạn muốn chèn vào.</DialogDescription>
-                 <div className="mt-4">
-                    <Input placeholder="https://example.com/image.jpg" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-                 </div>
-            </TabsContent>
-          </Tabs>
+           <div className="mt-4">
+              <Input placeholder="https://example.com/image.jpg" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={handleCloseModal}>Hủy</Button>
-            <Button type="button" onClick={imageFile ? handleImageUpload : handleImageInsert} disabled={isUploading}>
-              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
+            <Button type="button" onClick={handleImageInsert}>
+                Chèn ảnh
             </Button>
           </DialogFooter>
         </DialogContent>
