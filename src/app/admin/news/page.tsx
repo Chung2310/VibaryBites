@@ -34,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
@@ -46,6 +46,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function NewsPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const storage = useStorage();
     const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
@@ -61,21 +62,29 @@ export default function NewsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedArticle || !firestore) return;
+        if (!selectedArticle || !firestore || !storage) return;
 
         setIsDeleting(true);
         const docRef = doc(firestore, 'news_articles', selectedArticle.id);
         
         try {
-            if (selectedArticle.imageUrl) {
-                await deleteImage(selectedArticle.imageUrl);
+            // Check if there is an image URL and if it is a Firebase Storage URL before attempting deletion
+            if (selectedArticle.imageUrl && (selectedArticle.imageUrl.includes('firebasestorage') || selectedArticle.imageUrl.includes('storage.googleapis'))) {
+                await deleteImage(storage, selectedArticle.imageUrl).catch(storageError => {
+                     toast({
+                        variant: "destructive",
+                        title: "Lỗi xóa ảnh",
+                        description: "Không thể xóa ảnh của bài viết, nhưng bài viết sẽ vẫn được xóa.",
+                    });
+                     console.warn("Could not delete image, but proceeding with document deletion:", storageError);
+                });
             }
+            
             await deleteDoc(docRef);
 
             toast({
                 title: "Đã xóa",
                 description: `Bài viết "${selectedArticle.title}" đã được xóa.`,
-                variant: 'destructive',
             });
         } catch (error) {
              const permissionError = new FirestorePermissionError({
@@ -83,6 +92,11 @@ export default function NewsPage() {
                 operation: 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
+             toast({
+                title: "Lỗi",
+                description: `Không thể xóa bài viết. Vui lòng thử lại.`,
+                variant: 'destructive',
+            });
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);

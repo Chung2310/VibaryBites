@@ -5,9 +5,8 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
-  getStorage,
+  FirebaseStorage,
 } from 'firebase/storage';
-import { getApp } from 'firebase/app';
 import { v4 as uuidv4 } from 'uuid';
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
@@ -61,24 +60,14 @@ const resizeImage = (file: File): Promise<Blob> => {
   });
 };
 
-const getStorageInstance = () => {
-    try {
-        // This function ensures we get the app instance only after it's been initialized.
-        return getStorage(getApp());
-    } catch (error) {
-        console.error("Firebase app not initialized, cannot get Storage instance.", error);
-        return null;
-    }
-}
-
 export const uploadImage = (
+  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    const storage = getStorageInstance();
     if (!storage) {
-        return reject(new Error('Firebase Storage is not initialized.'));
+        return reject(new Error('Firebase Storage instance was not provided.'));
     }
     if (!file) {
         return reject(new Error('No file provided.'));
@@ -114,10 +103,9 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (imageUrl: string): Promise<void> => {
-  const storage = getStorageInstance();
+export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
   if (!storage) {
-    console.warn('Firebase Storage is not initialized, skipping deletion.');
+    console.warn('Firebase Storage instance not provided, skipping deletion.');
     return;
   }
   if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
@@ -133,6 +121,7 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
       console.warn(`Image not found for deletion, but proceeding: ${imageUrl}`);
     } else {
       console.error(`Error deleting image ${imageUrl}:`, error);
+      throw error;
     }
   }
 };
