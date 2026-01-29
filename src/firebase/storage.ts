@@ -6,13 +6,24 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
+  FirebaseStorage,
 } from 'firebase/storage';
 import { getApp, getApps } from 'firebase/app';
 import { v4 as uuidv4 } from 'uuid';
 
-// Firebase is initialized in the provider, we can just get the instance.
-const app = getApps().length ? getApp() : undefined;
-const storage = app ? getStorage(app) : undefined;
+/**
+ * Lazily gets the Firebase Storage instance.
+ * This ensures that `getApps()` is not called at the module level,
+ * which can cause issues in Next.js where the app might not be initialized yet.
+ * @returns The FirebaseStorage instance or null if not initialized.
+ */
+const getLazyStorage = (): FirebaseStorage | null => {
+  if (getApps().length > 0) {
+    return getStorage(getApp());
+  }
+  return null;
+};
+
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -69,6 +80,7 @@ export const uploadImage = (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
+  const storage = getLazyStorage();
   if (!storage) {
     return Promise.reject(new Error('Firebase Storage is not initialized.'));
   }
@@ -108,6 +120,7 @@ export const uploadImage = (
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
+  const storage = getLazyStorage();
   if (!storage) {
     console.warn('Firebase Storage is not initialized, skipping deletion.');
     return;
