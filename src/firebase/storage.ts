@@ -47,8 +47,8 @@ export function uploadImage(
 
     const timeoutId = setTimeout(() => {
         uploadTask.cancel();
-        reject(new Error('Upload timed out after 30 seconds. Please check your network connection and try again.'));
-    }, 30000); // 30-second timeout
+        reject(new Error('Upload timed out after 60 seconds. Please check your network connection and try again.'));
+    }, 60000); // 60-second timeout
 
     uploadTask.on('state_changed',
       (snapshot) => {
@@ -63,7 +63,8 @@ export function uploadImage(
             reject(new Error("Permission denied. Check storage security rules and user authentication."));
             break;
           case 'storage/canceled':
-            reject(new Error("Upload was canceled."));
+            // The timeout rejection is already handled.
+            // We don't want to show a generic "canceled" message if it was our timeout that caused it.
             break;
           case 'storage/unknown':
              reject(new Error("An unknown error occurred on the Firebase Storage server."));
