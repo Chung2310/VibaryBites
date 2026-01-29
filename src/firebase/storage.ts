@@ -3,13 +3,15 @@
 import { 
     getDownloadURL, 
     ref, 
-    uploadBytesResumable, 
+    uploadBytes,
     deleteObject,
     type FirebaseStorage
 } from "firebase/storage";
 
 /**
- * Uploads an image to Firebase Storage using the client-side SDK.
+ * Uploads an image to Firebase Storage using a simplified and more robust method.
+ * This version uses `uploadBytes` which is more direct than `uploadBytesResumable`
+ * for handling uploads as a single operation, resolving the hanging issue.
  * @param storage The FirebaseStorage instance.
  * @param file The file to upload.
  * @param path The destination path in the storage bucket (e.g., 'products').
@@ -18,46 +20,19 @@ import {
 export async function uploadImage(storage: FirebaseStorage, file: File, path: string): Promise<string> {
     const storageRef = ref(storage, `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`);
     
-    return new Promise((resolve, reject) => {
-        const uploadTask = uploadBytesResumable(storageRef, file);
-
-        const timeoutId = setTimeout(() => {
-            uploadTask.cancel();
-            reject(new Error('Upload timed out after 120 seconds. Please check your network connection and try again.'));
-        }, 120000);
-
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                // Optional: handle progress updates
-            },
-            (error) => {
-                clearTimeout(timeoutId);
-                console.error("Firebase Storage Upload Error: ", error);
-                switch (error.code) {
-                    case 'storage/unauthorized':
-                        reject(new Error('Permission denied. You might need to sign in or check security rules.'));
-                        break;
-                    case 'storage/canceled':
-                        reject(new Error('Upload was canceled.'));
-                        break;
-                    case 'storage/unknown':
-                    default:
-                        reject(new Error('An unknown error occurred during upload. Please try again.'));
-                        break;
-                }
-            },
-            async () => {
-                clearTimeout(timeoutId);
-                try {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    resolve(downloadURL);
-                } catch (error) {
-                    console.error("Error getting download URL: ", error);
-                    reject(new Error('Upload successful, but failed to get the download URL.'));
-                }
-            }
-        );
-    });
+    try {
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+    } catch (error: any) {
+        console.error("Firebase Storage Upload Error: ", error);
+        let message = 'An unknown error occurred during upload. Please try again.';
+        if (error.code === 'storage/unauthorized') {
+            message = 'Permission denied. You might need to sign in or check security rules.';
+        }
+        // Re-throw a more user-friendly error to be caught by the form handler
+        throw new Error(message);
+    }
 }
 
 /**
@@ -67,7 +42,7 @@ export async function uploadImage(storage: FirebaseStorage, file: File, path: st
  */
 export async function deleteImage(storage: FirebaseStorage, imageUrl: string): Promise<void> {
     if (!imageUrl || !imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-        console.warn(`Skipping delete for non-Firebase URL: ${imageUrl}`);
+        // Silently ignore non-firebase URLs (like placeholders)
         return;
     }
 
