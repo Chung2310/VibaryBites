@@ -1,9 +1,22 @@
-
 'use client';
 
+import { 
+    getStorage, 
+    ref, 
+    uploadBytes, 
+    getDownloadURL, 
+    deleteObject,
+    FirebaseStorage
+} from "firebase/storage";
+import { initializeFirebaseClient } from "@/firebase";
+
+// This is a helper function to ensure we have a storage instance.
+function getStorageInstance(): FirebaseStorage {
+    return initializeFirebaseClient().storage;
+}
+
 /**
- * Uploads a file by proxying the request through a server-side API route.
- * This avoids client-side CORS issues with Firebase Storage.
+ * Uploads a file to Firebase Storage using the client-side SDK.
  * @param file The file to upload.
  * @param path The destination path/folder in the storage bucket (e.g., 'products').
  * @returns A promise that resolves with the public download URL.
@@ -12,62 +25,48 @@ export async function uploadImage(
   file: File,
   path: string
 ): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('path', path);
-
     try {
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        });
+        const storage = getStorageInstance();
+        const uniqueFilename = `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+        const storageRef = ref(storage, uniqueFilename);
 
-        const responseData = await response.json();
+        // Upload the file
+        const snapshot = await uploadBytes(storageRef, file);
 
-        if (!response.ok) {
-            // Use the detailed error message from the server if available
-            throw new Error(responseData.details || responseData.error || `Upload failed with status: ${response.status}`);
-        }
-
-        if (!responseData.imageUrl) {
-            throw new Error('Server response did not include an image URL.');
-        }
+        // Get the download URL
+        const downloadURL = await getDownloadURL(snapshot.ref);
         
-        return responseData.imageUrl;
+        return downloadURL;
 
     } catch (error) {
         console.error("Client-side uploadImage error:", error);
-        // Re-throw the error so the calling component can catch it and show a toast
-        throw error;
+        // Re-throw a more user-friendly error to be caught by the calling component
+        throw new Error(`Failed to upload image. Please check permissions and network. Original error: ${(error as Error).message}`);
     }
 }
 
 /**
- * Deletes an image by proxying the request through a server-side API route.
+ * Deletes an image from Firebase Storage using the client-side SDK.
  * @param imageUrl The public URL of the image to delete.
  */
 export async function deleteImage(imageUrl: string): Promise<void> {
-  // Don't try to call the API for invalid or placeholder URLs
-  if (!imageUrl || imageUrl.includes('placehold.co')) {
+  // Don't try to delete invalid or placeholder URLs
+  if (!imageUrl || imageUrl.includes('placehold.co') || !imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
     return;
   }
 
   try {
-    const response = await fetch('/api/delete-image', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageUrl }),
-    });
+    const storage = getStorageInstance();
+    const imageRef = ref(storage, imageUrl);
+    
+    await deleteObject(imageRef);
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-        // Log the error but don't throw, as failing to delete an old image
-        // shouldn't block the user's main action (like updating a product).
-        console.error(`Failed to delete image: ${errorData.error || response.statusText}`);
+  } catch (error: any) {
+     // It's okay if the object doesn't exist (e.g., already deleted).
+     // We log other errors but don't throw, as failing to delete an old image
+     // shouldn't block the user's main action (like updating a product).
+    if (error.code !== 'storage/object-not-found') {
+        console.error("Client-side deleteImage error:", error);
     }
-  } catch (error) {
-     console.error("Client-side deleteImage error:", error);
   }
 }
