@@ -5,9 +5,25 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
+  getStorage,
   type FirebaseStorage,
 } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { firebaseConfig } from './config';
+
+// Lazy initialization of Firebase Storage
+let storageInstance: FirebaseStorage | null = null;
+function getLazyStorage(): FirebaseStorage {
+    if (!storageInstance) {
+        if (getApps().length === 0) {
+            initializeApp(firebaseConfig);
+        }
+        storageInstance = getStorage(getApp());
+    }
+    return storageInstance;
+}
+
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -61,14 +77,11 @@ const resizeImage = (file: File): Promise<Blob> => {
 };
 
 export const uploadImage = (
-  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    if (!storage) {
-      return reject(new Error('Firebase Storage is not initialized.'));
-    }
+    const storage = getLazyStorage();
     if (!file) {
       return reject(new Error('No file provided.'));
     }
@@ -103,11 +116,8 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
-   if (!storage) {
-    console.error('Firebase Storage is not initialized. Cannot delete image.');
-    return;
-  }
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  const storage = getLazyStorage();
   if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
     // Not a Firebase Storage URL, likely a placeholder or data URI, so do nothing.
     return;
