@@ -9,21 +9,13 @@ import {
   type FirebaseStorage,
 } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { firebaseConfig } from './config';
 
-// Lazy initialization of Firebase Storage
-let storageInstance: FirebaseStorage | null = null;
-function getLazyStorage(): FirebaseStorage {
-    if (!storageInstance) {
-        if (getApps().length === 0) {
-            initializeApp(firebaseConfig);
-        }
-        storageInstance = getStorage(getApp());
-    }
-    return storageInstance;
+// A function to reliably get the initialized Firebase app.
+function getFirebaseApp(): FirebaseApp {
+    return getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 }
-
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -81,7 +73,7 @@ export const uploadImage = (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    const storage = getLazyStorage();
+    const storage = getStorage(getFirebaseApp()); // Get storage instance reliably.
     if (!file) {
       return reject(new Error('No file provided.'));
     }
@@ -117,7 +109,7 @@ export const uploadImage = (
 };
 
 export const deleteImage = async (imageUrl: string): Promise<void> => {
-  const storage = getLazyStorage();
+  const storage = getStorage(getFirebaseApp()); // Get storage instance reliably.
   if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
     // Not a Firebase Storage URL, likely a placeholder or data URI, so do nothing.
     return;
