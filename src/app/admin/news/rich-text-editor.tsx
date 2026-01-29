@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useStorage } from '@/firebase';
 import { uploadImage } from '@/firebase/storage';
 
 interface RichTextEditorProps {
@@ -41,6 +42,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const storage = useStorage();
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -73,7 +75,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       }
       setIsUploading(true);
       try {
-          const downloadURL = await uploadImage(imageFile);
+          const downloadURL = await uploadImage(storage, imageFile);
           editor.chain().focus().setImage({ src: downloadURL }).run();
           setIsImageModalOpen(false);
           setImageFile(null);
