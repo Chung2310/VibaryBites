@@ -37,7 +37,7 @@ service cloud.firestore {
     // ============================================
     
     match /cakes/{cakeId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isSignedIn();
       
       match /reviews/{reviewId} {
@@ -48,18 +48,18 @@ service cloud.firestore {
       }
     }
     
-    match /product_categories/{categoryId} {
-      allow read: if true;
+    match /categories/{categoryId} {
+      allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
     
     match /news_articles/{newsArticleId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
     
     match /quiz_questions/{quizQuestionId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
     

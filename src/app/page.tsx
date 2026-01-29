@@ -168,7 +168,7 @@ function Hero() {
 
 function CategorySection() {
     const firestore = useFirestore();
-    const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'product_categories'), limit(4)) : null, [firestore]);
+    const categoriesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'categories'), limit(4)) : null, [firestore]);
     const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
     const router = useRouter();
     const pathname = usePathname();
