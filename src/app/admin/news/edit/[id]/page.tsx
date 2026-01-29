@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -13,23 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-
-const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (event.target?.result) {
-                resolve(event.target.result as string);
-            } else {
-                reject(new Error("Failed to read file."));
-            }
-        };
-        reader.onerror = (error) => {
-            reject(error);
-        };
-        reader.readAsDataURL(file);
-    });
-}
+import { uploadImage, deleteImage } from '@/firebase/storage'; // Import storage functions
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -37,6 +21,7 @@ export default function EditNewsArticlePage() {
     const articleId = params.id as string;
     
     const firestore = useFirestore();
+    const storage = useStorage(); // Get storage instance
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article) {
+        if (!firestore || !storage || !article) { // Check storage & article
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -67,22 +52,17 @@ export default function EditNewsArticlePage() {
             let finalImageUrl = article.imageUrl;
 
             if (imageFile) {
-                try {
-                    toastControl.update({ id: toastControl.id, title: "Đang xử lý ảnh mới...", description: "Biến ảnh thành văn bản..." });
-                    finalImageUrl = await fileToDataUri(imageFile);
-                    toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
-                } catch(e) {
-                     console.error("Lỗi khi xử lý ảnh:", e);
-                     toast({
-                        variant: 'destructive',
-                        title: 'Lỗi xử lý ảnh!',
-                        description: `Không thể thay đổi ảnh bìa. Các thông tin khác sẽ được lưu.`,
-                        duration: 9000,
-                    });
-                    finalImageUrl = article.imageUrl;
+                // If there's a new file, delete the old one first
+                if (article.imageUrl) {
+                    await deleteImage(storage, article.imageUrl);
                 }
+                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
+                finalImageUrl = await uploadImage(storage, imageFile, `news/${article.id}`);
+                toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
             } 
-            else if (imageWasRemoved) {
+            else if (imageWasRemoved && article.imageUrl) {
+                // If image was removed by user, delete from storage
+                await deleteImage(storage, article.imageUrl);
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 

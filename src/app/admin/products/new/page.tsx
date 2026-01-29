@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -12,33 +12,18 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-
-const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (event.target?.result) {
-                resolve(event.target.result as string);
-            } else {
-                reject(new Error("Failed to read file."));
-            }
-        };
-        reader.onerror = (error) => {
-            reject(error);
-        };
-        reader.readAsDataURL(file);
-    });
-}
+import { uploadImage } from '@/firebase/storage'; // Import uploadImage
 
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const storage = useStorage(); // Get storage instance
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
-        if (!firestore) {
-            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
+        if (!firestore || !storage) { // Check for storage
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
             return;
         }
 
@@ -53,14 +38,15 @@ export default function NewProductPage() {
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
                 try {
-                    toastControl.update({ id: toastControl.id, title: "Đang xử lý ảnh...", description: `Biến ảnh thành văn bản...` });
-                    imageUrl = await fileToDataUri(imageFile);
-                    toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
+                    toastControl.update({ id: toastControl.id, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
+                    // Use the new uploadImage function
+                    imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
+                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
                 } catch (error) {
-                    console.error("Lỗi khi xử lý ảnh:", error);
+                    console.error("Lỗi khi tải ảnh lên:", error);
                     toast({
                         variant: 'destructive',
-                        title: 'Lỗi xử lý ảnh!',
+                        title: 'Lỗi tải ảnh lên!',
                         description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
                         duration: 9000,
                     });
@@ -83,7 +69,7 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 description: values.description,
-                imageUrl: imageUrl,
+                imageUrl: imageUrl, // Save the URL from storage
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,

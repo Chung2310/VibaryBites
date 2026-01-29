@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import React, { useMemo } from "react";
 import { FirebaseProvider, initializeFirebaseClient } from "@/firebase";
+import { FirebaseStorage } from "firebase/storage";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -29,13 +30,14 @@ const fraunces = Fraunces({
 });
 
 function AppProviders({ children }: { children: React.ReactNode }) {
-  const { firebaseApp, auth, firestore } = useMemo(() => initializeFirebaseClient(), []);
+  const { firebaseApp, auth, firestore, storage } = useMemo(() => initializeFirebaseClient(), []);
 
   return (
     <FirebaseProvider
       firebaseApp={firebaseApp}
       auth={auth}
       firestore={firestore}
+      storage={storage} // Pass storage here
     >
       <AppProvider>
         <LayoutContent>{children}</LayoutContent>

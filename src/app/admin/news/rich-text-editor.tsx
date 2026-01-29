@@ -28,23 +28,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-
-const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (event.target?.result) {
-                resolve(event.target.result as string);
-            } else {
-                reject(new Error("Failed to read file."));
-            }
-        };
-        reader.onerror = (error) => {
-            reject(error);
-        };
-        reader.readAsDataURL(file);
-    });
-}
+import { useStorage } from '@/firebase'; // Import useStorage
+import { uploadImage } from '@/firebase/storage'; // Import uploadImage
 
 interface EditorToolbarProps {
   editor: any;
@@ -56,6 +41,7 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const storage = useStorage(); // Get storage instance
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -87,14 +73,20 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           return;
       }
       
+      if (!storage) {
+          toast({ variant: 'destructive', title: "Lỗi", description: "Dịch vụ lưu trữ chưa sẵn sàng."});
+          return;
+      }
+
       setIsUploading(true);
       try {
-          const dataUri = await fileToDataUri(imageFile);
-          editor.chain().focus().setImage({ src: dataUri }).run();
+          // Use the new uploadImage function
+          const downloadURL = await uploadImage(storage, imageFile, 'content_images');
+          editor.chain().focus().setImage({ src: downloadURL }).run();
           setIsImageModalOpen(false);
           setImageFile(null);
       } catch (error) {
-           toast({ variant: 'destructive', title: "Lỗi xử lý ảnh", description: "Đã có lỗi xảy ra khi đọc file ảnh."});
+           toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: "Đã có lỗi xảy ra khi tải ảnh lên."});
       } finally {
           setIsUploading(false);
       }
@@ -166,7 +158,7 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
             <Button type="button" onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
-              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang xử lý</> : 'Chèn ảnh'}
+              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -200,7 +192,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       }),
       Image.configure({
         inline: true,
-        allowBase64: true,
+        allowBase64: true, // Keep this true for pasting, but uploads will be URLs
       })
     ],
     content: value,
