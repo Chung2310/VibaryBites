@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
+import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -12,17 +12,17 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage'; // Import uploadImage
+import { uploadImage } from '@/firebase/storage';
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage(); // Get storage instance
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) { // Check for storage
+        if (!firestore || !storage) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
             return;
         }
@@ -32,24 +32,14 @@ export default function NewNewsArticlePage() {
         
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
-        let newArticle: NewsArticle | null = null;
+        let newArticleData: NewsArticle | null = null;
 
         try {
             let imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
-                try {
-                    toastControl.update({ id: toastControl.id, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
-                    imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
-                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-                } catch (error: any) {
-                    console.error("Lỗi khi tải ảnh lên:", error);
-                     toast({
-                        variant: 'destructive',
-                        title: 'Lỗi tải ảnh lên!',
-                        description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa bài viết để tải lại ảnh sau.`,
-                        duration: 9000,
-                    });
-                }
+                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
+                imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
+                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
             } else {
                  toast({
                     title: 'Không có ảnh bìa',
@@ -59,7 +49,7 @@ export default function NewNewsArticlePage() {
 
             toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            newArticle = {
+            newArticleData = {
                 id: articleId,
                 slug: generateSlug(values.title),
                 title: values.title,
@@ -67,11 +57,11 @@ export default function NewNewsArticlePage() {
                 category: values.category,
                 excerpt: values.excerpt,
                 content: values.content,
-                imageUrl: imageUrl, // Save the URL from storage
+                imageUrl: imageUrl,
                 publicationDate: new Date().toISOString(),
             };
 
-            await setDoc(docRef, newArticle);
+            await setDoc(docRef, newArticleData);
             
             toastControl.update({
                 id: toastControl.id,
@@ -86,7 +76,7 @@ export default function NewNewsArticlePage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: newArticle // Use the final object for error reporting
+                requestResourceData: newArticleData
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({
@@ -94,6 +84,7 @@ export default function NewNewsArticlePage() {
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
                 description: `Không thể lưu bài viết: ${error.message}`,
+                duration: 9000,
             });
         } finally {
             setIsSubmitting(false);

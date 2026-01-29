@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
+import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -12,17 +12,17 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage } from '@/firebase/storage'; // Import uploadImage
+import { uploadImage } from '@/firebase/storage';
 
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage(); // Get storage instance
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) { // Check for storage
+        if (!firestore || !storage) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
             return;
         }
@@ -32,25 +32,14 @@ export default function NewProductPage() {
         
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
-        let newProduct: Product | null = null;
+        let newProductData: Product | null = null;
 
         try {
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
-                try {
-                    toastControl.update({ id: toastControl.id, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
-                    // Use the new uploadImage function
-                    imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
-                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-                } catch (error) {
-                    console.error("Lỗi khi tải ảnh lên:", error);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Lỗi tải ảnh lên!',
-                        description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
-                        duration: 9000,
-                    });
-                }
+                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
+                imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
+                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
             } else {
                  toast({
                     title: 'Không có ảnh',
@@ -60,7 +49,7 @@ export default function NewProductPage() {
 
             toastControl.update({ id: toastControl.id, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            newProduct = {
+            newProductData = {
                 id: productId,
                 slug: generateSlug(values.name),
                 name: values.name,
@@ -69,7 +58,7 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 description: values.description,
-                imageUrl: imageUrl, // Save the URL from storage
+                imageUrl: imageUrl,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -81,7 +70,7 @@ export default function NewProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            await setDoc(docRef, newProduct);
+            await setDoc(docRef, newProductData);
             
             toastControl.update({
                 id: toastControl.id,
@@ -96,14 +85,15 @@ export default function NewProductPage() {
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
                 operation: 'create',
-                requestResourceData: newProduct
+                requestResourceData: newProductData
             });
             errorEmitter.emit('permission-error', permissionError);
             toastControl.update({
                 id: toastControl.id,
                 variant: 'destructive',
-                title: 'Lỗi lưu sản phẩm!',
-                description: `Không thể lưu sản phẩm vào cơ sở dữ liệu. Lỗi: ${error.message}`,
+                title: 'Lỗi tạo sản phẩm!',
+                description: `Không thể tạo sản phẩm: ${error.message}`,
+                duration: 9000,
             });
         } finally {
             setIsSubmitting(false);

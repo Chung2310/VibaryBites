@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -13,7 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage'; // Import storage functions
+import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -21,7 +21,7 @@ export default function EditNewsArticlePage() {
     const articleId = params.id as string;
     
     const firestore = useFirestore();
-    const storage = useStorage(); // Get storage instance
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage || !article) { // Check storage & article
+        if (!firestore || !storage || !article) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -52,7 +52,6 @@ export default function EditNewsArticlePage() {
             let finalImageUrl = article.imageUrl;
 
             if (imageFile) {
-                // If there's a new file, delete the old one first
                 if (article.imageUrl) {
                     await deleteImage(storage, article.imageUrl);
                 }
@@ -61,7 +60,6 @@ export default function EditNewsArticlePage() {
                 toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
             } 
             else if (imageWasRemoved && article.imageUrl) {
-                // If image was removed by user, delete from storage
                 await deleteImage(storage, article.imageUrl);
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }

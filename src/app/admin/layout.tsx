@@ -259,7 +259,7 @@ export default function AdminLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${'${user.uid}'}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
+                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${user.uid}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
