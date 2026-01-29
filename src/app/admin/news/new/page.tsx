@@ -20,7 +20,7 @@ export default function NewNewsArticlePage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
+    const handleFormSubmit = (values: NewsFormValues, imageFile: File | null) => {
         if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
@@ -29,15 +29,14 @@ export default function NewNewsArticlePage() {
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
         
-        const articleId = `news-${Date.now()}`;
-        const docRef = doc(firestore, 'news_articles', articleId);
-
-        try {
+        const processSubmission = async () => {
+            const articleId = `news-${Date.now()}`;
+            const docRef = doc(firestore, 'news_articles', articleId);
             let imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
+
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
                 imageUrl = await uploadImage(imageFile, `news/${articleId}`);
-                toast({ id: toastId, title: "Tải ảnh lên thành công!" });
             }
 
             toast({ id: toastId, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
@@ -55,35 +54,41 @@ export default function NewNewsArticlePage() {
             };
 
             await setDoc(docRef, newArticleData);
-            
-            toast({
-                id: toastId,
-                title: 'Thêm thành công!',
-                description: `Bài viết "${values.title}" đã được tạo.`,
-            });
-            
-            router.push('/admin/news');
-
-        } catch (error: any) {
-            console.error("Lỗi khi tạo bài viết:", error);
-            if (!(error.code && error.code.startsWith('storage/'))) {
-                const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'create',
-                    requestResourceData: values
+        };
+        
+        processSubmission()
+            .then(() => {
+                toast({
+                    id: toastId,
+                    title: 'Thêm thành công!',
+                    description: `Bài viết "${values.title}" đã được tạo.`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Lỗi lưu bài viết!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                router.push('/admin/news');
+            })
+            .catch((error: any) => {
+                console.error("Lỗi khi tạo bài viết:", error);
+                const isStorageError = error.message.includes("Failed to upload image");
+
+                if (!isStorageError && firestore) {
+                    const permissionError = new FirestorePermissionError({
+                        path: `news_articles/news-${Date.now()}`,
+                        operation: 'create',
+                        requestResourceData: values
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+
+                toast({
+                    id: toastId,
+                    variant: 'destructive',
+                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi lưu bài viết!',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     return (

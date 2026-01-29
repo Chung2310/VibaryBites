@@ -30,7 +30,7 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
+    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
         if (!firestore || !product) {
             toast({
                 variant: 'destructive',
@@ -42,28 +42,21 @@ export default function EditProductPage() {
         
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
-        const docRef = doc(firestore, 'cakes', product.id);
-
-        try {
+        
+        const processSubmission = async () => {
+            const docRef = doc(firestore, 'cakes', product.id);
             let finalImageUrl = product.imageUrl;
 
             if (imageFile) {
+                // Delete old image if it exists, but don't block if deletion fails
                 if (product.imageUrl) {
-                    try {
-                        await deleteImage(product.imageUrl);
-                    } catch (e) {
-                        console.warn("Failed to delete old image, proceeding with upload.", e)
-                    }
+                    deleteImage(product.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
                 }
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
                 finalImageUrl = await uploadImage(imageFile, `products/${product.id}`);
                 toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } else if (imageWasRemoved && product.imageUrl) {
-                 try {
-                    await deleteImage(product.imageUrl);
-                } catch (e) {
-                    console.warn("Failed to delete old image.", e)
-                }
+                 deleteImage(product.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             } else if (imagePreview) {
                 finalImageUrl = imagePreview;
@@ -93,35 +86,41 @@ export default function EditProductPage() {
             };
 
             await setDoc(docRef, updatedProductData, { merge: true });
-            
-            toast({
-                id: toastId,
-                title: 'Cập nhật thành công!',
-                description: `Sản phẩm "${values.name}" đã được cập nhật.`,
-            });
-            
-            router.push(`/admin/products`);
+        };
 
-        } catch (error: any) {
-            console.error("Lỗi khi cập nhật sản phẩm:", error);
-            if (!(error.code && error.code.startsWith('storage/'))) {
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'update',
-                    requestResourceData: values
+        processSubmission()
+            .then(() => {
+                 toast({
+                    id: toastId,
+                    title: 'Cập nhật thành công!',
+                    description: `Sản phẩm "${values.name}" đã được cập nhật.`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Không thể cập nhật sản phẩm',
-                description: error.message || `Đã có lỗi không xác định xảy ra.`,
-                duration: 9000,
+                router.push(`/admin/products`);
+            })
+            .catch((error: any) => {
+                console.error("Lỗi khi cập nhật sản phẩm:", error);
+                const isStorageError = error.message.includes("Failed to upload image");
+                
+                if (!isStorageError && productDocRef) {
+                     const permissionError = new FirestorePermissionError({
+                        path: productDocRef.path,
+                        operation: 'update',
+                        requestResourceData: values
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                
+                toast({
+                    id: toastId,
+                    variant: 'destructive',
+                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật sản phẩm',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-        } finally {
-            setIsSubmitting(false);
-        }
     };
     
     if (isLoading) {

@@ -57,31 +57,38 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
     return null;
   }
 
-  const handleImageInsert = async () => {
+  const handleImageInsert = () => {
     if (imageUrl) {
       editor.chain().focus().setImage({ src: imageUrl }).run();
+      handleCloseModal();
     }
-    setIsImageModalOpen(false);
-    setImageUrl("");
   };
 
-  const handleImageUpload = async () => {
+  const handleCloseModal = () => {
+    setIsImageModalOpen(false);
+    setImageUrl("");
+    setImageFile(null);
+  }
+
+  const handleImageUpload = () => {
       if (!imageFile) {
           toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
           return;
       }
 
       setIsUploading(true);
-      try {
-          const downloadURL = await uploadImage(imageFile, 'content_images');
-          editor.chain().focus().setImage({ src: downloadURL }).run();
-          setIsImageModalOpen(false);
-          setImageFile(null);
-      } catch (error: any) {
-           toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
-      } finally {
-          setIsUploading(false);
-      }
+      
+      uploadImage(imageFile, 'content_images')
+        .then(downloadURL => {
+            editor.chain().focus().setImage({ src: downloadURL }).run();
+            handleCloseModal();
+        })
+        .catch((error: any) => {
+            toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
+        })
+        .finally(() => {
+            setIsUploading(false);
+        });
   }
 
   return (
@@ -148,8 +155,8 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
             </TabsContent>
           </Tabs>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
-            <Button type="button" onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
+            <Button type="button" variant="ghost" onClick={handleCloseModal}>Hủy</Button>
+            <Button type="button" onClick={imageFile ? handleImageUpload : handleImageInsert} disabled={isUploading}>
               {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
             </Button>
           </DialogFooter>

@@ -20,7 +20,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
+    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
         if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
@@ -29,19 +29,16 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
         
-        const productId = `prod-${Date.now()}`;
-        const docRef = doc(firestore, 'cakes', productId);
-
-        try {
+        const processSubmission = async () => {
+            const productId = `prod-${Date.now()}`;
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
+
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
                 imageUrl = await uploadImage(imageFile, `products/${productId}`);
-                toast({ id: toastId, title: "Tải ảnh lên thành công!" });
             } else if (imagePreview) {
                 imageUrl = imagePreview;
             }
-
 
             toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
@@ -66,37 +63,45 @@ export default function NewProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
+            const docRef = doc(firestore, 'cakes', productId);
             await setDoc(docRef, newProductData);
-            
-            toast({
-                id: toastId,
-                title: 'Thêm thành công!',
-                description: `Sản phẩm "${values.name}" đã được tạo.`,
-            });
-            
-            router.push('/admin/products');
+        };
 
-        } catch (error: any) {
-            console.error("Lỗi khi tạo sản phẩm:", error);
-            // Firestore-specific error
-            if (!(error.code && error.code.startsWith('storage/'))) {
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'create',
-                    requestResourceData: values
+        processSubmission()
+            .then(() => {
+                toast({
+                    id: toastId,
+                    title: 'Thêm thành công!',
+                    description: `Sản phẩm "${values.name}" đã được tạo.`,
                 });
-                errorEmitter.emit('permission-error', permissionError);
-            }
-            toast({
-                id: toastId,
-                variant: 'destructive',
-                title: 'Lỗi tạo sản phẩm!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                duration: 9000,
+                router.push('/admin/products');
+            })
+            .catch((error: any) => {
+                console.error("Lỗi khi tạo sản phẩm:", error);
+                
+                // Determine if it's a storage or firestore error to show a better message
+                const isStorageError = error.message.includes("Failed to upload image");
+
+                if (!isStorageError && firestore) {
+                     const permissionError = new FirestorePermissionError({
+                        path: `cakes/prod-${Date.now()}`,
+                        operation: 'create',
+                        requestResourceData: values
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+                
+                toast({
+                    id: toastId,
+                    variant: 'destructive',
+                    title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi tạo sản phẩm!',
+                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                    duration: 9000,
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-        } finally {
-            setIsSubmitting(false);
-        }
     };
     
     return (
