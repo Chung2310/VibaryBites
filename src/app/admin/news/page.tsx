@@ -34,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
@@ -46,7 +46,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function NewsPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
@@ -62,7 +61,7 @@ export default function NewsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedArticle || !firestore || !storage) return;
+        if (!selectedArticle || !firestore) return;
 
         setIsDeleting(true);
         const docRef = doc(firestore, 'news_articles', selectedArticle.id);
@@ -70,7 +69,7 @@ export default function NewsPage() {
         try {
             // Check if there is an image URL and if it is a Firebase Storage URL before attempting deletion
             if (selectedArticle.imageUrl && (selectedArticle.imageUrl.includes('firebasestorage') || selectedArticle.imageUrl.includes('storage.googleapis'))) {
-                await deleteImage(storage, selectedArticle.imageUrl).catch(storageError => {
+                await deleteImage(selectedArticle.imageUrl).catch(storageError => {
                      toast({
                         variant: "destructive",
                         title: "Lỗi xóa ảnh",

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
@@ -17,12 +17,11 @@ import { generateSlug } from '@/lib/utils';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
+        if (!firestore) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
@@ -41,7 +40,7 @@ export default function NewProductPage() {
                     const onProgress = (progress: number) => {
                         toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh...", description: `Tiến trình: ${Math.round(progress)}%` });
                     };
-                    imageUrl = await uploadImage(storage, imageFile, onProgress);
+                    imageUrl = await uploadImage(imageFile, onProgress);
                     toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
                 } catch (error) {
                     console.error("Lỗi khi tải ảnh lên:", error);

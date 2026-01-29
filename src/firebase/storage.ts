@@ -5,9 +5,27 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
-  FirebaseStorage,
+  getStorage,
+  type FirebaseStorage,
 } from 'firebase/storage';
+import { getApp } from 'firebase/app';
 import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Lazily gets the Firebase Storage instance.
+ * Ensures that `getApp()` is called only after the Firebase app has been initialized.
+ * @returns The FirebaseStorage instance.
+ */
+const getLazyStorage = (): FirebaseStorage => {
+    try {
+        const app = getApp(); // This will retrieve the default initialized app
+        return getStorage(app);
+    } catch (e) {
+        console.error("Firebase app not initialized, cannot get storage instance.", e);
+        // This throw is critical to stop execution if Firebase is not ready
+        throw new Error("Firebase not initialized. Cannot access Storage.");
+    }
+};
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -61,14 +79,11 @@ const resizeImage = (file: File): Promise<Blob> => {
 };
 
 export const uploadImage = (
-  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
-    if (!storage) {
-      return reject(new Error('Firebase Storage instance was not provided.'));
-    }
+    const storage = getLazyStorage();
     if (!file) {
       return reject(new Error('No file provided.'));
     }
@@ -103,11 +118,8 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
-  if (!storage) {
-    console.warn('Firebase Storage instance not provided, skipping deletion.');
-    return;
-  }
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  const storage = getLazyStorage();
   if (!imageUrl || !(imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com'))) {
     // Not a Firebase Storage URL, likely a placeholder or data URI, so do nothing.
     return;

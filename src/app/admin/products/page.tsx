@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -62,7 +62,6 @@ import { cn } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
-    const storage = useStorage();
     const router = useRouter();
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
@@ -88,7 +87,7 @@ export default function ProductsPage() {
     }
     
     const handleDelete = async () => {
-        if (!selectedProduct || !firestore || !storage) return;
+        if (!selectedProduct || !firestore) return;
 
         setIsDeleting(true);
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
@@ -96,7 +95,7 @@ export default function ProductsPage() {
         try {
             // Delete associated image from Firebase Storage, if it's from Firebase
             if (selectedProduct.imageUrl && (selectedProduct.imageUrl.includes('firebasestorage.googleapis.com') || selectedProduct.imageUrl.includes('storage.googleapis.com'))) {
-                await deleteImage(storage, selectedProduct.imageUrl).catch(err => {
+                await deleteImage(selectedProduct.imageUrl).catch(err => {
                     console.warn(`Failed to delete image ${selectedProduct.imageUrl}`, err);
                 });
             }
