@@ -5,10 +5,10 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
-  FirebaseStorage,
+  getStorage,
 } from 'firebase/storage';
+import { getApp } from 'firebase/app';
 import { v4 as uuidv4 } from 'uuid';
-
 
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
@@ -61,22 +61,32 @@ const resizeImage = (file: File): Promise<Blob> => {
   });
 };
 
+const getStorageInstance = () => {
+    try {
+        // This function ensures we get the app instance only after it's been initialized.
+        return getStorage(getApp());
+    } catch (error) {
+        console.error("Firebase app not initialized, cannot get Storage instance.", error);
+        return null;
+    }
+}
+
 export const uploadImage = (
-  storage: FirebaseStorage,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  if (!storage) {
-    return Promise.reject(new Error('Firebase Storage is not initialized.'));
-  }
-  if (!file) {
-    return Promise.reject(new Error('No file provided.'));
-  }
-  if (!file.type.startsWith('image/')) {
-    return Promise.reject(new Error('File is not an image.'));
-  }
-
   return new Promise(async (resolve, reject) => {
+    const storage = getStorageInstance();
+    if (!storage) {
+        return reject(new Error('Firebase Storage is not initialized.'));
+    }
+    if (!file) {
+        return reject(new Error('No file provided.'));
+    }
+    if (!file.type.startsWith('image/')) {
+        return reject(new Error('File is not an image.'));
+    }
+    
     try {
       const imageBlob = await resizeImage(file);
       const fileName = `images/${uuidv4()}.webp`;
@@ -104,7 +114,8 @@ export const uploadImage = (
   });
 };
 
-export const deleteImage = async (storage: FirebaseStorage, imageUrl: string): Promise<void> => {
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  const storage = getStorageInstance();
   if (!storage) {
     console.warn('Firebase Storage is not initialized, skipping deletion.');
     return;

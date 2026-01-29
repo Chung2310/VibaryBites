@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../../news-form';
@@ -21,7 +21,6 @@ export default function EditNewsArticlePage() {
     const articleId = params.id as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,9 +55,9 @@ export default function EditNewsArticlePage() {
                     const onProgress = (progress: number) => {
                         toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới...", description: `Tiến trình: ${Math.round(progress)}%` });
                     };
-                    const newImageUrl = await uploadImage(storage, imageFile, onProgress);
+                    const newImageUrl = await uploadImage(imageFile, onProgress);
                     if (article.imageUrl && (article.imageUrl.includes('firebasestorage') || article.imageUrl.includes('storage.googleapis'))) {
-                        await deleteImage(storage, article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
+                        await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
                     }
                     finalImageUrl = newImageUrl;
                     toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
@@ -74,7 +73,7 @@ export default function EditNewsArticlePage() {
                 }
             } 
             else if (imageWasRemoved && article.imageUrl) {
-                await deleteImage(storage, article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
+                await deleteImage(article.imageUrl).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 
