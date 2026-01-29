@@ -33,19 +33,21 @@ export async function uploadImage(
     return new Promise((resolve, reject) => {
         const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
-        // Set a 120-second timeout for the upload
         const timeoutId = setTimeout(() => {
+            // This will trigger the 'error' branch of the observer with a 'storage/canceled' error.
             uploadTask.cancel();
-            reject(new Error('Upload timed out after 120 seconds. Please check your network connection and try again.'));
         }, 120000); // 120-second timeout
 
         uploadTask.on('state_changed',
             (snapshot) => {
                 // Optional: handle progress updates here
+                // const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                // console.log('Upload is ' + progress + '% done');
             },
             (error) => {
                 // Handle unsuccessful uploads
-                clearTimeout(timeoutId); // Clear the timeout
+                clearTimeout(timeoutId); // MUST clear timeout on any error
+
                 console.error("Client-side uploadImage error:", error);
 
                 let errorMessage = `Failed to upload image. Please check permissions and network.`;
@@ -54,7 +56,7 @@ export async function uploadImage(
                         errorMessage = 'Permission denied. You do not have permission to upload files.';
                         break;
                     case 'storage/canceled':
-                        errorMessage = 'Upload was canceled.';
+                        errorMessage = 'Upload timed out after 120 seconds. Please check your network connection and try again.';
                         break;
                     case 'storage/unknown':
                         errorMessage = 'An unknown error occurred during upload.';
@@ -64,7 +66,8 @@ export async function uploadImage(
             },
             () => {
                 // Handle successful uploads on complete
-                clearTimeout(timeoutId); // Clear the timeout
+                clearTimeout(timeoutId); // MUST clear timeout on success
+
                 getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                     resolve(downloadURL);
                 }).catch(error => {
