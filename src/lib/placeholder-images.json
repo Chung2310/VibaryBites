@@ -69,7 +69,7 @@
     {
       "id": "category-sweet-cake",
       "description": "A variety of sweet cakes.",
-      "imageUrl": "https://placehold.co/600x800/F4DDDD/333333?text=Sweet+Cakes",
+      "imageUrl": "https://images.unsplash.com/photo-1635888070574-beb32aa9b06d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzd2VldCUyMGNha2V8ZW58MHx8fHwxNzY5Njk1MzYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "sweet cake"
     },
     {
@@ -81,19 +81,19 @@
     {
       "id": "category-birthday-cake",
       "description": "A birthday cake.",
-      "imageUrl": "https://placehold.co/600x800/F8EFD4/333333?text=Birthday+Cakes",
+      "imageUrl": "https://images.unsplash.com/photo-1578922864601-79dcc7cbcea9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxiaXJ0aGRheSUyMGNha2V8ZW58MHx8fHwxNzY5NjE2NjgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "birthday cake"
     },
     {
       "id": "category-drinks",
       "description": "A variety of drinks.",
-      "imageUrl": "https://placehold.co/600x800/D4F0E2/333333?text=Drinks",
+      "imageUrl": "https://images.unsplash.com/photo-1632996986862-75aa7ac496da?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb2xvcmZ1bCUyMGRyaW5rc3xlbnwwfHx8fDE3Njk2OTUzNjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "colorful drinks"
     },
     {
       "id": "category-other-cakes",
       "description": "Other types of cakes.",
-      "imageUrl": "https://placehold.co/600x800/E3EBF8/333333?text=Other+Cakes",
+      "imageUrl": "https://images.unsplash.com/photo-1651307573144-98b6f546761e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhc3NvcnRlZCUyMGNha2VzfGVufDB8fHx8MTc2OTY5MTU0NHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "assorted cakes"
     },
     {
