@@ -73,7 +73,6 @@ export default function NewProductPage() {
                 categorySlug: values.categorySlug,
                 description: values.description,
                 imageUrl: imageUrl,
-                collection: values.categorySlug,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,

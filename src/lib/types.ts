@@ -18,7 +18,6 @@ export type Product = {
     price: number;
   }[];
   imageUrl: string;
-  collection: string;
   categorySlug: string;
   flavorProfile?: string[];
   structure?: string[];
