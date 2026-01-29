@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -34,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article || !storage) {
+        if (!firestore || !storage || !article) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',

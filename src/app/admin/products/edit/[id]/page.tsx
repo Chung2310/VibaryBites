@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -34,7 +33,7 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !product || !storage) {
+        if (!firestore || !storage || !product) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',

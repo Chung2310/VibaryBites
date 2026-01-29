@@ -1,17 +1,17 @@
-
 'use client';
 
-import React, { type ReactNode } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
-import { firebaseApp, auth, firestore, storage } from '@/firebase';
+import { initializeFirebaseClient } from '@/firebase';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  // The instances are initialized at the module level in index.ts,
-  // so we can use them directly here without useMemo.
+  // useMemo ensures this function is called only once on the client
+  const { firebaseApp, auth, firestore, storage } = useMemo(() => initializeFirebaseClient(), []);
+
   return (
     <FirebaseProvider
       firebaseApp={firebaseApp}
