@@ -10,7 +10,8 @@ import {
 } from "react";
 import { useToast } from "./use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
+import { products as seedProducts } from "@/lib/data";
 
 interface AppContextType {
   // Cart
@@ -46,6 +47,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   
   // Fetch live data from Firestore
   const { data: firestoreProducts, isLoading: isLoadingFirestore } = useCollection<Product>(productsCollection);
+
+  // Seed initial products if the collection is empty
+  useEffect(() => {
+    if (firestore && !isLoadingFirestore && firestoreProducts && firestoreProducts.length === 0) {
+      const seedDatabase = async () => {
+        toast({ title: "Thiết lập ban đầu", description: "Đang thêm các sản phẩm mẫu..." });
+        
+        try {
+          const promises = seedProducts.map(product => {
+            const docRef = doc(firestore, 'cakes', product.id);
+            // Ensure slug is generated for seed data
+            const productWithSlug = { ...product, slug: product.slug || product.name.toLowerCase().replace(/ /g, '-') };
+            return setDoc(docRef, productWithSlug);
+          });
+          
+          await Promise.all(promises);
+
+          toast({ title: "Hoàn tất!", description: "Các sản phẩm mẫu đã được thêm thành công." });
+        } catch (error) {
+            console.error("Error seeding products:", error);
+            toast({
+                variant: "destructive",
+                title: "Lỗi",
+                description: "Không thể thêm sản phẩm mẫu."
+            });
+        }
+      };
+
+      seedDatabase();
+    }
+  }, [firestore, isLoadingFirestore, firestoreProducts, toast]);
 
   // Loading is true only if we have no products yet AND we're still fetching from the server.
   const isLoadingProducts = products.length === 0 && isLoadingFirestore;
