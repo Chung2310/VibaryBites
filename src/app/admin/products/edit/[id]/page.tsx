@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -32,89 +32,75 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
         if (!firestore || !storage || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
         
         setIsSubmitting(true);
-        
-        const updatedProductData: Partial<Product> = {
-            name: values.name,
-            subtitle: values.subtitle,
-            description: values.description,
-            price: Number(values.price),
-            stock: Number(values.stock),
-            categorySlug: values.categorySlug,
-            slug: generateSlug(values.name),
-            detailedDescription: {
-                flavor: values.detailedDescription_flavor,
-                ingredients: values.detailedDescription_ingredients,
-                storage: values.detailedDescription_storage,
-                dimensions: values.detailedDescription_dimensions,
-                accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
-            },
-            flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-            structure: values.structure?.split('\n').filter(Boolean) || [],
-            // Don't update imageUrl here yet
-        };
+        let finalImageUrl = product.imageUrl; // Start with existing URL
 
-        setDoc(productDocRef, updatedProductData, { merge: true })
-            .then(() => {
-                toast({
-                    title: 'Cập nhật thành công!',
-                    description: `Sản phẩm "${values.name}" đã được lưu. Đang xử lý ảnh...`,
-                });
-                router.push(`/admin/products`);
+        try {
+            // Step 1: Handle image changes
+            if (imageFile) {
+                toast({ description: "Đang tải ảnh mới lên..." });
+                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
+                    await deleteImage(storage, product.imageUrl);
+                }
+                finalImageUrl = await uploadImage(storage, `products/${product.id}`, imageFile);
+            } else if (imageWasRemoved) {
+                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
+                    toast({ description: "Đang xóa ảnh cũ..." });
+                    await deleteImage(storage, product.imageUrl);
+                }
+                finalImageUrl = 'https://placehold.co/800x600/F4DDDD/333333?text=No+Image';
+            }
+            
+            // Step 2: Prepare data
+            const updatedProductData: Partial<Product> = {
+                name: values.name,
+                subtitle: values.subtitle,
+                description: values.description,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                slug: generateSlug(values.name),
+                imageUrl: finalImageUrl,
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                },
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
+            };
 
-                // Handle image operations in the background
-                if (imageFile) {
-                    const oldImageUrl = product.imageUrl;
-                    uploadImage(storage, `products/${product.id}`, imageFile)
-                        .then(newImageUrl => {
-                            setDoc(productDocRef, { imageUrl: newImageUrl }, { merge: true });
-                            if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
-                                deleteImage(storage, oldImageUrl);
-                            }
-                        })
-                        .catch(err => {
-                             console.error("Background product image upload failed:", err);
-                             toast({ variant: 'destructive', title: 'Lỗi tải ảnh lên', description: 'Dữ liệu văn bản đã được lưu. Vui lòng thử sửa và tải lại ảnh.'});
-                        });
-                } else if (imageWasRemoved) {
-                    const oldImageUrl = product.imageUrl;
-                    if (oldImageUrl && oldImageUrl.includes('firebasestorage')) {
-                        deleteImage(storage, oldImageUrl)
-                            .then(() => {
-                                setDoc(productDocRef, { imageUrl: `https://placehold.co/800x600/F4DDDD/333333?text=No+Image` }, { merge: true });
-                            });
-                    }
-                } else if (imagePreview && imagePreview !== product.imageUrl) {
-                    // This handles pasting a new URL
-                    setDoc(productDocRef, { imageUrl: imagePreview }, { merge: true });
-                }
-            })
-            .catch((error: any) => {
-                console.error("Lỗi khi cập nhật sản phẩm:", error);
-                
-                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
-                    const permissionError = new FirestorePermissionError({
-                        path: productDocRef.path,
-                        operation: 'update',
-                        requestResourceData: values
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
-                
-                toast({
-                    variant: 'destructive',
-                    title: 'Không thể cập nhật sản phẩm',
-                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                    duration: 9000,
-                });
-                 setIsSubmitting(false);
+            // Step 3: Save to Firestore
+            toast({ description: "Đang lưu thay đổi..." });
+            await setDoc(productDocRef, updatedProductData, { merge: true });
+
+            // Step 4: Success
+            toast({ title: 'Cập nhật thành công!', description: `Sản phẩm "${values.name}" đã được cập nhật.` });
+            router.push(`/admin/products`);
+
+        } catch (error: any) {
+            console.error("Lỗi khi cập nhật sản phẩm:", error);
+            const errorMessage = (error.code?.includes('permission-denied'))
+                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
+                : error.message || 'Đã có lỗi không xác định xảy ra.';
+            
+            toast({
+                variant: 'destructive',
+                title: 'Không thể cập nhật sản phẩm',
+                description: errorMessage,
+                duration: 9000,
             });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     if (isLoading) {

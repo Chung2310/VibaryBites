@@ -60,7 +60,7 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => void;
+  onSubmit: (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -157,7 +157,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
 
   const handleFormSubmit = (values: ProductFormValues) => {
     const imageWasRemoved = isEditMode && !!product?.imageUrl && !imagePreview;
-    onSubmit(values, imageFile, imagePreview, imageWasRemoved);
+    onSubmit(values, imageFile, imageWasRemoved);
   };
 
   return (

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -21,77 +21,69 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFormSubmit = (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
-        if (!firestore) {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
+        if (!firestore || !storage) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
 
         setIsSubmitting(true);
-        
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
-        
-        const newProductData: Product = {
-            id: productId,
-            slug: generateSlug(values.name),
-            name: values.name,
-            subtitle: values.subtitle,
-            price: Number(values.price),
-            stock: Number(values.stock),
-            categorySlug: values.categorySlug,
-            description: values.description,
-            imageUrl: imageFile ? `https://placehold.co/800x600/F4DDDD/333333?text=Uploading...` : (imagePreview || `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`),
-            detailedDescription: {
-                flavor: values.detailedDescription_flavor,
-                ingredients: values.detailedDescription_ingredients,
-                storage: values.detailedDescription_storage,
-                dimensions: values.detailedDescription_dimensions,
-                accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
-            },
-            flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
-            structure: values.structure?.split('\n').filter(Boolean) || [],
-        };
-        
-        setDoc(docRef, newProductData)
-            .then(() => {
-                toast({
-                    title: 'Thêm thành công!',
-                    description: `Sản phẩm "${values.name}" đã được tạo. Đang xử lý ảnh...`,
-                });
-                router.push('/admin/products');
+        let finalImageUrl = 'https://placehold.co/800x600/F4DDDD/333333?text=No+Image';
 
-                if (imageFile && storage) {
-                    uploadImage(storage, `products/${productId}`, imageFile)
-                        .then(downloadURL => {
-                            return setDoc(docRef, { imageUrl: downloadURL }, { merge: true });
-                        })
-                        .catch(uploadError => {
-                            console.error("Background product image upload failed:", uploadError);
-                            setDoc(docRef, { imageUrl: `https://placehold.co/800x600/FF0000/FFFFFF?text=Upload+Failed` }, { merge: true });
-                        });
-                }
-            })
-            .catch((error: any) => {
-                console.error("Lỗi khi tạo sản phẩm:", error);
+        try {
+            // Step 1: Upload image if it exists
+            if (imageFile) {
+                toast({ description: "Đang tải ảnh lên..." });
+                finalImageUrl = await uploadImage(storage, `products/${productId}`, imageFile);
+            }
 
-                if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
-                    const permissionError = new FirestorePermissionError({
-                        path: docRef.path,
-                        operation: 'create',
-                        requestResourceData: newProductData
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
-                
-                toast({
-                    variant: 'destructive',
-                    title: 'Lỗi tạo sản phẩm!',
-                    description: error.message || 'Đã có lỗi không xác định xảy ra.',
-                    duration: 9000,
-                });
-                 setIsSubmitting(false);
+            // Step 2: Prepare data
+            const newProductData: Product = {
+                id: productId,
+                slug: generateSlug(values.name),
+                name: values.name,
+                subtitle: values.subtitle,
+                price: Number(values.price),
+                stock: Number(values.stock),
+                categorySlug: values.categorySlug,
+                description: values.description,
+                imageUrl: finalImageUrl,
+                detailedDescription: {
+                    flavor: values.detailedDescription_flavor,
+                    ingredients: values.detailedDescription_ingredients,
+                    storage: values.detailedDescription_storage,
+                    dimensions: values.detailedDescription_dimensions,
+                    accessories: values.detailedDescription_accessories?.split('\n').filter(Boolean) || [],
+                },
+                flavorProfile: values.flavorProfile?.split('\n').filter(Boolean) || [],
+                structure: values.structure?.split('\n').filter(Boolean) || [],
+            };
+
+            // Step 3: Save to Firestore
+            toast({ description: "Đang lưu thông tin sản phẩm..." });
+            await setDoc(docRef, newProductData);
+
+            // Step 4: Success
+            toast({ title: 'Thêm thành công!', description: `Sản phẩm "${values.name}" đã được tạo.` });
+            router.push('/admin/products');
+
+        } catch (error: any) {
+            console.error("Lỗi khi tạo sản phẩm:", error);
+            const errorMessage = (error.code?.includes('permission-denied'))
+                ? 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.'
+                : error.message || 'Đã có lỗi không xác định xảy ra.';
+
+            toast({
+                variant: 'destructive',
+                title: 'Lỗi tạo sản phẩm!',
+                description: errorMessage,
+                duration: 9000,
             });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
     
     return (
