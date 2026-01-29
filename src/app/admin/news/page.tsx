@@ -42,9 +42,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useStorage, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
-import { deleteImage } from '@/firebase/storage';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -54,7 +53,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function NewsPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
@@ -76,18 +74,6 @@ export default function NewsPage() {
         const docRef = doc(firestore, 'news_articles', selectedArticle.id);
         
         try {
-            // Check if there is an image URL and if it is a Firebase Storage URL before attempting deletion
-            if (selectedArticle.imageUrl && (selectedArticle.imageUrl.includes('firebasestorage') || selectedArticle.imageUrl.includes('storage.googleapis'))) {
-                await deleteImage(selectedArticle.imageUrl, storage).catch(storageError => {
-                     toast({
-                        variant: "destructive",
-                        title: "Lỗi xóa ảnh",
-                        description: "Không thể xóa ảnh của bài viết, nhưng bài viết sẽ vẫn được xóa.",
-                    });
-                     console.warn("Could not delete image, but proceeding with document deletion:", storageError);
-                });
-            }
-            
             await deleteDoc(docRef);
 
             toast({
@@ -221,7 +207,7 @@ export default function NewsPage() {
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
                 <AlertDialogDescription>
                     Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn bài viết
-                    <span className="font-semibold"> "{selectedArticle?.title}" </span> và ảnh bìa liên quan.
+                    <span className="font-semibold"> "{selectedArticle?.title}" </span>.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

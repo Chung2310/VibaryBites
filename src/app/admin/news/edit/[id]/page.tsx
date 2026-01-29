@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage, deleteImage } from '@/firebase/storage';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +13,23 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import type { FirebaseStorage } from 'firebase/storage';
+
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                resolve(event.target.result as string);
+            } else {
+                reject(new Error("Failed to read file."));
+            }
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -22,7 +37,6 @@ export default function EditNewsArticlePage() {
     const articleId = params.id as string;
     
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,28 +68,21 @@ export default function EditNewsArticlePage() {
 
             if (imageFile) {
                 try {
-                    const onProgress = (progress: number) => {
-                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh mới...", description: `Tiến trình: ${Math.round(progress)}%` });
-                    };
-                    const newImageUrl = await uploadImage(imageFile, storage, onProgress);
-                    if (article.imageUrl && (article.imageUrl.includes('firebasestorage') || article.imageUrl.includes('storage.googleapis'))) {
-                        await deleteImage(article.imageUrl, storage).catch(err => console.warn("Failed to delete old image, proceeding anyway:", err));
-                    }
-                    finalImageUrl = newImageUrl;
-                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                    toastControl.update({ id: toastControl.id, title: "Đang xử lý ảnh mới...", description: "Biến ảnh thành văn bản..." });
+                    finalImageUrl = await fileToDataUri(imageFile);
+                    toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
                 } catch(e) {
-                     console.error("Lỗi khi tải ảnh lên:", e);
+                     console.error("Lỗi khi xử lý ảnh:", e);
                      toast({
                         variant: 'destructive',
-                        title: 'Lỗi tải ảnh lên!',
+                        title: 'Lỗi xử lý ảnh!',
                         description: `Không thể thay đổi ảnh bìa. Các thông tin khác sẽ được lưu.`,
                         duration: 9000,
                     });
                     finalImageUrl = article.imageUrl;
                 }
             } 
-            else if (imageWasRemoved && article.imageUrl) {
-                await deleteImage(article.imageUrl, storage).catch(err => console.warn("Failed to delete removed image, proceeding anyway:", err));
+            else if (imageWasRemoved) {
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 

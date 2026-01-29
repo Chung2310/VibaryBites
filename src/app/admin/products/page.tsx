@@ -52,17 +52,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useStorage, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { deleteImage } from '@/firebase/storage';
 import { cn } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
-    const storage = useStorage();
     const router = useRouter();
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
@@ -94,13 +92,6 @@ export default function ProductsPage() {
         const docRef = doc(firestore, 'cakes', selectedProduct.id);
         
         try {
-            // Delete associated image from Firebase Storage, if it's from Firebase
-            if (selectedProduct.imageUrl && (selectedProduct.imageUrl.includes('firebasestorage.googleapis.com') || selectedProduct.imageUrl.includes('storage.googleapis.com'))) {
-                await deleteImage(selectedProduct.imageUrl, storage).catch(err => {
-                    console.warn(`Failed to delete image ${selectedProduct.imageUrl}`, err);
-                });
-            }
-
             await deleteDoc(docRef);
 
             toast({
@@ -299,8 +290,7 @@ export default function ProductsPage() {
                 <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
                 <AlertDialogDescription>
                     Hành động này không thể được hoàn tác. Thao tác này sẽ xóa vĩnh viễn sản phẩm
-                    <span className="font-semibold"> "{selectedProduct?.name}" </span>
-                    và tất cả các hình ảnh liên quan.
+                    <span className="font-semibold"> "{selectedProduct?.name}" </span>.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

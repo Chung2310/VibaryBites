@@ -29,14 +29,13 @@ const fraunces = Fraunces({
 });
 
 function AppProviders({ children }: { children: React.ReactNode }) {
-  const { firebaseApp, auth, firestore, storage } = useMemo(() => initializeFirebaseClient(), []);
+  const { firebaseApp, auth, firestore } = useMemo(() => initializeFirebaseClient(), []);
 
   return (
     <FirebaseProvider
       firebaseApp={firebaseApp}
       auth={auth}
       firestore={firestore}
-      storage={storage}
     >
       <AppProvider>
         <LayoutContent>{children}</LayoutContent>

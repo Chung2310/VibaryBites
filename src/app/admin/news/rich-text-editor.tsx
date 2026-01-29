@@ -28,8 +28,23 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { uploadImage } from '@/firebase/storage';
-import { useStorage } from '@/firebase';
+
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                resolve(event.target.result as string);
+            } else {
+                reject(new Error("Failed to read file."));
+            }
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 interface EditorToolbarProps {
   editor: any;
@@ -41,7 +56,6 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
-  const storage = useStorage();
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -75,12 +89,12 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
       
       setIsUploading(true);
       try {
-          const downloadURL = await uploadImage(imageFile, storage);
-          editor.chain().focus().setImage({ src: downloadURL }).run();
+          const dataUri = await fileToDataUri(imageFile);
+          editor.chain().focus().setImage({ src: dataUri }).run();
           setIsImageModalOpen(false);
           setImageFile(null);
       } catch (error) {
-           toast({ variant: 'destructive', title: "Lỗi tải lên", description: "Đã có lỗi xảy ra khi tải ảnh lên."});
+           toast({ variant: 'destructive', title: "Lỗi xử lý ảnh", description: "Đã có lỗi xảy ra khi đọc file ảnh."});
       } finally {
           setIsUploading(false);
       }
@@ -152,7 +166,7 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setIsImageModalOpen(false)}>Hủy</Button>
             <Button type="button" onClick={imageUrl ? handleImageInsert : handleImageUpload} disabled={isUploading}>
-              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải lên</> : 'Chèn ảnh'}
+              {isUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang xử lý</> : 'Chèn ảnh'}
             </Button>
           </DialogFooter>
         </DialogContent>

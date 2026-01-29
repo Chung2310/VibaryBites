@@ -2,7 +2,6 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 // Export a function to initialize and get Firebase services
 export function initializeFirebaseClient() {
@@ -16,9 +15,8 @@ export function initializeFirebaseClient() {
 
     const auth: Auth = getAuth(firebaseApp);
     const firestore: Firestore = getFirestore(firebaseApp);
-    const storage: FirebaseStorage = getStorage(firebaseApp);
 
-    return { firebaseApp, auth, firestore, storage };
+    return { firebaseApp, auth, firestore };
 }
 
 

@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/firebase/storage';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,10 +13,26 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
 
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                resolve(event.target.result as string);
+            } else {
+                reject(new Error("Failed to read file."));
+            }
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,26 +50,22 @@ export default function NewProductPage() {
         let newProduct: Product | null = null;
 
         try {
-            let imageUrl = '';
+            let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
                 try {
-                    const onProgress = (progress: number) => {
-                        toastControl.update({ id: toastControl.id, title: "Đang tải lên ảnh...", description: `Tiến trình: ${Math.round(progress)}%` });
-                    };
-                    imageUrl = await uploadImage(imageFile, storage, onProgress);
-                    toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
+                    toastControl.update({ id: toastControl.id, title: "Đang xử lý ảnh...", description: `Biến ảnh thành văn bản...` });
+                    imageUrl = await fileToDataUri(imageFile);
+                    toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
                 } catch (error) {
-                    console.error("Lỗi khi tải ảnh lên:", error);
-                    imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=Image+Upload+Failed`;
+                    console.error("Lỗi khi xử lý ảnh:", error);
                     toast({
                         variant: 'destructive',
-                        title: 'Lỗi tải ảnh lên!',
+                        title: 'Lỗi xử lý ảnh!',
                         description: `Đã sử dụng ảnh mặc định. Bạn có thể thử sửa sản phẩm để tải lại ảnh sau.`,
                         duration: 9000,
                     });
                 }
             } else {
-                 imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
                  toast({
                     title: 'Không có ảnh',
                     description: 'Đang sử dụng ảnh mặc định cho sản phẩm.'
