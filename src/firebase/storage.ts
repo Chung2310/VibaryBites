@@ -7,7 +7,6 @@ import {
     getDownloadURL,
     deleteObject,
     FirebaseStorage,
-    UploadTask,
 } from "firebase/storage";
 import { initializeFirebaseClient } from "@/firebase";
 
@@ -17,10 +16,11 @@ function getStorageInstance(): FirebaseStorage {
 }
 
 /**
- * Uploads a file to Firebase Storage using the resumable API for better control and timeout handling.
+ * Uploads a file to Firebase Storage using a robust method with a timeout.
  * @param file The file to upload.
  * @param path The destination path/folder in the storage bucket (e.g., 'products').
  * @returns A promise that resolves with the public download URL.
+ * @throws An error if the upload fails or times out.
  */
 export async function uploadImage(
   file: File,
@@ -30,54 +30,43 @@ export async function uploadImage(
     const uniqueFilename = `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
     const storageRef = ref(storage, uniqueFilename);
 
-    return new Promise((resolve, reject) => {
-        const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+    // The core upload operation, which resolves with the download URL on success.
+    const uploadPromise = uploadBytesResumable(storageRef, file)
+        .then(snapshot => getDownloadURL(snapshot.ref));
 
-        const timeoutId = setTimeout(() => {
-            // This will trigger the 'error' branch of the observer with a 'storage/canceled' error.
-            uploadTask.cancel();
-        }, 120000); // 120-second timeout
+    // A timeout promise that rejects after 120 seconds.
+    const timeoutPromise = new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error('Upload timed out after 120 seconds. Please check your network connection and try again.')), 120000)
+    );
 
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                // Optional: handle progress updates here
-                // const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                // console.log('Upload is ' + progress + '% done');
-            },
-            (error) => {
-                // Handle unsuccessful uploads
-                clearTimeout(timeoutId); // MUST clear timeout on any error
+    // Use Promise.race to compete the upload against the timeout.
+    try {
+        const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
+        return downloadURL;
+    } catch (error: any) {
+        console.error("Client-side uploadImage error:", error);
 
-                console.error("Client-side uploadImage error:", error);
-
-                let errorMessage = `Failed to upload image. Please check permissions and network.`;
-                switch (error.code) {
-                    case 'storage/unauthorized':
-                        errorMessage = 'Permission denied. You do not have permission to upload files.';
-                        break;
-                    case 'storage/canceled':
-                        errorMessage = 'Upload timed out after 120 seconds. Please check your network connection and try again.';
-                        break;
-                    case 'storage/unknown':
-                        errorMessage = 'An unknown error occurred during upload.';
-                        break;
-                }
-                reject(new Error(errorMessage));
-            },
-            () => {
-                // Handle successful uploads on complete
-                clearTimeout(timeoutId); // MUST clear timeout on success
-
-                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                    resolve(downloadURL);
-                }).catch(error => {
-                    // This is unlikely but possible if getting the URL fails
-                    console.error("Failed to get download URL:", error);
-                    reject(new Error('Upload successful, but failed to get download URL.'));
-                });
+        // Create a more user-friendly error message.
+        let errorMessage = `Failed to upload image. Please check permissions and network.`;
+        if (error.message && error.message.includes('timed out')) {
+            errorMessage = error.message;
+        } else if (error.code) {
+             switch (error.code) {
+                case 'storage/unauthorized':
+                    errorMessage = 'Permission denied. You do not have permission to upload files.';
+                    break;
+                case 'storage/canceled':
+                    errorMessage = 'Upload was canceled.';
+                    break;
+                case 'storage/unknown':
+                    errorMessage = 'An unknown error occurred during upload.';
+                    break;
             }
-        );
-    });
+        }
+       
+        // Re-throw a new, clean error to be caught by the calling form submission logic.
+        throw new Error(errorMessage);
+    }
 }
 
 
