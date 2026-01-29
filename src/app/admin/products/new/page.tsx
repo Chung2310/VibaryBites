@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -17,39 +17,32 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
-            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
 
         setIsSubmitting(true);
-        const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
         
         const productId = `prod-${Date.now()}`;
         const docRef = doc(firestore, 'cakes', productId);
-        let newProductData: Product | null = null;
 
         try {
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
-                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
-                imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
-                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-            } else {
-                 toast({
-                    title: 'Không có ảnh',
-                    description: 'Đang sử dụng ảnh mặc định cho sản phẩm.'
-                 });
+                toast({ id: toastId, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
+                imageUrl = await uploadImage(imageFile, `products/${productId}`);
+                toast({ id: toastId, title: "Tải ảnh lên thành công!" });
             }
 
-            toastControl.update({ id: toastControl.id, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            newProductData = {
+            const newProductData: Product = {
                 id: productId,
                 slug: generateSlug(values.name),
                 name: values.name,
@@ -72,8 +65,8 @@ export default function NewProductPage() {
 
             await setDoc(docRef, newProductData);
             
-            toastControl.update({
-                id: toastControl.id,
+            toast({
+                id: toastId,
                 title: 'Thêm thành công!',
                 description: `Sản phẩm "${values.name}" đã được tạo.`,
             });
@@ -82,17 +75,20 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: newProductData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toastControl.update({
-                id: toastControl.id,
+            // Firestore-specific error
+            if (!(error.code && error.code.startsWith('storage/'))) {
+                 const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'create',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+            toast({
+                id: toastId,
                 variant: 'destructive',
                 title: 'Lỗi tạo sản phẩm!',
-                description: `Không thể tạo sản phẩm: ${error.message}`,
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

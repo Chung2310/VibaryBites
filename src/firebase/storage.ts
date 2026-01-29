@@ -7,24 +7,35 @@ import {
   getDownloadURL,
   deleteObject,
   ref as refFromUrl_,
+  getStorage,
 } from 'firebase/storage';
+import { getApp } from 'firebase/app';
+
+
+/**
+ * Gets the Firebase Storage instance, ensuring the app is initialized.
+ * @returns The FirebaseStorage instance.
+ */
+function getStorageInstance(): FirebaseStorage {
+    const app = getApp(); // Throws an error if Firebase is not initialized
+    return getStorage(app);
+}
 
 const refFromURL = refFromUrl_;
 
 /**
  * Uploads a file to Firebase Storage and returns the public download URL.
- * Uses uploadBytesResumable for better error handling and to avoid hangs.
- * @param storage The FirebaseStorage instance.
+ * Uses uploadBytesResumable, includes a timeout, and gets the storage instance internally.
  * @param file The file to upload.
  * @param path The path in the storage bucket (e.g., 'products/').
  * @returns A promise that resolves with the download URL or rejects with an error.
  */
 export function uploadImage(
-  storage: FirebaseStorage,
   file: File,
   path: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    const storage = getStorageInstance();
     if (!file) {
       return reject(new Error('No file provided to upload.'));
     }
@@ -34,14 +45,18 @@ export function uploadImage(
     
     const uploadTask = uploadBytesResumable(storageRef, file);
 
+    const timeoutId = setTimeout(() => {
+        uploadTask.cancel();
+        reject(new Error('Upload timed out after 30 seconds. Please check your network connection and try again.'));
+    }, 30000); // 30-second timeout
+
     uploadTask.on('state_changed',
       (snapshot) => {
-        // You can use this to report progress, but for now, we'll just log it.
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         console.log('Upload is ' + progress + '% done');
       }, 
       (error) => {
-        // Handle unsuccessful uploads
+        clearTimeout(timeoutId); // Clear timeout on error
         console.error("Firebase Storage Upload Error:", error);
         switch (error.code) {
           case 'storage/unauthorized':
@@ -58,7 +73,7 @@ export function uploadImage(
         }
       }, 
       () => {
-        // Handle successful uploads on complete
+        clearTimeout(timeoutId); // Clear timeout on success
         getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
       }
     );
@@ -67,12 +82,10 @@ export function uploadImage(
 
 /**
  * Deletes an image from Firebase Storage based on its URL.
- * It ignores placeholder URLs.
- * @param storage The FirebaseStorage instance.
+ * It ignores placeholder URLs and gets the storage instance internally.
  * @param imageUrl The URL of the image to delete.
  */
 export async function deleteImage(
-  storage: FirebaseStorage,
   imageUrl: string
 ): Promise<void> {
   // Don't try to delete placeholders
@@ -80,17 +93,15 @@ export async function deleteImage(
     return;
   }
   
-  // Only try to delete if it's a Firebase Storage URL
   if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('storage.googleapis.com')) {
     try {
+      const storage = getStorageInstance();
       const imageRef = refFromURL(storage, imageUrl);
       await deleteObject(imageRef);
     } catch (error: any) {
-      // It's possible the file doesn't exist, so we can ignore "object-not-found" errors.
       if (error.code !== 'storage/object-not-found') {
         console.error("Error deleting image from storage: ", error);
-        // Optionally re-throw if you want to handle it further up
-        // throw error;
+        // Do not re-throw, as failing to delete an old image shouldn't block the user.
       }
     }
   }

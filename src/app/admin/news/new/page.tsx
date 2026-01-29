@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -17,39 +17,32 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null) => {
-        if (!firestore || !storage) {
-            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
+        if (!firestore) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
         
         setIsSubmitting(true);
-        const toastControl = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." });
+        const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
         
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
-        let newArticleData: NewsArticle | null = null;
 
         try {
             let imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             if (imageFile) {
-                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
-                imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
-                toastControl.update({ id: toastControl.id, title: "Tải ảnh lên thành công!" });
-            } else {
-                 toast({
-                    title: 'Không có ảnh bìa',
-                    description: 'Đang sử dụng ảnh mặc định cho bài viết.'
-                 });
+                toast({ id: toastId, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
+                imageUrl = await uploadImage(imageFile, `news/${articleId}`);
+                toast({ id: toastId, title: "Tải ảnh lên thành công!" });
             }
 
-            toastControl.update({ id: toastControl.id, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toast({ id: toastId, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
 
-            newArticleData = {
+            const newArticleData: NewsArticle = {
                 id: articleId,
                 slug: generateSlug(values.title),
                 title: values.title,
@@ -63,8 +56,8 @@ export default function NewNewsArticlePage() {
 
             await setDoc(docRef, newArticleData);
             
-            toastControl.update({
-                id: toastControl.id,
+            toast({
+                id: toastId,
                 title: 'Thêm thành công!',
                 description: `Bài viết "${values.title}" đã được tạo.`,
             });
@@ -73,17 +66,19 @@ export default function NewNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'create',
-                requestResourceData: newArticleData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toastControl.update({
-                id: toastControl.id,
+            if (!(error.code && error.code.startsWith('storage/'))) {
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'create',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+            toast({
+                id: toastId,
                 variant: 'destructive',
                 title: 'Lỗi lưu bài viết!',
-                description: `Không thể lưu bài viết: ${error.message}`,
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

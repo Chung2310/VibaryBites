@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase'; // Import useStorage
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,7 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadImage, deleteImage } from '@/firebase/storage'; // Import storage functions
+import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -21,7 +21,6 @@ export default function EditProductPage() {
     const productId = params.id as string;
     
     const firestore = useFirestore();
-    const storage = useStorage(); // Get storage instance
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +32,7 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !storage || !product) { // Check for storage & product
+        if (!firestore || !product) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -43,30 +42,26 @@ export default function EditProductPage() {
         }
         
         setIsSubmitting(true);
-        const toastControl = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." });
+        const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
         const docRef = doc(firestore, 'cakes', product.id);
-        
-        let updatedProductData: Partial<Product> = {};
 
         try {
             let finalImageUrl = product.imageUrl;
 
             if (imageFile) {
-                // If there's a new file, delete the old one first (if it exists and isn't a placeholder)
                 if (product.imageUrl) {
-                    await deleteImage(storage, product.imageUrl);
+                    await deleteImage(product.imageUrl);
                 }
-                toastControl.update({ id: toastControl.id, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
-                finalImageUrl = await uploadImage(storage, imageFile, `products/${product.id}`);
-                toastControl.update({ id: toastControl.id, title: "Xử lý ảnh thành công!" });
+                toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
+                finalImageUrl = await uploadImage(imageFile, `products/${product.id}`);
+                toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } else if (imageWasRemoved && product.imageUrl) {
-                 // If the image was removed by the user, delete it from storage
-                await deleteImage(storage, product.imageUrl);
+                await deleteImage(product.imageUrl);
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             }
             
-            toastControl.update({ id: toastControl.id, title: "Đang lưu thông tin sản phẩm...", description: "" });
-            updatedProductData = {
+            toast({ id: toastId, title: "Đang lưu thông tin sản phẩm...", description: "" });
+            const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
                 description: values.description,
@@ -88,8 +83,8 @@ export default function EditProductPage() {
 
             await setDoc(docRef, updatedProductData, { merge: true });
             
-            toastControl.update({
-                id: toastControl.id,
+            toast({
+                id: toastId,
                 title: 'Cập nhật thành công!',
                 description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
@@ -98,17 +93,19 @@ export default function EditProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'update',
-                requestResourceData: updatedProductData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toastControl.update({
-                id: toastControl.id,
+            if (!(error.code && error.code.startsWith('storage/'))) {
+                 const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'update',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            }
+            toast({
+                id: toastId,
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại.`,
+                description: error.message || `Đã có lỗi không xác định xảy ra.`,
                 duration: 9000,
             });
         } finally {
