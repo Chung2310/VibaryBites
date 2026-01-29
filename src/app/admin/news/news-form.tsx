@@ -23,10 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { RichTextEditor } from './rich-text-editor';
+import { ImageUploader } from '@/components/image-uploader';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Tiêu đề phải có ít nhất 3 ký tự." }),
@@ -71,8 +71,6 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
     },
   });
 
-  const imageUrl = form.watch('imageUrl');
-  
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -122,25 +120,24 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
 
           {/* Right Column */}
           <div className="md:col-span-1 space-y-6">
-            <FormField
+             <FormField
                 control={form.control}
                 name="imageUrl"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>URL Ảnh bìa</FormLabel>
+                        <FormLabel>Ảnh bìa</FormLabel>
                         <FormControl>
-                            <Input placeholder="https://example.com/image.jpg" {...field} />
+                            <ImageUploader 
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSubmitting}
+                            />
                         </FormControl>
                         <FormDescription>Ảnh bìa cho bài viết, nên có tỉ lệ 4:3</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
             />
-            {imageUrl && (
-                <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden border">
-                    <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
-                </div>
-            )}
             <FormField
               control={form.control}
               name="author"

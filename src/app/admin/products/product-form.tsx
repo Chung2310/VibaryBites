@@ -23,12 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { ImageUploader } from "@/components/image-uploader";
 
 const productSchema = z.object({
     // Basic Info
@@ -109,8 +109,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
-  const imageUrl = form.watch('imageUrl');
-  
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -152,27 +150,26 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
 
         {/* --- Image URL Input --- */}
         <div className="space-y-2">
-            <FormField
+           <FormField
                 control={form.control}
                 name="imageUrl"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>URL Ảnh sản phẩm</FormLabel>
+                        <FormLabel>Ảnh sản phẩm</FormLabel>
                         <FormControl>
-                            <Input placeholder="https://example.com/path/to/your/image.png" {...field} />
+                            <ImageUploader 
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                disabled={isSubmitting}
+                            />
                         </FormControl>
                         <FormDescription>
-                            Dán đường dẫn URL của ảnh. Ảnh nên có tỉ lệ 1:1 và nền trong suốt để hiển thị tốt nhất.
+                            Tải lên ảnh cho sản phẩm. Ảnh nên có tỉ lệ 1:1.
                         </FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
             />
-            {imageUrl && (
-                <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden border mt-4">
-                    <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
-                </div>
-            )}
         </div>
 
         <Separator />
