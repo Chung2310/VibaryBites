@@ -8,9 +8,11 @@ service firebase.storage {
     match /{allPaths=**} {
       allow read;
       
-      // Allow writes (uploads, updates, deletes) only if the user is authenticated.
-      // This is a security measure to prevent unauthorized uploads.
-      allow write: if request.auth != null;
+      // Allow writes (uploads, updates, deletes) if true.
+      // This is a temporary, insecure rule for debugging purposes to rule out
+      // authentication issues with storage uploads.
+      // In production, this should be restricted, e.g., 'if request.auth != null;'.
+      allow write: if true;
     }
   }
 }

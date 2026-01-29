@@ -9,6 +9,9 @@ import {
 } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
+// The resizing logic is a potential source of errors. For now, we will bypass it
+// to isolate the problem. We will upload the original file directly.
+/*
 const MAX_IMAGE_DIMENSION = 1200; // A good balance for quality and size
 
 const resizeImage = (file: File): Promise<Blob> => {
@@ -59,6 +62,7 @@ const resizeImage = (file: File): Promise<Blob> => {
     reader.readAsDataURL(file);
   });
 };
+*/
 
 export const uploadImage = (
   file: File,
@@ -74,8 +78,10 @@ export const uploadImage = (
     }
 
     try {
-      const imageBlob = await resizeImage(file);
-      const fileName = `images/${uuidv4()}.webp`;
+      // Bypassing image resizing for debugging. Uploading the original file.
+      const imageBlob = file;
+      const fileExtension = file.name.split('.').pop() || 'jpg';
+      const fileName = `images/${uuidv4()}.${fileExtension}`;
       const storageRef = ref(storage, fileName);
       const uploadTask = uploadBytesResumable(storageRef, imageBlob);
 
@@ -94,7 +100,7 @@ export const uploadImage = (
         }
       );
     } catch (error) {
-      console.error('Error during image processing or upload:', error);
+      console.error('Error during image upload setup:', error);
       reject(error);
     }
   });
