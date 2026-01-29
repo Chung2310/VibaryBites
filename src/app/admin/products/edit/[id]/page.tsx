@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,6 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,8 +32,8 @@ export default function EditProductPage() {
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
-    const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore || !product || !productDocRef) {
+    const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null) => {
+        if (!firestore || !storage || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
@@ -39,6 +41,19 @@ export default function EditProductPage() {
         setIsSubmitting(true);
         
         try {
+            let finalImageUrl = product.imageUrl;
+
+            if (imageFile) {
+                if (product.imageUrl && product.imageUrl.includes('firebasestorage.googleapis.com')) {
+                    try {
+                        await deleteImage(storage, product.imageUrl);
+                    } catch (deleteError: any) {
+                         console.warn(`Could not delete old image: ${deleteError.message}`);
+                    }
+                }
+                finalImageUrl = await uploadImage(storage, 'product_images', imageFile);
+            }
+
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -47,7 +62,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 slug: generateSlug(values.name),
-                imageUrl: values.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image',
+                imageUrl: finalImageUrl,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -66,19 +81,10 @@ export default function EditProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            let errorMessage = 'Đã có lỗi không xác định xảy ra.';
-             if (error.code?.includes('permission-denied')) {
-                errorMessage = 'Lỗi quyền hạn. Vui lòng kiểm tra lại quy tắc bảo mật.';
-            } else if (error.message.includes('entity too large') || (error.code && error.code.includes('resource-exhausted'))) {
-                errorMessage = 'Tệp ảnh quá lớn để lưu trực tiếp. Vui lòng chọn ảnh có dung lượng nhỏ hơn (dưới 1MB).';
-            } else {
-                errorMessage = error.message;
-            }
-            
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: errorMessage,
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
         } finally {

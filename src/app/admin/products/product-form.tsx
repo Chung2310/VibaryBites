@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (values: ProductFormValues) => void;
+  onSubmit: (values: ProductFormValues, imageFile: File | null) => void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -110,19 +110,35 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
-  const imageUrl = form.watch("imageUrl");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(product?.imageUrl || null);
+  
+  useEffect(() => {
+    // Clean up the object URL on unmount or when previewUrl changes
+    let objectUrl: string | null = null;
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      objectUrl = previewUrl;
+    }
+    
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        form.setValue('imageUrl', dataUrl, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setImageFile(file);
+      const newPreviewUrl = URL.createObjectURL(file);
+      setPreviewUrl(newPreviewUrl);
+      form.setValue('imageUrl', newPreviewUrl, { shouldValidate: true });
     }
-  }, [form]);
+  }, [form, previewUrl]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -131,12 +147,21 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const removeImage = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+    }
+    setImageFile(null);
+    setPreviewUrl(null);
     form.setValue('imageUrl', '', { shouldValidate: true });
+  };
+
+  const handleFormSubmit = (values: ProductFormValues) => {
+    onSubmit(values, imageFile);
   };
   
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         
         {/* --- Main Product Info --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -176,9 +201,9 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         {/* --- Image Uploader --- */}
         <div className="space-y-2">
             <FormLabel>Ảnh sản phẩm</FormLabel>
-             {imageUrl ? (
+             {previewUrl ? (
                 <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden">
-                  <Image src={imageUrl} alt="Xem trước ảnh" fill className="object-cover" />
+                  <Image src={previewUrl} alt="Xem trước ảnh" fill className="object-cover" />
                   <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
