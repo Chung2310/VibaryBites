@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Product } from "@/lib/types";
+import type { Product, ProductCategory } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -30,6 +30,8 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 
 const productSchema = z.object({
@@ -64,13 +66,6 @@ interface ProductFormProps {
   isEditMode: boolean;
 }
 
-const hardcodedCategories = [
-    { slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật' },
-    { slug: 'banh-le', title: 'Bánh lẻ' },
-    { slug: 'banh-nuong', title: 'Bánh nướng' },
-    { slug: 'banh-tea-break', title: 'Bánh Tea-Break' },
-];
-
 const defaultStorageInstructions = `Luôn giữ bánh trong hộp kín & bảo quản trong ngăn mát tủ lạnh
 Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị chảy)
 Sử dụng trong vòng 03 ngày`;
@@ -79,6 +74,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
   const [imageUrlInput, setImageUrlInput] = useState(isEditMode && product?.imageUrl ? product.imageUrl : '');
+
+  const firestore = useFirestore();
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -182,10 +181,14 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                 <FormField control={form.control} name="categorySlug" render={({ field }) => (
                     <FormItem>
                     <FormLabel>Danh mục</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Chọn một danh mục" /></SelectTrigger></FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder={isLoadingCategories ? "Đang tải..." : "Chọn một danh mục"} />
+                            </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
-                            {hardcodedCategories.map(cat => ( <SelectItem key={cat.slug} value={cat.slug}>{cat.title}</SelectItem> ))}
+                            {categories?.map(cat => ( <SelectItem key={cat.slug} value={cat.slug}>{cat.title}</SelectItem> ))}
                         </SelectContent>
                     </Select>
                     <FormMessage />
