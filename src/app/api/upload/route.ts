@@ -1,16 +1,12 @@
-
 import { NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
-import { firebaseConfig } from '@/firebase/config';
 import type { NextRequest } from 'next/server';
 
 // Initialize Google Cloud Storage
-// This assumes the environment is set up with Google Cloud credentials.
-const storage = new Storage({
-  projectId: firebaseConfig.projectId,
-});
-
-const bucket = storage.bucket(firebaseConfig.storageBucket);
+// It will try to infer project ID and credentials from the environment.
+const storage = new Storage();
+const bucketName = "gen-lang-client-0850828234.appspot.com"; // Manually specify bucket name
+const bucket = storage.bucket(bucketName);
 
 export async function POST(request: NextRequest) {
   try {
