@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -12,6 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { uploadFile } from '@/lib/storage-client';
 
 export default function NewProductPage() {
     const router = useRouter();
@@ -26,8 +27,15 @@ export default function NewProductPage() {
         }
 
         setIsSubmitting(true);
+        let finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
         
         try {
+            // Step 1: Handle image upload if a new file is present
+            if (values.imageFile) {
+                finalImageUrl = await uploadFile(values.imageFile, 'products');
+            }
+
+            // Step 2: Prepare data and save to Firestore
             const productId = `prod-${Date.now()}`;
             const docRef = doc(firestore, 'cakes', productId);
 
@@ -40,7 +48,7 @@ export default function NewProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 description: values.description,
-                imageUrl: values.imageUrl || 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image',
+                imageUrl: finalImageUrl,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -62,9 +70,14 @@ export default function NewProductPage() {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi tạo sản phẩm!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'cakes', // Simplified path for creation
+                operation: 'create',
+                requestResourceData: values
+            }));
         } finally {
             setIsSubmitting(false);
         }

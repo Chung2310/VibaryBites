@@ -24,14 +24,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
-
 
 const productSchema = z.object({
     // Basic Info
@@ -41,7 +40,10 @@ const productSchema = z.object({
     stock: z.coerce.number().int().min(0, { message: "Số lượng tồn kho phải là số nguyên không âm." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn danh mục."),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
+    
+    // Image Handling
     imageUrl: z.string().optional(),
+    imageFile: z.instanceof(File).optional(),
 
     // Detailed Description
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
@@ -85,6 +87,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         categorySlug: product.categorySlug,
         description: product.description,
         imageUrl: product.imageUrl || "",
+        imageFile: undefined,
         detailedDescription_flavor: product.detailedDescription?.flavor || "",
         detailedDescription_ingredients: product.detailedDescription?.ingredients || "",
         detailedDescription_storage: product.detailedDescription?.storage || defaultStorageInstructions,
@@ -100,6 +103,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         categorySlug: "",
         description: "",
         imageUrl: "",
+        imageFile: undefined,
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
         detailedDescription_storage: defaultStorageInstructions,
@@ -110,18 +114,31 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
-  const [previewUrl, setPreviewUrl] = useState<string | null>(product?.imageUrl || null);
-  
+  const imageFile = form.watch('imageFile');
+  const existingImageUrl = form.watch('imageUrl');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(existingImageUrl || null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    if (imageFile) {
+        objectUrl = URL.createObjectURL(imageFile);
+        setPreviewUrl(objectUrl);
+    } else {
+        setPreviewUrl(existingImageUrl || null);
+    }
+
+    return () => {
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+        }
+    };
+  }, [imageFile, existingImageUrl]);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        setPreviewUrl(dataUrl);
-        form.setValue('imageUrl', dataUrl, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      form.setValue('imageFile', file, { shouldValidate: true });
+      form.setValue('imageUrl', '', { shouldValidate: false }); // Clear old URL so we know to upload
     }
   }, [form]);
 
@@ -132,7 +149,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const removeImage = () => {
-    setPreviewUrl(null);
+    form.setValue('imageFile', undefined, { shouldValidate: true });
     form.setValue('imageUrl', '', { shouldValidate: true });
   };
   

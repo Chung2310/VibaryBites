@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -13,6 +13,8 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { uploadFile, deleteFile } from '@/lib/storage-client';
+
 
 export default function EditNewsArticlePage() {
     const router = useRouter();
@@ -37,8 +39,19 @@ export default function EditNewsArticlePage() {
         }
         
         setIsSubmitting(true);
+        let finalImageUrl = article.imageUrl;
         
         try {
+            if (values.imageFile) {
+                if (article.imageUrl && !article.imageUrl.includes('placehold.co')) {
+                   await deleteFile(article.imageUrl);
+                }
+                finalImageUrl = await uploadFile(values.imageFile, 'news_images');
+            } else if (!values.imageUrl && article.imageUrl) {
+                await deleteFile(article.imageUrl);
+                finalImageUrl = 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image';
+            }
+
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
@@ -46,7 +59,7 @@ export default function EditNewsArticlePage() {
                 excerpt: values.excerpt,
                 content: values.content,
                 slug: generateSlug(values.title),
-                imageUrl: values.imageUrl || article.imageUrl,
+                imageUrl: finalImageUrl,
             };
 
             await setDoc(articleDocRef, updatedArticleData, { merge: true });
@@ -59,9 +72,14 @@ export default function EditNewsArticlePage() {
             toast({
                 variant: 'destructive',
                 title: 'Cập nhật thất bại',
-                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: articleDocRef.path,
+                operation: 'update',
+                requestResourceData: values,
+            }));
         } finally {
             setIsSubmitting(false);
         }

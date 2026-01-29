@@ -28,8 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { uploadImage } from '@/firebase/storage';
-import { useStorage } from '@/firebase';
+import { uploadFile } from '@/lib/storage-client';
 
 interface EditorToolbarProps {
   editor: any;
@@ -41,7 +40,6 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
-  const storage = useStorage();
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -77,16 +75,13 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
           return;
       }
-      if (!storage) {
-          toast({ variant: 'destructive', title: "Lỗi", description: "Dịch vụ lưu trữ chưa sẵn sàng."});
-          return;
-      }
-
+      
       setIsUploading(true);
       try {
-        const downloadURL = await uploadImage(storage, 'content_images', imageFile);
+        const downloadURL = await uploadFile(imageFile, 'content_images');
         editor.chain().focus().setImage({ src: downloadURL }).run();
         handleCloseModal();
+        toast({ title: 'Thành công', description: 'Ảnh đã được tải lên và chèn vào bài viết.' });
       } catch (error: any) {
         toast({ variant: 'destructive', title: "Lỗi tải ảnh lên", description: error.message || "Đã có lỗi xảy ra khi tải ảnh lên."});
       } finally {
@@ -194,7 +189,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       }),
       Image.configure({
         inline: true,
-        allowBase64: true, // Keep this true for pasting, but uploads will be URLs
+        allowBase64: true,
       })
     ],
     content: value,

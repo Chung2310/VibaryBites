@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,6 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
+import { uploadFile, deleteFile } from '@/lib/storage-client';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -37,8 +38,25 @@ export default function EditProductPage() {
         }
         
         setIsSubmitting(true);
+        let finalImageUrl = product.imageUrl;
         
         try {
+            // Step 1: Handle image upload/delete if changed
+            if (values.imageFile) {
+                // Delete old image if it exists and is not a placeholder
+                if (product.imageUrl && !product.imageUrl.includes('placehold.co')) {
+                   await deleteFile(product.imageUrl);
+                }
+                // Upload the new image
+                finalImageUrl = await uploadFile(values.imageFile, 'products');
+            } else if (!values.imageUrl && product.imageUrl) {
+                // Image was removed without a new one being added
+                await deleteFile(product.imageUrl);
+                finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
+            }
+
+
+            // Step 2: Prepare data for Firestore
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -47,7 +65,7 @@ export default function EditProductPage() {
                 stock: Number(values.stock),
                 categorySlug: values.categorySlug,
                 slug: generateSlug(values.name),
-                imageUrl: values.imageUrl || product.imageUrl,
+                imageUrl: finalImageUrl,
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
@@ -59,6 +77,7 @@ export default function EditProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
+            // Step 3: Save to Firestore
             await setDoc(productDocRef, updatedProductData, { merge: true });
 
             toast({ title: 'Cập nhật thành công!', description: `Sản phẩm "${values.name}" đã được cập nhật.` });
@@ -69,9 +88,14 @@ export default function EditProductPage() {
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra. Ảnh có thể quá lớn.',
+                description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: productDocRef.path,
+                operation: 'update',
+                requestResourceData: values
+            }));
         } finally {
             setIsSubmitting(false);
         }

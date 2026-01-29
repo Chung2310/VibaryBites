@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { RichTextEditor } from './rich-text-editor';
 import { useDropzone } from 'react-dropzone';
@@ -37,6 +37,7 @@ const formSchema = z.object({
   excerpt: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
   content: z.string().min(20, "Nội dung phải có ít nhất 20 ký tự."),
   imageUrl: z.string().optional(),
+  imageFile: z.instanceof(File).optional(),
 });
 
 export type NewsFormValues = z.infer<typeof formSchema>;
@@ -63,6 +64,7 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
         excerpt: article.excerpt,
         content: article.content,
         imageUrl: article.imageUrl || "",
+        imageFile: undefined,
     } : {
         title: "",
         author: "Vibary Team",
@@ -70,21 +72,35 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
         excerpt: "",
         content: "",
         imageUrl: "",
+        imageFile: undefined,
     },
   });
 
-  const [previewUrl, setPreviewUrl] = useState<string | null>(article?.imageUrl || null);
+  const imageFile = form.watch('imageFile');
+  const existingImageUrl = form.watch('imageUrl');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(existingImageUrl || null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    if (imageFile) {
+        objectUrl = URL.createObjectURL(imageFile);
+        setPreviewUrl(objectUrl);
+    } else {
+        setPreviewUrl(existingImageUrl || null);
+    }
+
+    return () => {
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+        }
+    };
+  }, [imageFile, existingImageUrl]);
   
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        setPreviewUrl(dataUrl);
-        form.setValue('imageUrl', dataUrl, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      form.setValue('imageFile', file, { shouldValidate: true });
+      form.setValue('imageUrl', '', { shouldValidate: false });
     }
   }, [form]);
 
@@ -95,7 +111,7 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
   });
 
   const removeImage = () => {
-    setPreviewUrl(null);
+    form.setValue('imageFile', undefined, { shouldValidate: true });
     form.setValue('imageUrl', '', { shouldValidate: true });
   };
   
