@@ -192,7 +192,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             <FormLabel>Ảnh sản phẩm</FormLabel>
              {imagePreview ? (
                 <div className="relative w-full max-w-sm aspect-square rounded-md overflow-hidden">
-                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-contain" />
+                  <Image src={imagePreview} alt="Xem trước ảnh" fill className="object-cover" />
                   <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={removeImage}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
