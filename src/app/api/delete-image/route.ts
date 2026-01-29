@@ -3,8 +3,9 @@ import { Storage } from '@google-cloud/storage';
 import type { NextRequest } from 'next/server';
 
 // Initialize Google Cloud Storage
-// It will try to infer project ID and credentials from the environment.
-const storage = new Storage();
+const storage = new Storage({
+    projectId: "gen-lang-client-0850828234",
+});
 const bucketName = "gen-lang-client-0850828234.appspot.com"; // Manually specify bucket name
 
 export async function POST(request: NextRequest) {
@@ -42,6 +43,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'File not found, assumed already deleted.' });
     }
     console.error('Delete API Error:', error);
+    if (error instanceof Error && error.message.includes('Could not refresh access token')) {
+        console.error('Authentication Error: The server environment is not correctly authenticated with Google Cloud. Check Application Default Credentials.');
+    }
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json({ error: 'Failed to delete file.', details: errorMessage }, { status: 500 });
   }
