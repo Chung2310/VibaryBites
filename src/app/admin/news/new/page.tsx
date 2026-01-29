@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -17,6 +17,7 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewNewsArticlePage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,7 +37,7 @@ export default function NewNewsArticlePage() {
 
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
-                imageUrl = await uploadImage(imageFile, `news/${articleId}`);
+                imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
             }
 
             toast({ id: toastId, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
@@ -64,7 +65,7 @@ export default function NewNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
 
             if (!isStorageError) {
                  const permissionError = new FirestorePermissionError({
@@ -72,14 +73,13 @@ export default function NewNewsArticlePage() {
                     operation: 'create',
                     requestResourceData: values
                 });
-                // This will throw and be caught by the error boundary
                 errorEmitter.emit('permission-error', permissionError);
             }
             
             toast({
                 id: toastId,
                 variant: 'destructive',
-                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi lưu bài viết!',
+                title: 'Lỗi tạo bài viết!',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -21,6 +21,7 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,13 +50,13 @@ export default function EditProductPage() {
 
             if (imageFile) {
                 if (product.imageUrl) {
-                    deleteImage(product.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
+                    deleteImage(storage, product.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
                 }
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
-                finalImageUrl = await uploadImage(imageFile, `products/${product.id}`);
+                finalImageUrl = await uploadImage(storage, imageFile, `products/${product.id}`);
                 toast({ id: toastId, title: "Xử lý ảnh thành công!" });
             } else if (imageWasRemoved && product.imageUrl) {
-                 deleteImage(product.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
+                 deleteImage(storage, product.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             } else if (imagePreview) {
                 finalImageUrl = imagePreview;
@@ -94,7 +95,7 @@ export default function EditProductPage() {
             router.push(`/admin/products`);
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
             
             if (!isStorageError) {
                  const permissionError = new FirestorePermissionError({
@@ -108,7 +109,7 @@ export default function EditProductPage() {
             toast({
                 id: toastId,
                 variant: 'destructive',
-                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật sản phẩm',
+                title: 'Không thể cập nhật sản phẩm',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });

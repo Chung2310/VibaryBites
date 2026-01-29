@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -17,6 +17,7 @@ import { uploadImage } from '@/firebase/storage';
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,7 +36,7 @@ export default function NewProductPage() {
 
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
-                imageUrl = await uploadImage(imageFile, `products/${productId}`);
+                imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
             } else if (imagePreview) {
                 imageUrl = imagePreview;
             }
@@ -75,7 +76,7 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
+            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
 
             if (!isStorageError) {
                  const permissionError = new FirestorePermissionError({
@@ -89,7 +90,7 @@ export default function NewProductPage() {
             toast({
                 id: toastId,
                 variant: 'destructive',
-                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Lỗi tạo sản phẩm!',
+                title: 'Lỗi tạo sản phẩm!',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });

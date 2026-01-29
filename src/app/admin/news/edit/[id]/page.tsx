@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -21,6 +21,7 @@ export default function EditNewsArticlePage() {
     const articleId = (params.id || '') as string;
     
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,13 +51,13 @@ export default function EditNewsArticlePage() {
             if (imageFile) {
                 // Delete old image but don't block if it fails
                 if (article.imageUrl) {
-                    deleteImage(article.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
+                    deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
                 }
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
-                finalImageUrl = await uploadImage(imageFile, `news/${article.id}`);
+                finalImageUrl = await uploadImage(storage, imageFile, `news/${article.id}`);
             } 
             else if (imageWasRemoved && article.imageUrl) {
-                deleteImage(article.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
+                deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
                 finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
             }
 
@@ -97,7 +98,7 @@ export default function EditNewsArticlePage() {
             toast({
                 id: toastId,
                 variant: 'destructive',
-                title: isStorageError ? 'Lỗi tải ảnh lên!' : 'Không thể cập nhật bài viết',
+                title: 'Không thể cập nhật bài viết',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });

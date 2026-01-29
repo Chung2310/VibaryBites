@@ -1,78 +1,86 @@
 'use client';
 
+import { 
+    getDownloadURL, 
+    ref, 
+    uploadBytesResumable, 
+    deleteObject,
+    type FirebaseStorage
+} from "firebase/storage";
+
 /**
- * Uploads a file by proxying through a server-side API route.
+ * Uploads an image to Firebase Storage using the client-side SDK.
+ * @param storage The FirebaseStorage instance.
  * @param file The file to upload.
- * @param path The destination path/folder in the storage bucket (e.g., 'products').
+ * @param path The destination path in the storage bucket (e.g., 'products').
  * @returns A promise that resolves with the public download URL.
- * @throws An error if the upload fails.
  */
-export async function uploadImage(file: File, path: string): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('path', path);
+export async function uploadImage(storage: FirebaseStorage, file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`);
+    
+    return new Promise((resolve, reject) => {
+        const uploadTask = uploadBytesResumable(storageRef, file);
 
-  // Set a timeout for the fetch request
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
+        const timeoutId = setTimeout(() => {
+            uploadTask.cancel();
+            reject(new Error('Upload timed out after 120 seconds. Please check your network connection and try again.'));
+        }, 120000);
 
-  try {
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                // Optional: handle progress updates
+            },
+            (error) => {
+                clearTimeout(timeoutId);
+                console.error("Firebase Storage Upload Error: ", error);
+                switch (error.code) {
+                    case 'storage/unauthorized':
+                        reject(new Error('Permission denied. You might need to sign in or check security rules.'));
+                        break;
+                    case 'storage/canceled':
+                        reject(new Error('Upload was canceled.'));
+                        break;
+                    case 'storage/unknown':
+                    default:
+                        reject(new Error('An unknown error occurred during upload. Please try again.'));
+                        break;
+                }
+            },
+            async () => {
+                clearTimeout(timeoutId);
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                } catch (error) {
+                    console.error("Error getting download URL: ", error);
+                    reject(new Error('Upload successful, but failed to get the download URL.'));
+                }
+            }
+        );
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      // Try to parse the error response from the server
-      const errorBody = await response.json().catch(() => ({ 
-        error: `Server responded with status: ${response.status}` 
-      }));
-      throw new Error(errorBody.details || errorBody.error || `Upload failed. Server responded with ${response.status}`);
-    }
-
-    const { imageUrl } = await response.json();
-    if (!imageUrl) {
-      throw new Error('Upload successful, but the server did not return an image URL.');
-    }
-
-    return imageUrl;
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Upload timed out after 120 seconds. Please check your network connection and try again.');
-    }
-    // Re-throw other errors
-    throw error;
-  }
 }
 
-
 /**
- * Deletes an image by proxying through a server-side API route.
- * This is a "fire-and-forget" operation from the client's perspective.
+ * Deletes an image from Firebase Storage.
+ * @param storage The FirebaseStorage instance.
  * @param imageUrl The public URL of the image to delete.
  */
-export async function deleteImage(imageUrl: string): Promise<void> {
-  if (!imageUrl || imageUrl.includes('placehold.co')) {
-    return;
-  }
+export async function deleteImage(storage: FirebaseStorage, imageUrl: string): Promise<void> {
+    if (!imageUrl || !imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
+        console.warn(`Skipping delete for non-Firebase URL: ${imageUrl}`);
+        return;
+    }
 
-  try {
-    // We don't await this, because we don't want to block the UI
-    // on a non-critical cleanup task. The server will handle it.
-    fetch('/api/delete-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ imageUrl }),
-      keepalive: true, // Helps ensure the request is sent even if the page is closing
-    });
-  } catch (error) {
-    // Log the error but don't re-throw to avoid interrupting the user flow.
-    console.warn('Client-side deleteImage call failed to dispatch (non-blocking):', error);
-  }
+    try {
+        const imageRef = ref(storage, imageUrl);
+        await deleteObject(imageRef);
+    } catch (error: any) {
+        // It's okay if the object doesn't exist, maybe it was already deleted.
+        if (error.code === 'storage/object-not-found') {
+            console.warn(`File not found, assumed already deleted: ${imageUrl}`);
+            return;
+        }
+        // Log other errors but don't re-throw to avoid interrupting the user flow.
+        console.error('Client-side deleteImage call failed:', error);
+    }
 }

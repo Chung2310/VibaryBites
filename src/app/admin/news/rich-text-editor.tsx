@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { uploadImage } from '@/firebase/storage';
+import { useStorage } from '@/firebase';
 
 interface EditorToolbarProps {
   editor: any;
@@ -40,6 +41,7 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const storage = useStorage();
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -78,7 +80,7 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
 
       setIsUploading(true);
       try {
-        const downloadURL = await uploadImage(imageFile, 'content_images');
+        const downloadURL = await uploadImage(storage, imageFile, 'content_images');
         editor.chain().focus().setImage({ src: downloadURL }).run();
         handleCloseModal();
       } catch (error: any) {
