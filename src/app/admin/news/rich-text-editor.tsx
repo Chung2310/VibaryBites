@@ -29,13 +29,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { uploadImage } from '@/firebase/storage';
+import { useStorage } from '@/firebase';
+import type { FirebaseStorage } from 'firebase/storage';
 
-interface RichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
+interface EditorToolbarProps {
+  editor: any;
+  storage: FirebaseStorage;
 }
 
-const EditorToolbar = ({ editor }: { editor: any }) => {
+const EditorToolbar = ({ editor, storage }: EditorToolbarProps) => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -74,7 +76,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       
       setIsUploading(true);
       try {
-          const downloadURL = await uploadImage(imageFile);
+          const downloadURL = await uploadImage(storage, imageFile);
           editor.chain().focus().setImage({ src: downloadURL }).run();
           setIsImageModalOpen(false);
           setImageFile(null);
@@ -160,7 +162,15 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
   );
 };
 
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
 export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+  const storage = useStorage();
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -205,7 +215,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
-  if (!editor) {
+  if (!editor || !storage) {
     return null;
   }
 
@@ -218,7 +228,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
   return (
     <div className="border border-input rounded-b-md">
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} storage={storage} />
       
       <BubbleMenu
         editor={editor}
