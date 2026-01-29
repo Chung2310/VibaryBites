@@ -48,8 +48,10 @@ export default function EditProductPage() {
         try {
             let finalImageUrl = product.imageUrl;
 
+            // Step 1: Handle image operations
             if (imageFile) {
                 toast({ id: toastId, title: "Đang xử lý ảnh mới...", description: "Bước 1/2: Tải ảnh sản phẩm." });
+                // Delete old image if it's a firebase URL
                 if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
                     await deleteImage(storage, product.imageUrl);
                 }
@@ -61,9 +63,11 @@ export default function EditProductPage() {
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             } 
             else if (imagePreview && imagePreview !== product.imageUrl) {
+                // This handles pasting a new URL
                 finalImageUrl = imagePreview;
             }
             
+            // Step 2: Save product data
             toast({ id: toastId, title: "Đang lưu thông tin sản phẩm...", description: "Bước 2/2: Cập nhật dữ liệu." });
             const updatedProductData: Partial<Product> = {
                 name: values.name,
@@ -87,6 +91,7 @@ export default function EditProductPage() {
 
             await setDoc(productDocRef, updatedProductData, { merge: true });
 
+            // Step 3: Success
             toast({
                 id: toastId,
                 title: 'Cập nhật thành công!',
@@ -97,7 +102,7 @@ export default function EditProductPage() {
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
             
-            if (error.name !== 'Error' && firestore) {
+            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
                  const permissionError = new FirestorePermissionError({
                     path: productDocRef.path,
                     operation: 'update',
@@ -114,6 +119,7 @@ export default function EditProductPage() {
                 duration: 9000,
             });
         } finally {
+            // This is guaranteed to run, preventing the UI from getting stuck.
             setIsSubmitting(false);
         }
     };

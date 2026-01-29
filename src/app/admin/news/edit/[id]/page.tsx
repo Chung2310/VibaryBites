@@ -51,6 +51,7 @@ export default function EditNewsArticlePage() {
             // Step 1: Handle image operations
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Bước 1/2: Xử lý ảnh bìa." });
+                // Delete old image if it exists and is a Firebase Storage URL
                 if (article.imageUrl && article.imageUrl.includes('firebasestorage')) {
                     await deleteImage(storage, article.imageUrl);
                 }
@@ -88,7 +89,8 @@ export default function EditNewsArticlePage() {
         } catch (error: any) {
             console.error("Lỗi khi cập nhật bài viết:", error);
             
-            if (error.name !== 'Error' && firestore) { 
+            // This is a Firestore permission error
+            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
                  const permissionError = new FirestorePermissionError({
                     path: articleDocRef.path,
                     operation: 'update',
@@ -105,6 +107,7 @@ export default function EditNewsArticlePage() {
                 duration: 9000,
             });
         } finally {
+            // This is guaranteed to run, preventing the UI from getting stuck.
             setIsSubmitting(false);
         }
     };

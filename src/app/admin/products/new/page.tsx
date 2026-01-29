@@ -30,17 +30,22 @@ export default function NewProductPage() {
         setIsSubmitting(true);
         const { id: toastId } = toast({ title: "Đang tạo sản phẩm...", description: "Vui lòng đợi." });
         
+        const productId = `prod-${Date.now()}`;
+        const docRef = doc(firestore, 'cakes', productId);
+        
         try {
-            const productId = `prod-${Date.now()}`;
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
 
+            // Step 1: Upload image if it exists
             if (imageFile) {
                 toast({ id: toastId, title: "Đang tải ảnh lên...", description: "Bước 1/2: Xử lý ảnh sản phẩm." });
                 imageUrl = await uploadImage(storage, `products/${productId}`, imageFile);
             } else if (imagePreview) {
+                // This case handles when a URL is pasted directly without uploading a file
                 imageUrl = imagePreview;
             }
 
+            // Step 2: Prepare and save document data
             toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Bước 2/2: Lưu dữ liệu." });
 
             const newProductData: Product = {
@@ -64,9 +69,9 @@ export default function NewProductPage() {
                 structure: values.structure?.split('\n').filter(Boolean) || [],
             };
 
-            const docRef = doc(firestore, 'cakes', productId);
             await setDoc(docRef, newProductData);
             
+            // Step 3: Final success notification and navigation
             toast({
                 id: toastId,
                 title: 'Thêm thành công!',
@@ -77,9 +82,9 @@ export default function NewProductPage() {
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
 
-            if (error.name !== 'Error' && firestore) {
+            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) {
                  const permissionError = new FirestorePermissionError({
-                    path: `cakes/prod-${Date.now()}`,
+                    path: docRef.path,
                     operation: 'create',
                     requestResourceData: values
                 });
@@ -94,6 +99,7 @@ export default function NewProductPage() {
                 duration: 9000,
             });
         } finally {
+            // This is guaranteed to run, preventing the UI from getting stuck.
             setIsSubmitting(false);
         }
     };

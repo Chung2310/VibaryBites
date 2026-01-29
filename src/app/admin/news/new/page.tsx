@@ -69,8 +69,9 @@ export default function NewNewsArticlePage() {
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
             
-            if (error.name !== 'Error' && firestore) { // 'Error' is the name for my custom storage errors
-                const permissionError = new FirestorePermissionError({
+            // This is a Firestore permission error
+            if (error.name === 'FirebaseError' && error.code?.includes('permission-denied')) { 
+                 const permissionError = new FirestorePermissionError({
                     path: docRef.path,
                     operation: 'create',
                     requestResourceData: values
@@ -86,7 +87,8 @@ export default function NewNewsArticlePage() {
                 duration: 9000,
             });
         } finally {
-            setIsSubmitting(false); // CRITICAL
+            // This is guaranteed to run, preventing the UI from getting stuck.
+            setIsSubmitting(false);
         }
     };
 

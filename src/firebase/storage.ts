@@ -3,45 +3,57 @@
 import { 
     getDownloadURL, 
     ref, 
-    uploadBytes,
+    uploadBytesResumable, // Using this for its observers
     deleteObject,
-    type FirebaseStorage
+    type FirebaseStorage,
+    type UploadTask
 } from "firebase/storage";
 
 /**
- * Uploads an image to Firebase Storage using the simpler uploadBytes method.
- * This function is wrapped in a Promise with a timeout to prevent hangs.
+ * A robust function to upload a file to Firebase Storage with progress, timeout, and proper error handling.
+ * It is wrapped in a Promise that guarantees resolution or rejection.
  * @param storage The FirebaseStorage instance.
  * @param path The destination path in the storage bucket (e.g., 'products').
  * @param file The file to upload.
- * @returns A promise that resolves with the public download URL.
+ * @param progressCallback An optional callback to report upload progress (0-100).
+ * @returns A promise that resolves with the public download URL of the uploaded file.
  */
-export async function uploadImage(storage: FirebaseStorage, path: string, file: File): Promise<string> {
-    return new Promise(async (resolve, reject) => {
+export async function uploadImage(
+    storage: FirebaseStorage, 
+    path: string, 
+    file: File,
+    progressCallback?: (progress: number) => void
+): Promise<string> {
+    return new Promise((resolve, reject) => {
         const storageRef = ref(storage, `${path}/${Date.now()}-${file.name.replace(/\s/g, '_')}`);
-        
+        const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+
         // Set a timeout for the entire operation.
         const timeoutId = setTimeout(() => {
-            reject(new Error("Upload timed out after 30 seconds. Please check your network connection and try again."));
-        }, 30000); // 30 seconds
+            uploadTask.cancel(); // Cancel the upload if it's still running
+            reject(new Error("Upload timed out after 120 seconds. Please check your network connection and try again."));
+        }, 120000); // 120 seconds
 
-        try {
-            const snapshot = await uploadBytes(storageRef, file);
-            clearTimeout(timeoutId); // Clear timeout on successful upload
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            resolve(downloadURL);
-        } catch (error: any) {
-            clearTimeout(timeoutId); // Clear timeout on failure
-            console.error("Firebase Storage Upload Error: ", error);
-            // Create a user-friendly error message
-            let message = 'An unknown error occurred during upload. Please try again.';
-            if (error.code) {
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                // Progress observer
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                if (progressCallback) {
+                    progressCallback(progress);
+                }
+            },
+            (error) => {
+                // Error observer
+                clearTimeout(timeoutId); // Clear the timeout as we have an error
+                console.error("Firebase Storage Upload Error: ", error);
+                
+                let message = 'An unknown error occurred during upload.';
                 switch (error.code) {
                     case 'storage/unauthorized':
                         message = 'Permission denied. Please check your storage security rules.';
                         break;
                     case 'storage/canceled':
-                        message = 'Upload was canceled.';
+                        message = 'Upload was canceled by the user or due to a timeout.';
                         break;
                     case 'storage/unknown':
                         message = 'An unknown storage error occurred. Your network connection might be unstable.';
@@ -49,12 +61,22 @@ export async function uploadImage(storage: FirebaseStorage, path: string, file: 
                     default:
                         message = `Storage error: ${error.code}. Please contact support.`;
                 }
+                reject(new Error(message));
+            },
+            async () => {
+                // Completion observer
+                clearTimeout(timeoutId); // Clear the timeout as the upload is complete
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                } catch (getUrlError) {
+                    console.error("Error getting download URL: ", getUrlError);
+                    reject(new Error("Upload succeeded, but failed to get download URL."));
+                }
             }
-            reject(new Error(message));
-        }
+        );
     });
 }
-
 
 /**
  * Deletes an image from Firebase Storage.
