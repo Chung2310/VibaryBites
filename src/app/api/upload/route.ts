@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       blobStream.on('finish', () => resolve(true));
       blobStream.on('error', (err) => {
           console.error("GCS Stream Error:", err);
-          reject(new Error('Could not upload file to Google Cloud Storage.'));
+          // Pass the original error from the GCS library to be caught below.
+          reject(err);
       });
       blobStream.end(buffer);
     });
