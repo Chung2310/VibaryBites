@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ProductCard } from "@/components/product-card";
@@ -10,13 +9,8 @@ import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import type { ProductCategory } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-
-const productCategories: ProductCategory[] = [
-    { id: 'cat-banh-sinh-nhat', slug: 'banh-sinh-nhat', title: 'Bánh sinh nhật', subtitle: 'Cho ngày đặc biệt', description: 'Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.' },
-    { id: 'cat-banh-le', slug: 'banh-le', title: 'Bánh lẻ', subtitle: 'Thưởng thức mỗi ngày', description: 'Các loại bánh nhỏ, entremet, và bánh ngọt để bạn tự thưởng cho bản thân.' },
-    { id: 'cat-banh-nuong', slug: 'banh-nuong', title: 'Bánh nướng', subtitle: 'Giòn tan, thơm lừng', description: 'Các loại bánh nướng cổ điển như bánh sừng bò, bánh tart, và nhiều hơn nữa.' },
-    { id: 'cat-banh-tea-break', slug: 'banh-tea-break', title: 'Bánh Tea-Break', subtitle: 'Cho tiệc trà & sự kiện', description: 'Set bánh nhỏ gọn, đa dạng cho các buổi tiệc trà công ty hoặc sự kiện đặc biệt.' },
-  ];
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function ProductsPage() {
   const { products, isLoadingProducts } = useAppStore();
@@ -24,24 +18,32 @@ export default function ProductsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const firestore = useFirestore();
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
+
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
+    if (isLoadingCategories || !categories || categories.length === 0) return;
+
     const categorySlugFromQuery = searchParams.get('category');
-    const slugToHandle = categorySlugFromQuery || productCategories[0].slug;
+    // Default to the first category if none is in the query params
+    const slugToHandle = categorySlugFromQuery || categories[0].slug;
     
     setActiveCategory(slugToHandle);
     
     if (categorySlugFromQuery) {
         const element = sectionRefs.current[categorySlugFromQuery];
         if (element) {
+            // Wait for the page to potentially re-render with the new data before scrolling
             setTimeout(() => {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         }
     }
-  }, [searchParams]);
+  }, [searchParams, categories, isLoadingCategories]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
     e.preventDefault();
@@ -55,7 +57,10 @@ export default function ProductsPage() {
         <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
-                    {productCategories.map(category => (
+                    {isLoadingCategories && Array.from({length: 4}).map((_, i) => (
+                        <Skeleton key={i} className="h-4 w-24" />
+                    ))}
+                    {categories?.map(category => (
                         <a
                             key={category.slug}
                             href={`/products?category=${category.slug}`}
@@ -73,7 +78,36 @@ export default function ProductsPage() {
         </nav>
 
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {productCategories.map((category, index) => {
+        {(isLoadingCategories ? Array.from({length: 4}).map((_, i) => ({ id: `skel-${i}`, slug: `skel-${i}`, title: '', subtitle: '', description: ''})) : (categories || [])).map((category, index) => {
+          if (isLoadingCategories) {
+             return (
+                 <section key={category.id} className="scroll-mt-24">
+                    <div className="mb-12 pt-12 text-center">
+                        <Skeleton className="h-4 w-1/4 mx-auto mb-2" />
+                        <Skeleton className="h-12 w-1/2 mx-auto mb-2" />
+                        <Skeleton className="h-4 w-3/4 mx-auto mt-4" />
+                    </div>
+                     <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
+                       {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="sm:px-8">
+                          <div className="space-y-4">
+                            <div className="p-4 space-y-2">
+                              <Skeleton className="h-6 w-3/4" />
+                              <Skeleton className="h-4 w-1/2" />
+                              <Skeleton className="h-4 w-1/4" />
+                            </div>
+                            <Skeleton className="relative w-full aspect-square" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                     {index < (categories?.length || 4) - 1 && (
+                        <Separator className="my-16 sm:my-24" />
+                    )}
+                 </section>
+             )
+          }
+            
           const categoryProducts = products.filter(p => p.categorySlug === category.slug);
 
           return (
@@ -95,7 +129,7 @@ export default function ProductsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
-                {isLoadingProducts ? (
+                {isLoadingProducts && categoryProducts.length === 0 ? (
                    Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="sm:px-8">
                       <div className="space-y-4">
@@ -121,7 +155,7 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              {index < productCategories.length - 1 && (
+              {index < (categories?.length || 0) - 1 && (
                 <Separator className="my-16 sm:my-24" />
               )}
             </section>
