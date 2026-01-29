@@ -29,7 +29,7 @@ const heroBanners = [
     subtitle: "Mọi dịp đặc biệt của bạn",
     buttonText: "KHÁM PHÁ NGAY",
     buttonLink: "/products?collection=special-occasions",
-    imageUrl: "https://placehold.co/1920x1080/F8F0E3/333333?text=Vibary+Banner",
+    imageUrl: "https://picsum.photos/seed/h-banner-1/1920/1080",
     description: "Beautifully crafted entremet cake on a platter.",
     imageHint: "entremet cake"
   },
@@ -39,7 +39,7 @@ const heroBanners = [
     subtitle: "Bánh Trái Cây Nhiệt Đới",
     buttonText: "THỬ NGAY",
     buttonLink: "/products",
-    imageUrl: "https://placehold.co/1920x1080/E3F8F0/333333?text=Vibary+Banner",
+    imageUrl: "https://picsum.photos/seed/h-banner-2/1920/1080",
     description: "Close up shot of a slice of layered mousse cake.",
     imageHint: "mousse cake"
   },
@@ -49,7 +49,7 @@ const heroBanners = [
     subtitle: "Hộp Bánh Entremet Mini",
     buttonText: "XEM QUÀ TẶNG",
     buttonLink: "/products?category=banh-le",
-    imageUrl: "https://placehold.co/1920x1080/F0E3F8/333333?text=Vibary+Banner",
+    imageUrl: "https://picsum.photos/seed/h-banner-3/1920/1080",
     description: "A variety of colorful French pastries on display.",
     imageHint: "french pastry"
   },
@@ -59,7 +59,7 @@ const heroBanners = [
     subtitle: "Tạo nên từ tâm huyết",
     buttonText: "VỀ CHÚNG TÔI",
     buttonLink: "/about",
-    imageUrl: "https://placehold.co/1920x1080/E3EBF8/333333?text=Vibary+Banner",
+    imageUrl: "https://picsum.photos/seed/h-banner-4/1920/1080",
     description: "A baker decorating a modern cake with precision.",
     imageHint: "cake decorating"
   },
@@ -69,7 +69,7 @@ const heroBanners = [
     subtitle: "Bánh Sô-cô-la Bỉ",
     buttonText: "KHÁM PHÁ SÔ-CÔ-LA",
     buttonLink: "/products/summer-calling",
-    imageUrl: "https://placehold.co/1920x1080/D4CCC5/333333?text=Vibary+Banner",
+    imageUrl: "https://picsum.photos/seed/h-banner-5/1920/1080",
     description: "Luxurious chocolate entremet with a glossy finish.",
     imageHint: "chocolate entremet"
   }
