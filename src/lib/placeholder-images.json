@@ -1,279 +1,147 @@
 {
   "placeholderImages": [
     {
-      "id": "hero-banner-1",
-      "description": "Beautifully crafted entremet cake on a platter.",
-      "imageUrl": "/images/banner/1.png",
-      "imageHint": "entremet cake"
-    },
-    {
-      "id": "hero-banner-2",
-      "description": "Close up shot of a slice of layered mousse cake.",
-      "imageUrl": "/images/banner/2.png",
-      "imageHint": "mousse cake"
-    },
-    {
-      "id": "hero-banner-3",
-      "description": "A variety of colorful French pastries on display.",
-      "imageUrl": "/images/banner/3.png",
-      "imageHint": "french pastry"
-    },
-    {
-      "id": "hero-banner-4",
-      "description": "A baker decorating a modern cake with precision.",
-      "imageUrl": "/images/banner/4.png",
-      "imageHint": "cake decorating"
-    },
-    {
-      "id": "hero-banner-5",
-      "description": "Luxurious chocolate entremet with a glossy finish.",
-      "imageUrl": "/images/banner/5.png",
-      "imageHint": "chocolate entremet"
-    },
-    {
-      "id": "hero-banner-6",
-      "description": "A vibrant fruit-topped cake, perfect for summer.",
-      "imageUrl": "/images/banner/6.png",
-      "imageHint": "fruit cake"
-    },
-    {
       "id": "collection-special-occasion",
       "description": "A beautiful cake for a special occasion.",
-      "imageUrl": "https://storage.googleapis.com/gemini-studio-assets/lafuong/1722883015577_laf-A-Little-Grace-Entremet-Cake-Lafuong-Pastry-Cakes-Shop-Hanoi-new-1-1.jpg",
+      "imageUrl": "https://placehold.co/800x600/EDE0D4/333333?text=Special+Occasion",
       "imageHint": "celebration cake"
     },
     {
       "id": "collection-heart-shaped",
       "description": "A heart-shaped cake, perfect for romantic events.",
-      "imageUrl": "https://storage.googleapis.com/gemini-studio-assets/lafuong/1722882897288_A-Gentle-Blend-Entremet-Cake-Lafuong-Pastry-Cakes-Shop-Hanoi-1.jpg",
+      "imageUrl": "https://placehold.co/800x600/F4DDDD/333333?text=Heart+Cake",
       "imageHint": "heart cake"
     },
     {
       "id": "collection-half",
       "description": "A half entremet for smaller gatherings.",
-      "imageUrl": "https://storage.googleapis.com/gemini-studio-assets/lafuong/1722882811364_Summer-Calling-Entremet-Cake-Lafuong-Pastry-Cakes-Shop-Hanoi-1-1.jpg",
+      "imageUrl": "https://placehold.co/800x600/D4E2F0/333333?text=Small+Cake",
       "imageHint": "small cake"
     },
     {
       "id": "collection-baby",
       "description": "A small, cute cake from the baby collection.",
-      "imageUrl": "https://storage.googleapis.com/gemini-studio-assets/lafuong/1722883015577_laf-A-Little-Grace-Entremet-Cake-Lafuong-Pastry-Cakes-Shop-Hanoi-new-1-1.jpg",
+      "imageUrl": "https://placehold.co/800x600/D4F0E2/333333?text=Baby+Cake",
       "imageHint": "cute cake"
-    },
-    {
-      "id": "product-1",
-      "description": "Lychee & Rose Delight cake.",
-      "imageUrl": "/images/product/BeinBlossom2.avif",
-      "imageHint": "pink cake"
-    },
-    {
-      "id": "product-2",
-      "description": "Passion Fruit Breeze cake.",
-      "imageUrl": "/images/product/BelovedDarling2.avif",
-      "imageHint": "yellow cake"
-    },
-    {
-      "id": "product-3",
-      "description": "Matcha & Yuzu Garden cake.",
-      "imageUrl": "/images/product/ALittleGrace2.avif",
-      "imageHint": "white cake"
-    },
-    {
-      "id": "product-4",
-      "description": "Chocolate Hazelnut Dream cake.",
-      "imageUrl": "/images/product/OneSunnyDay2.avif",
-      "imageHint": "chocolate cake"
-    },
-    {
-      "id": "product-5",
-      "description": "Strawberry Love cake.",
-      "imageUrl": "/images/product/SecretGarden2.avif",
-      "imageHint": "strawberry cake"
-    },
-    {
-      "id": "product-6",
-      "description": "Baby Mango Bliss cake.",
-      "imageUrl": "/images/product/baby-mango-bliss.png",
-      "imageHint": "mango cake"
-    },
-    {
-      "id": "product-7",
-      "description": "Raspberry & Pistachio Half cake.",
-      "imageUrl": "/images/product/raspberry-pistachio-half.png",
-      "imageHint": "pistachio cake"
-    },
-    {
-      "id": "product-8",
-      "description": "Summer Berry Cheesecake.",
-      "imageUrl": "/images/product/summer-berry-cheesecake.png",
-      "imageHint": "berry cheesecake"
     },
     {
       "id": "blog-1",
       "description": "Image for founder story article.",
-      "imageUrl": "https://images.prismic.io/lafuong/Zq-Kv-iA_esB_C0j_laf-be-in-blossom-entremet-cake-lafuong-pastry-hanoi-1.jpg?auto=format%2Ccompress&ar=4%3A3&fit=crop",
+      "imageUrl": "https://placehold.co/800x600/F4DDDD/333333?text=Blog+Post",
       "imageHint": "pink entremet"
     },
     {
       "id": "blog-2",
       "description": "Image for behind the scenes article.",
-      "imageUrl": "https://images.prismic.io/lafuong/Zq-L4eiA_esB_C2d_laf-beloved-darling-entremet-cake-lafuong-pastry-hanoi-1.jpg?auto=format%2Ccompress&ar=4%3A3&fit=crop",
+      "imageUrl": "https://placehold.co/800x600/F8EFD4/333333?text=Blog+Post",
       "imageHint": "yellow entremet"
     },
     {
       "id": "blog-3",
       "description": "Image for shopping guide article.",
-      "imageUrl": "https://images.prismic.io/lafuong/Zq-M9eiA_esB_C3y_laf-a-little-grace-entremet-cake-lafuong-pastry-hanoi-1.jpg?auto=format%2Ccompress&ar=4%3A3&fit=crop",
+      "imageUrl": "https://placehold.co/800x600/E3F8E9/333333?text=Blog+Post",
       "imageHint": "white entremet"
     },
     {
       "id": "blog-4",
       "description": "An elegant entremet cake.",
-      "imageUrl": "https://images.unsplash.com/photo-1633352638067-fdf2c07561c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxlbnRyZW1ldCUyMGNha2V8ZW58MHx8fHwxNzY2OTc2NjY1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://placehold.co/800x600/E0E0E0/333333?text=Blog+Post",
       "imageHint": "entremet cake"
-    },
-    {
-      "id": "blog-5",
-      "description": "A cake with a perfect mirror glaze.",
-      "imageUrl": "https://images.unsplash.com/photo-1696680787753-47aca4cf84ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bWlycm9yJTIwZ2xhemV8ZW58MHx8fHwxNzY3MDYyMDA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "mirror glaze"
-    },
-    {
-      "id": "blog-6",
-      "description": "Tropical fruits like mango and passionfruit.",
-      "imageUrl": "https://images.unsplash.com/photo-1605027990121-cbae9e0642df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx0cm9waWNhbCUyMGZydWl0c3xlbnwwfHx8fDE3NjY5NTA5OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "tropical fruits"
-    },
-    {
-      "id": "blog-7",
-      "description": "A birthday party with a cake.",
-      "imageUrl": "https://images.unsplash.com/photo-1601268588577-319223ba7cb3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YmlydGhkYXklMjBwYXJ0eXxlbnwwfHx8fDE3NjY5NTgxMjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "birthday party"
-    },
-    {
-      "id": "blog-8",
-      "description": "Cocoa beans and chocolate bars.",
-      "imageUrl": "https://images.unsplash.com/photo-1545567724-9b16e57c906d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2NvYSUyMGJlYW5zfGVufDB8fHx8MTc2NzA2MjAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cocoa beans"
-    },
-    {
-      "id": "blog-9",
-      "description": "A slice of dacquoise cake.",
-      "imageUrl": "https://images.unsplash.com/photo-1645805740318-31bb7604ffd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkYWNxdW9pc2UlMjBjYWtlfGVufDB8fHx8MTc2NzA2MjAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "dacquoise cake"
-    },
-    {
-      "id": "blog-10",
-      "description": "A slice of cake and a cup of tea.",
-      "imageUrl": "https://images.unsplash.com/photo-1571916467369-9879f85d41e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYWtlJTIwdGVhfGVufDB8fHx8MTc2NzA2MjAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cake tea"
-    },
-    {
-      "id": "blog-11",
-      "description": "A busy pastry kitchen.",
-      "imageUrl": "https://images.unsplash.com/photo-1610016198131-046a3975346f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwYXN0cnklMjBraXRjaGVufGVufDB8fHx8MTc2Njk3NjY2NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "pastry kitchen"
-    },
-    {
-      "id": "blog-12",
-      "description": "A collection of small petit cakes.",
-      "imageUrl": "https://images.unsplash.com/photo-1764380746818-18c01e96df12?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXRpdCUyMGZvdXJzfGVufDB8fHx8MTc2NzA2MjAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "petit fours"
     },
     {
       "id": "quiz-banner",
       "description": "Banner image for the flavor quiz section.",
-      "imageUrl": "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjYWtlJTIwc2xpY2V8ZW58MHx8fHwxNzY2OTY5NzkxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://placehold.co/1200x800/F0E3F8/333333?text=Quiz",
       "imageHint": "cake slice"
     },
     {
       "id": "about-banner",
       "description": "Banner image for the about page.",
-      "imageUrl": "https://images.unsplash.com/photo-1634610814993-880e4d3e8810?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwYXN0cnklMjBraXRjaGVufGVufDB8fHx8MTc2Njk3NjY2NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://placehold.co/1600x900/D4CCC5/333333?text=About+Us",
       "imageHint": "pastry kitchen"
     },
     {
       "id": "about-location",
       "description": "Vibary storefront in Bac Ninh.",
-      "imageUrl": "https://storage.googleapis.com/altima-studio-public-images/59b20756-3c05-4d7a-a63e-2b7e19d7742d",
+      "imageUrl": "https://placehold.co/1200x600/E0E0E0/333333?text=Our+Location",
       "imageHint": "storefront shop"
     },
     {
       "id": "category-sweet-cake",
       "description": "A variety of sweet cakes.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/F4DDDD/333333?text=Sweet+Cakes",
       "imageHint": "sweet cake"
     },
     {
       "id": "category-salty-cake",
       "description": "A variety of salty cakes.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/D4E2F0/333333?text=Salty+Pastry",
       "imageHint": "salty pastry"
     },
     {
       "id": "category-birthday-cake",
       "description": "A birthday cake.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/F8EFD4/333333?text=Birthday+Cakes",
       "imageHint": "birthday cake"
     },
     {
       "id": "category-drinks",
       "description": "A variety of drinks.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/D4F0E2/333333?text=Drinks",
       "imageHint": "colorful drinks"
     },
     {
       "id": "category-other-cakes",
       "description": "Other types of cakes.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/E3EBF8/333333?text=Other+Cakes",
       "imageHint": "assorted cakes"
     },
     {
       "id": "category-other-food",
       "description": "Other types of food.",
-      "imageUrl": "/images/product/anhbia.jpg",
+      "imageUrl": "https://placehold.co/600x800/F0E3F8/333333?text=Other+Food",
       "imageHint": "food platter"
     },
     {
       "id": "faq-illustration",
       "description": "Illustration for the how-to-buy page.",
-      "imageUrl": "/images/how-to-buy-illustration.png",
+      "imageUrl": "https://placehold.co/600x400/FFFFFF/333333?text=How+To+Buy",
       "imageHint": "line art drawing"
     },
     {
       "id": "faq-step-1",
       "description": "Illustration for choosing a product.",
-      "imageUrl": "/images/cachmua/1.webp",
+      "imageUrl": "https://placehold.co/300x250/F8F0E3/333333?text=Step+1",
       "imageHint": "shopping cart"
     },
     {
       "id": "faq-step-2",
       "description": "Illustration for writing a wish.",
-      "imageUrl": "/images/cachmua/2.webp",
+      "imageUrl": "https://placehold.co/300x250/E3F8F0/333333?text=Step+2",
       "imageHint": "greeting card"
     },
     {
       "id": "faq-step-3",
       "description": "Illustration for filling information.",
-      "imageUrl": "/images/cachmua/3.webp",
+      "imageUrl": "https://placehold.co/300x250/F0E3F8/333333?text=Step+3",
       "imageHint": "information form"
     },
     {
       "id": "faq-step-4",
       "description": "Illustration for payment.",
-      "imageUrl": "/images/cachmua/4.webp",
+      "imageUrl": "https://placehold.co/300x250/E3EBF8/333333?text=Step+4",
       "imageHint": "payment methods"
     },
     {
       "id": "faq-step-5",
       "description": "Illustration for confirmation.",
-      "imageUrl": "/images/cachmua/5.webp",
+      "imageUrl": "https://placehold.co/300x250/D4CCC5/333333?text=Step+5",
       "imageHint": "phone confirmation"
     },
     {
       "id": "faq-step-6",
       "description": "Illustration for delivery.",
-      "imageUrl": "/images/cachmua/6.webp",
+      "imageUrl": "https://placehold.co/300x250/F4DDDD/333333?text=Step+6",
       "imageHint": "delivery person"
     }
   ]

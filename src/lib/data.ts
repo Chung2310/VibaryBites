@@ -26,7 +26,7 @@ export const products: Product[] = [
       { name: '16cm (6-8 người)', price: 650000 },
       { name: '18cm (8-10 người)', price: 780000 },
     ],
-    imageUrl: '/images/product/BeinBlossom2.avif',
+    imageUrl: 'https://placehold.co/800x800/F4DDDD/333333?text=Be+In+Blossom',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Ngọt ngào', 'Thơm ngát', 'Tinh tế'],
     structure: [
@@ -61,7 +61,7 @@ export const products: Product[] = [
       { name: '16cm (6-8 người)', price: 620000 },
       { name: '18cm (8-10 người)', price: 750000 },
     ],
-    imageUrl: '/images/product/BelovedDarling2.avif',
+    imageUrl: 'https://placehold.co/800x800/F8EFD4/333333?text=Beloved+Darling',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Chua thanh', 'Nhiệt đới', 'Sảng khoái'],
     structure: [
@@ -92,7 +92,7 @@ export const products: Product[] = [
       ]
     },
     price: 380000,
-    imageUrl: '/images/product/ALittleGrace2.avif',
+    imageUrl: 'https://placehold.co/800x800/E3F8E9/333333?text=A+Little+Grace',
     categorySlug: 'banh-le',
     flavorProfile: ['Đậm vị trà', 'Chua nhẹ', 'Thanh lịch'],
      structure: [
@@ -127,7 +127,7 @@ export const products: Product[] = [
       { name: '18cm (8-10 người)', price: 700000 },
       { name: '20cm (10-12 người)', price: 850000 },
     ],
-    imageUrl: '/images/product/OneSunnyDay2.avif',
+    imageUrl: 'https://placehold.co/800x800/D4CCC5/333333?text=Summer+Calling',
     categorySlug: 'banh-sinh-nhat',
     flavorProfile: ['Đậm đà', 'Sang trọng', 'Giòn tan'],
      structure: [
@@ -158,7 +158,7 @@ export const products: Product[] = [
       ]
     },
     price: 680000,
-    imageUrl: '/images/product/SecretGarden2.avif',
+    imageUrl: 'https://placehold.co/800x800/F8E3E9/333333?text=A+Gentle+Blend',
     categorySlug: 'banh-sinh-nhat',
      flavorProfile: ['Ngọt ngào', 'Kinh điển', 'Trái cây tươi'],
      structure: [
@@ -189,7 +189,7 @@ export const products: Product[] = [
       ]
     },
     price: 250000,
-    imageUrl: '/images/product/baby-mango-bliss.png',
+    imageUrl: 'https://placehold.co/800x800/F8F4D4/333333?text=Baby+Mango',
     categorySlug: 'banh-le',
      flavorProfile: ['Nhiệt đới', 'Ngọt dịu', 'Dễ thương'],
      structure: [
@@ -220,7 +220,7 @@ export const products: Product[] = [
       ]
     },
     price: 420000,
-    imageUrl: '/images/product/raspberry-pistachio-half.png',
+    imageUrl: 'https://placehold.co/800x800/F8E3F2/333333?text=Pistachio',
     categorySlug: 'banh-le',
     flavorProfile: ['Bùi', 'Chua thanh', 'Độc đáo'],
     structure: [
@@ -251,7 +251,7 @@ export const products: Product[] = [
       ]
     },
     price: 640000,
-    imageUrl: '/images/product/summer-berry-cheesecake.png',
+    imageUrl: 'https://placehold.co/800x800/F8E3E3/333333?text=Berry+Cheesecake',
     categorySlug: 'banh-nuong',
     flavorProfile: ['Béo ngậy', 'Tươi mát', 'Kinh điển'],
     structure: [
