@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -12,17 +12,18 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadFile } from '@/lib/storage-client';
+import { uploadImage } from '@/firebase/storage';
 
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore) {
-            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
+        if (!firestore || !storage) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu hoặc lưu trữ." });
             return;
         }
 
@@ -32,7 +33,7 @@ export default function NewProductPage() {
         try {
             // Step 1: Handle image upload if a new file is present
             if (values.imageFile) {
-                finalImageUrl = await uploadFile(values.imageFile, 'products');
+                finalImageUrl = await uploadImage(storage, values.imageFile, 'products');
             }
 
             // Step 2: Prepare data and save to Firestore
@@ -67,17 +68,22 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
+            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
+            
+            if (isPermissionError) {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'cakes', // Simplified path for creation
+                    operation: 'create',
+                    requestResourceData: values
+                }));
+            }
+            
             toast({
                 variant: 'destructive',
                 title: 'Lỗi tạo sản phẩm!',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
                 duration: 9000,
             });
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'cakes', // Simplified path for creation
-                operation: 'create',
-                requestResourceData: values
-            }));
         } finally {
             setIsSubmitting(false);
         }

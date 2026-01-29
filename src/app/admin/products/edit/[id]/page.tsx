@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -13,7 +13,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
-import { uploadFile, deleteFile } from '@/lib/storage-client';
+import { uploadImage, deleteImage } from '@/firebase/storage';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -21,6 +21,7 @@ export default function EditProductPage() {
     const productId = (params.id || '') as string;
     
     const firestore = useFirestore();
+    const storage = useStorage();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,7 +33,7 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore || !product || !productDocRef) {
+        if (!firestore || !product || !productDocRef || !storage) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
@@ -44,14 +45,14 @@ export default function EditProductPage() {
             // Step 1: Handle image upload/delete if changed
             if (values.imageFile) {
                 // Delete old image if it exists and is not a placeholder
-                if (product.imageUrl && !product.imageUrl.includes('placehold.co')) {
-                   await deleteFile(product.imageUrl);
+                if (product.imageUrl) {
+                   await deleteImage(storage, product.imageUrl);
                 }
                 // Upload the new image
-                finalImageUrl = await uploadFile(values.imageFile, 'products');
+                finalImageUrl = await uploadImage(storage, values.imageFile, 'products');
             } else if (!values.imageUrl && product.imageUrl) {
                 // Image was removed without a new one being added
-                await deleteFile(product.imageUrl);
+                await deleteImage(storage, product.imageUrl);
                 finalImageUrl = 'https://placehold.co/800x800/F4DDDD/333333?text=No+Image';
             }
 
@@ -85,17 +86,22 @@ export default function EditProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
+            const isPermissionError = error.code === 'storage/unauthorized' || error.code === 'permission-denied';
+
+            if (isPermissionError) {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: productDocRef.path,
+                    operation: 'update',
+                    requestResourceData: values
+                }));
+            }
+            
             toast({
                 variant: 'destructive',
                 title: 'Không thể cập nhật sản phẩm',
-                description: error.message || 'Đã có lỗi không xác định xảy ra.',
+                description: isPermissionError ? 'Bạn không có quyền tải ảnh lên.' : (error.message || 'Đã có lỗi không xác định xảy ra.'),
                 duration: 9000,
             });
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: productDocRef.path,
-                operation: 'update',
-                requestResourceData: values
-            }));
         } finally {
             setIsSubmitting(false);
         }
