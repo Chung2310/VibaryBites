@@ -77,10 +77,14 @@ const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           toast({ variant: 'destructive', title: "Chưa chọn file", description: "Vui lòng chọn một file ảnh để tải lên."});
           return;
       }
+      if (!storage) {
+          toast({ variant: 'destructive', title: "Lỗi", description: "Dịch vụ lưu trữ chưa sẵn sàng."});
+          return;
+      }
 
       setIsUploading(true);
       try {
-        const downloadURL = await uploadImage(storage, imageFile, 'content_images');
+        const downloadURL = await uploadImage(storage, 'content_images', imageFile);
         editor.chain().focus().setImage({ src: downloadURL }).run();
         handleCloseModal();
       } catch (error: any) {

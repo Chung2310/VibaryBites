@@ -22,26 +22,26 @@ export default function NewProductPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null) => {
-        if (!firestore) {
+        if (!firestore || !storage) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
 
         setIsSubmitting(true);
-        const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
+        const { id: toastId } = toast({ title: "Đang tạo sản phẩm...", description: "Vui lòng đợi." });
         
         try {
             const productId = `prod-${Date.now()}`;
             let imageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
 
             if (imageFile) {
-                toast({ id: toastId, title: "Đang tải ảnh lên...", description: `Tải lên ${imageFile.name}.` });
-                imageUrl = await uploadImage(storage, imageFile, `products/${productId}`);
+                toast({ id: toastId, title: "Đang tải ảnh lên...", description: "Bước 1/2: Xử lý ảnh sản phẩm." });
+                imageUrl = await uploadImage(storage, `products/${productId}`, imageFile);
             } else if (imagePreview) {
                 imageUrl = imagePreview;
             }
 
-            toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
+            toast({ id: toastId, title: "Đang lưu sản phẩm...", description: "Bước 2/2: Lưu dữ liệu." });
 
             const newProductData: Product = {
                 id: productId,
@@ -76,9 +76,8 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
 
-            if (!isStorageError) {
+            if (error.name !== 'Error' && firestore) {
                  const permissionError = new FirestorePermissionError({
                     path: `cakes/prod-${Date.now()}`,
                     operation: 'create',

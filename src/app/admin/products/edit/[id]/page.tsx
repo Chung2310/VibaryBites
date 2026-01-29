@@ -33,7 +33,7 @@ export default function EditProductPage() {
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues, imageFile: File | null, imagePreview: string | null, imageWasRemoved?: boolean) => {
-        if (!firestore || !product || !productDocRef) {
+        if (!firestore || !storage || !product || !productDocRef) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -43,28 +43,28 @@ export default function EditProductPage() {
         }
         
         setIsSubmitting(true);
-        const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
+        const { id: toastId } = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi." });
         
         try {
             let finalImageUrl = product.imageUrl;
 
             if (imageFile) {
-                if (product.imageUrl) {
-                    deleteImage(storage, product.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
+                toast({ id: toastId, title: "Đang xử lý ảnh mới...", description: "Bước 1/2: Tải ảnh sản phẩm." });
+                if (product.imageUrl && product.imageUrl.includes('firebasestorage')) {
+                    await deleteImage(storage, product.imageUrl);
                 }
-                toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
-                finalImageUrl = await uploadImage(storage, imageFile, `products/${product.id}`);
-                toast({ id: toastId, title: "Xử lý ảnh thành công!" });
-            } else if (imageWasRemoved && product.imageUrl) {
-                 deleteImage(storage, product.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
+                finalImageUrl = await uploadImage(storage, `products/${product.id}`, imageFile);
+            } 
+            else if (imageWasRemoved && product.imageUrl && product.imageUrl.includes('firebasestorage')) {
+                 toast({ id: toastId, title: "Đang xóa ảnh cũ...", description: "Bước 1/2: Xử lý ảnh sản phẩm." });
+                await deleteImage(storage, product.imageUrl);
                 finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
-            } else if (imagePreview) {
+            } 
+            else if (imagePreview && imagePreview !== product.imageUrl) {
                 finalImageUrl = imagePreview;
-            } else {
-                finalImageUrl = `https://placehold.co/800x600/F4DDDD/333333?text=No+Image`;
             }
             
-            toast({ id: toastId, title: "Đang lưu thông tin sản phẩm...", description: "" });
+            toast({ id: toastId, title: "Đang lưu thông tin sản phẩm...", description: "Bước 2/2: Cập nhật dữ liệu." });
             const updatedProductData: Partial<Product> = {
                 name: values.name,
                 subtitle: values.subtitle,
@@ -93,11 +93,11 @@ export default function EditProductPage() {
                 description: `Sản phẩm "${values.name}" đã được cập nhật.`,
             });
             router.push(`/admin/products`);
+
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
             
-            if (!isStorageError) {
+            if (error.name !== 'Error' && firestore) {
                  const permissionError = new FirestorePermissionError({
                     path: productDocRef.path,
                     operation: 'update',
