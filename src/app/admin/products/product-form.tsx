@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
 import { cn } from "@/lib/utils";
@@ -112,25 +112,35 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     },
   });
   
+  // When component unmounts, revoke the object URL to avoid memory leaks
   useEffect(() => {
-    if (product?.imageUrl) {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+  
+  useEffect(() => {
+    if (product?.imageUrl && !imageFile) {
       setImagePreview(product.imageUrl);
       setImageUrlInput(product.imageUrl)
     }
-  }, [product]);
+  }, [product, imageFile]);
 
-  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      // Revoke the old object URL if it exists to prevent memory leaks
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Create a new object URL for the preview, which is very lightweight
+      setImagePreview(URL.createObjectURL(file));
       setImageUrlInput('');
     }
-  }, []);
+  }, [imagePreview]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -139,6 +149,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   });
 
   const removeImage = () => {
+    // Revoke the object URL if it exists
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setImageFile(null);
     setImagePreview(null);
     setImageUrlInput('');
@@ -150,6 +164,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   
   const handleUseUrl = () => {
       if(imageUrlInput) {
+          // Revoke any existing blob URL before switching to the new URL
+          if (imagePreview && imagePreview.startsWith('blob:')) {
+            URL.revokeObjectURL(imagePreview);
+          }
           setImagePreview(imageUrlInput);
           setImageFile(null);
       }

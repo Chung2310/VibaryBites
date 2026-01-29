@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Loader2, Trash2, UploadCloud } from "lucide-react";
 import { RichTextEditor } from './rich-text-editor';
 import { useDropzone } from 'react-dropzone';
@@ -73,24 +73,34 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
     },
   });
 
+  // When component unmounts, revoke the object URL to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   // Effect to update preview if article changes (e.g., when form is for editing)
   useEffect(() => {
-    if (article?.imageUrl) {
+    if (article?.imageUrl && !imageFile) {
       setImagePreview(article.imageUrl);
     }
-  }, [article]);
+  }, [article, imageFile]);
 
-  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      // Revoke the old object URL if it exists to prevent memory leaks
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Create a new object URL for the preview, which is very lightweight
+      setImagePreview(URL.createObjectURL(file));
     }
-  }, []);
+  }, [imagePreview]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -99,6 +109,10 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
   });
 
   const removeImage = () => {
+    // Revoke the object URL if it exists
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setImageFile(null);
     setImagePreview(null);
   };
