@@ -33,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article || !articleDocRef) {
+        if (!firestore || !article || !articleDocRef || !storage) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -46,54 +46,48 @@ export default function EditNewsArticlePage() {
         const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
         
         try {
-            let finalImageUrl = article.imageUrl;
-
-            if (imageFile) {
-                // Delete old image but don't block if it fails
-                if (article.imageUrl) {
-                    deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
-                }
-                toast({ id: toastId, title: "Đang tải ảnh mới lên...", description: "Vui lòng đợi..." });
-                finalImageUrl = await uploadImage(storage, imageFile, `news/${article.id}`);
-            } 
-            else if (imageWasRemoved && article.imageUrl) {
-                deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image.", e));
-                finalImageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
-            }
-
-            toast({ id: toastId, title: "Đang lưu bài viết...", description: "" });
-
+            // 1. Update text content first
             const updatedArticleData: Partial<NewsArticle> = {
                 title: values.title,
                 author: values.author,
                 category: values.category,
                 excerpt: values.excerpt,
                 content: values.content,
-                imageUrl: finalImageUrl,
                 slug: generateSlug(values.title),
             };
 
             await setDoc(articleDocRef, updatedArticleData, { merge: true });
+            toast({ id: toastId, title: "Đã lưu nội dung", description: "Đang xử lý ảnh..." });
 
-            toast({
-                id: toastId,
-                title: 'Cập nhật thành công!',
-                description: `Bài viết "${values.title}" đã được cập nhật.`,
-            });
+            // 2. Handle image logic
+            if (imageFile) {
+                // New image uploaded
+                if (article.imageUrl) {
+                    deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
+                }
+                const newImageUrl = await uploadImage(storage, imageFile, `news/${article.id}`);
+                await setDoc(articleDocRef, { imageUrl: newImageUrl }, { merge: true });
+                toast({ id: toastId, title: "Cập nhật thành công!", description: `Bài viết đã được cập nhật với ảnh mới.` });
+            } else if (imageWasRemoved && article.imageUrl) {
+                // Image was removed
+                await deleteImage(storage, article.imageUrl);
+                await setDoc(articleDocRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
+                toast({ id: toastId, title: "Cập nhật thành công!", description: `Ảnh đã được xóa.` });
+            } else {
+                // No image changes
+                toast({ id: toastId, title: "Cập nhật thành công!", description: `Bài viết "${values.title}" đã được cập nhật.` });
+            }
+
             router.push('/admin/news');
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật bài viết:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Failed to upload image");
-
-            if (!isStorageError) {
-                const permissionError = new FirestorePermissionError({
-                    path: articleDocRef.path,
-                    operation: 'update',
-                    requestResourceData: values
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            }
+            const permissionError = new FirestorePermissionError({
+                path: articleDocRef.path,
+                operation: 'update',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
 
             toast({
                 id: toastId,

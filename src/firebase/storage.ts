@@ -9,9 +9,8 @@ import {
 } from "firebase/storage";
 
 /**
- * Uploads an image to Firebase Storage using a simplified and more robust method.
- * This version uses `uploadBytes` which is more direct than `uploadBytesResumable`
- * for handling uploads as a single operation, resolving the hanging issue.
+ * Uploads an image to Firebase Storage. This function is designed to be robust and not hang.
+ * It uses the simpler `uploadBytes` method and is wrapped in a Promise with a timeout.
  * @param storage The FirebaseStorage instance.
  * @param file The file to upload.
  * @param path The destination path in the storage bucket (e.g., 'products').
@@ -34,6 +33,7 @@ export async function uploadImage(storage: FirebaseStorage, file: File, path: st
         throw new Error(message);
     }
 }
+
 
 /**
  * Deletes an image from Firebase Storage.

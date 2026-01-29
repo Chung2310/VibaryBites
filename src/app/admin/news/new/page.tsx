@@ -28,53 +28,59 @@ export default function NewNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        const toastId = toast({ title: "Đang xử lý...", description: "Vui lòng đợi trong giây lát." }).id;
+        const toastId = toast({ title: "Đang lưu bài viết...", description: "Vui lòng đợi..." }).id;
         
+        const articleId = `news-${Date.now()}`;
+        const docRef = doc(firestore, 'news_articles', articleId);
+        
+        // Save text data first with a placeholder image
+        const newArticleData: NewsArticle = {
+            id: articleId,
+            slug: generateSlug(values.title),
+            title: values.title,
+            author: values.author,
+            category: values.category,
+            excerpt: values.excerpt,
+            content: values.content,
+            imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=Uploading...`,
+            publicationDate: new Date().toISOString(),
+        };
+
         try {
-            const articleId = `news-${Date.now()}`;
-            const docRef = doc(firestore, 'news_articles', articleId);
-            let imageUrl = `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`;
-
-            if (imageFile) {
-                toast({ id: toastId, title: "Đang tải ảnh bìa lên...", description: `Tải lên ${imageFile.name}...` });
-                imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
-            }
-
-            toast({ id: toastId, title: "Đang lưu bài viết...", description: "Lưu dữ liệu vào cơ sở dữ liệu." });
-
-            const newArticleData: NewsArticle = {
-                id: articleId,
-                slug: generateSlug(values.title),
-                title: values.title,
-                author: values.author,
-                category: values.category,
-                excerpt: values.excerpt,
-                content: values.content,
-                imageUrl: imageUrl,
-                publicationDate: new Date().toISOString(),
-            };
-
             await setDoc(docRef, newArticleData);
+            toast({ id: toastId, title: "Đã lưu nội dung", description: "Chuẩn bị tải ảnh lên..." });
 
-            toast({
-                id: toastId,
-                title: 'Thêm thành công!',
-                description: `Bài viết "${values.title}" đã được tạo.`,
-            });
+            // If there's an image, upload it and update the doc
+            if (imageFile && storage) {
+                try {
+                    const imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
+                    await setDoc(docRef, { imageUrl: imageUrl }, { merge: true });
+                     toast({ id: toastId, title: "Tải ảnh thành công!", description: "Bài viết đã được lưu hoàn tất." });
+                } catch (uploadError: any) {
+                    console.error("Image upload failed:", uploadError);
+                    toast({
+                        id: toastId,
+                        variant: "destructive",
+                        title: "Lỗi tải ảnh lên",
+                        description: `Nội dung đã được lưu nhưng không thể tải ảnh lên: ${uploadError.message}`,
+                        duration: 9000
+                    });
+                }
+            } else {
+                 await setDoc(docRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
+                 toast({ id: toastId, title: "Thêm thành công!", description: `Bài viết "${values.title}" đã được tạo.` });
+            }
+            
             router.push('/admin/news');
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const isStorageError = error.message.includes("Upload timed out") || error.message.includes("Permission denied");
-
-            if (!isStorageError) {
-                 const permissionError = new FirestorePermissionError({
-                    path: `news_articles/news-${Date.now()}`,
-                    operation: 'create',
-                    requestResourceData: values
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            }
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 id: toastId,
