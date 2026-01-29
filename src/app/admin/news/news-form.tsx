@@ -46,7 +46,7 @@ const articleCategories = [
 
 interface NewsFormProps {
   article?: NewsArticle;
-  onSubmit: (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => Promise<void>;
+  onSubmit: (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => Promise<void> | void;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -105,6 +105,8 @@ export function NewsForm({ article, onSubmit, onCancel, isSubmitting, isEditMode
 
   const handleFormSubmit = async (values: NewsFormValues) => {
     const imageWasRemoved = isEditMode && !!article?.imageUrl && !imagePreview;
+    // The parent page (new or edit) will handle the submission logic.
+    // This form's only job is to pass up the data.
     await onSubmit(values, imageFile, imageWasRemoved);
   }
 

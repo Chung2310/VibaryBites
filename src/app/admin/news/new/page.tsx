@@ -28,12 +28,11 @@ export default function NewNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        const toastId = toast({ title: "Đang lưu bài viết...", description: "Vui lòng đợi..." }).id;
         
         const articleId = `news-${Date.now()}`;
         const docRef = doc(firestore, 'news_articles', articleId);
         
-        // Save text data first with a placeholder image
+        // 1. Create the article data with a placeholder image URL if an image is being uploaded
         const newArticleData: NewsArticle = {
             id: articleId,
             slug: generateSlug(values.title),
@@ -42,38 +41,40 @@ export default function NewNewsArticlePage() {
             category: values.category,
             excerpt: values.excerpt,
             content: values.content,
-            imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=Uploading...`,
+            imageUrl: imageFile ? `https://placehold.co/1200x800/F4DDDD/333333?text=Uploading...` : `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image`,
             publicationDate: new Date().toISOString(),
         };
 
         try {
+            // 2. Save the main article data immediately
             await setDoc(docRef, newArticleData);
-            toast({ id: toastId, title: "Đã lưu nội dung", description: "Chuẩn bị tải ảnh lên..." });
+            toast({ title: "Đã tạo bài viết!", description: `"${values.title}" đã được lưu.` });
 
-            // If there's an image, upload it and update the doc
-            if (imageFile && storage) {
-                try {
-                    const imageUrl = await uploadImage(storage, imageFile, `news/${articleId}`);
-                    await setDoc(docRef, { imageUrl: imageUrl }, { merge: true });
-                     toast({ id: toastId, title: "Tải ảnh thành công!", description: "Bài viết đã được lưu hoàn tất." });
-                } catch (uploadError: any) {
-                    console.error("Image upload failed:", uploadError);
-                    toast({
-                        id: toastId,
-                        variant: "destructive",
-                        title: "Lỗi tải ảnh lên",
-                        description: `Nội dung đã được lưu nhưng không thể tải ảnh lên: ${uploadError.message}`,
-                        duration: 9000
-                    });
-                }
-            } else {
-                 await setDoc(docRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
-                 toast({ id: toastId, title: "Thêm thành công!", description: `Bài viết "${values.title}" đã được tạo.` });
-            }
-            
+            // 3. Unblock the UI and navigate away
+            setIsSubmitting(false);
             router.push('/admin/news');
 
+            // 4. Start the image upload in the background (fire-and-forget from the UI's perspective)
+            if (imageFile && storage) {
+                uploadImage(storage, imageFile, `news/${articleId}`)
+                    .then(async (downloadURL) => {
+                        // 5. Once upload is complete, update the document with the real URL
+                        await setDoc(docRef, { imageUrl: downloadURL }, { merge: true });
+                        toast({ title: "Tải ảnh thành công", description: `Ảnh cho bài viết "${values.title}" đã được cập nhật.` });
+                    })
+                    .catch((uploadError) => {
+                        // 6. If background upload fails, notify the user. The article text is still saved.
+                        console.error("Background image upload failed:", uploadError);
+                        toast({
+                            variant: "destructive",
+                            title: "Lỗi tải ảnh nền",
+                            description: `Không thể tải ảnh cho bài viết "${values.title}". Bạn có thể chỉnh sửa lại bài viết để thử lại.`,
+                            duration: 9000,
+                        });
+                    });
+            }
         } catch (error: any) {
+            // This catch block handles errors from the initial `setDoc`
             console.error("Lỗi khi tạo bài viết:", error);
             const permissionError = new FirestorePermissionError({
                 path: docRef.path,
@@ -83,14 +84,12 @@ export default function NewNewsArticlePage() {
             errorEmitter.emit('permission-error', permissionError);
             
             toast({
-                id: toastId,
                 variant: 'destructive',
                 title: 'Lỗi tạo bài viết!',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
-        } finally {
-            setIsSubmitting(false);
+             setIsSubmitting(false); // Ensure submitting state is reset on error
         }
     };
 

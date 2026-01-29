@@ -33,7 +33,7 @@ export default function EditNewsArticlePage() {
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues, imageFile: File | null, imageWasRemoved: boolean) => {
-        if (!firestore || !article || !articleDocRef || !storage) {
+        if (!firestore || !article || !articleDocRef) {
             toast({
                 variant: 'destructive',
                 title: 'Lỗi',
@@ -43,44 +43,66 @@ export default function EditNewsArticlePage() {
         }
         
         setIsSubmitting(true);
-        const toastId = toast({ title: "Đang cập nhật...", description: "Vui lòng đợi trong giây lát." }).id;
         
+        const updatedArticleData: Partial<NewsArticle> = {
+            title: values.title,
+            author: values.author,
+            category: values.category,
+            excerpt: values.excerpt,
+            content: values.content,
+            slug: generateSlug(values.title),
+        };
+
         try {
-            // 1. Update text content first
-            const updatedArticleData: Partial<NewsArticle> = {
-                title: values.title,
-                author: values.author,
-                category: values.category,
-                excerpt: values.excerpt,
-                content: values.content,
-                slug: generateSlug(values.title),
-            };
-
+            // 1. Save text changes immediately
             await setDoc(articleDocRef, updatedArticleData, { merge: true });
-            toast({ id: toastId, title: "Đã lưu nội dung", description: "Đang xử lý ảnh..." });
+            toast({ title: "Đã lưu nội dung!", description: `Các thay đổi cho "${values.title}" đã được lưu.` });
 
-            // 2. Handle image logic
-            if (imageFile) {
-                // New image uploaded
-                if (article.imageUrl) {
-                    deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image, proceeding with upload.", e));
-                }
-                const newImageUrl = await uploadImage(storage, imageFile, `news/${article.id}`);
-                await setDoc(articleDocRef, { imageUrl: newImageUrl }, { merge: true });
-                toast({ id: toastId, title: "Cập nhật thành công!", description: `Bài viết đã được cập nhật với ảnh mới.` });
-            } else if (imageWasRemoved && article.imageUrl) {
-                // Image was removed
-                await deleteImage(storage, article.imageUrl);
-                await setDoc(articleDocRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
-                toast({ id: toastId, title: "Cập nhật thành công!", description: `Ảnh đã được xóa.` });
-            } else {
-                // No image changes
-                toast({ id: toastId, title: "Cập nhật thành công!", description: `Bài viết "${values.title}" đã được cập nhật.` });
-            }
-
+            // 2. Unblock the UI and navigate away
+            setIsSubmitting(false);
             router.push('/admin/news');
 
+            // 3. Handle image logic in the background
+            if (imageFile && storage) {
+                // A new image was uploaded. First, delete the old one if it exists.
+                if (article.imageUrl) {
+                    deleteImage(storage, article.imageUrl).catch(e => console.warn("Failed to delete old image, but proceeding with new upload.", e));
+                }
+                
+                // Then, upload the new image and update the document.
+                uploadImage(storage, imageFile, `news/${article.id}`)
+                    .then(async (downloadURL) => {
+                        await setDoc(articleDocRef, { imageUrl: downloadURL }, { merge: true });
+                        toast({ title: "Tải ảnh thành công", description: `Ảnh cho bài viết đã được cập nhật.` });
+                    })
+                    .catch((uploadError) => {
+                        console.error("Background image upload failed:", uploadError);
+                        toast({
+                            variant: "destructive",
+                            title: "Lỗi tải ảnh nền",
+                            description: `Không thể tải ảnh mới. Bạn có thể chỉnh sửa lại bài viết để thử lại.`,
+                            duration: 9000,
+                        });
+                    });
+            } else if (imageWasRemoved && article.imageUrl && storage) {
+                // Image was removed, delete it from storage and update the doc in the background.
+                deleteImage(storage, article.imageUrl)
+                    .then(async () => {
+                        await setDoc(articleDocRef, { imageUrl: `https://placehold.co/1200x800/F4DDDD/333333?text=No+Image` }, { merge: true });
+                        toast({ title: "Đã xóa ảnh", description: `Ảnh của bài viết đã được xóa.` });
+                    })
+                    .catch((deleteError) => {
+                        console.error("Background image deletion failed:", deleteError);
+                        toast({
+                            variant: "destructive",
+                            title: "Lỗi xóa ảnh nền",
+                            description: `Không thể xóa ảnh cũ. Vui lòng thử lại.`,
+                            duration: 9000,
+                        });
+                    });
+            }
         } catch (error: any) {
+            // This catch handles errors from the initial `setDoc` for text data.
             console.error("Lỗi khi cập nhật bài viết:", error);
             const permissionError = new FirestorePermissionError({
                 path: articleDocRef.path,
@@ -90,14 +112,12 @@ export default function EditNewsArticlePage() {
             errorEmitter.emit('permission-error', permissionError);
 
             toast({
-                id: toastId,
                 variant: 'destructive',
                 title: 'Không thể cập nhật bài viết',
                 description: error.message || 'Đã có lỗi không xác định xảy ra.',
                 duration: 9000,
             });
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Ensure submitting state is reset on error
         }
     };
     
