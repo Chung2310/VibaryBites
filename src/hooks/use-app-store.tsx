@@ -1,6 +1,6 @@
 "use client";
 
-import type { CartItem, Product } from "@/lib/types";
+import type { CartItem, Product, ProductCategory } from "@/lib/types";
 import {
   createContext,
   useContext,
@@ -12,6 +12,7 @@ import { useToast } from "./use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { products as seedProducts } from "@/lib/data";
+import { generateSlug } from "@/lib/utils";
 
 interface AppContextType {
   // Cart
@@ -44,9 +45,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   
   // Fetch live data from Firestore
   const { data: firestoreProducts, isLoading: isLoadingFirestore } = useCollection<Product>(productsCollection);
+  const { data: firestoreCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
   // Seed initial products if the collection is empty
   useEffect(() => {
@@ -78,6 +81,46 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       seedDatabase();
     }
   }, [firestore, isLoadingFirestore, firestoreProducts, toast]);
+
+  // Seed initial categories if the collection is empty
+  useEffect(() => {
+    if (firestore && !isLoadingCategories && firestoreCategories && firestoreCategories.length === 0) {
+      const seedCategories = async () => {
+        toast({ title: "Thiết lập ban đầu", description: "Đang tạo các danh mục sản phẩm mặc định..." });
+
+        const defaultCategories = [
+          { title: "Bánh sinh nhật", subtitle: "Cho ngày đặc biệt", description: "Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật." },
+          { title: "Bánh lẻ", subtitle: "Thưởng thức mỗi ngày", description: "Các loại bánh nhỏ, entremet, và bánh ngọt để bạn tự thưởng cho bản thân." },
+          { title: "Bánh nướng", subtitle: "Giòn tan, thơm lừng", description: "Các loại bánh nướng cổ điển như bánh sừng bò, bánh tart, và nhiều hơn nữa." },
+          { title: "Bánh Tea-Break", subtitle: "Cho tiệc trà & sự kiện", description: "Set bánh nhỏ gọn, đa dạng cho các buổi tiệc trà công ty hoặc sự kiện đặc biệt." },
+        ];
+
+        try {
+          const promises = defaultCategories.map(cat => {
+            const slug = generateSlug(cat.title);
+            const id = `cat-${slug}`;
+            const docRef = doc(firestore, 'categories', id);
+            const dataToSave: ProductCategory = { id, slug, ...cat };
+            return setDoc(docRef, dataToSave);
+          });
+
+          await Promise.all(promises);
+
+          toast({ title: "Hoàn tất!", description: "Các danh mục mặc định đã được tạo thành công." });
+        } catch (error) {
+          console.error("Error seeding categories: ", error);
+           toast({
+                variant: "destructive",
+                title: "Lỗi",
+                description: "Không thể tạo danh mục mặc định."
+            });
+        }
+      };
+
+      seedCategories();
+    }
+  }, [firestore, isLoadingCategories, firestoreCategories, toast]);
+
 
   // Loading is true only if we have no products yet AND we're still fetching from the server.
   const isLoadingProducts = products.length === 0 && isLoadingFirestore;

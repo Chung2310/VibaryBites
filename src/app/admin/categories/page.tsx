@@ -21,17 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { ProductCategory } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { CategoryForm } from './category-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
-import { generateSlug } from '@/lib/utils';
-
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
@@ -44,45 +42,6 @@ export default function CategoriesPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<ProductCategory | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Seed initial categories if the collection is empty
-    if (firestore && !isLoading && categories && categories.length === 0) {
-      const seedCategories = async () => {
-        toast({ title: "Thiết lập ban đầu", description: "Đang tạo các danh mục sản phẩm mặc định..." });
-
-        const defaultCategories = [
-          { title: "Bánh sinh nhật", subtitle: "Cho ngày đặc biệt", description: "Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật." },
-          { title: "Bánh lẻ", subtitle: "Thưởng thức mỗi ngày", description: "Các loại bánh nhỏ, entremet, và bánh ngọt để bạn tự thưởng cho bản thân." },
-          { title: "Bánh nướng", subtitle: "Giòn tan, thơm lừng", description: "Các loại bánh nướng cổ điển như bánh sừng bò, bánh tart, và nhiều hơn nữa." },
-          { title: "Bánh Tea-Break", subtitle: "Cho tiệc trà & sự kiện", description: "Set bánh nhỏ gọn, đa dạng cho các buổi tiệc trà công ty hoặc sự kiện đặc biệt." },
-        ];
-
-        try {
-          const promises = defaultCategories.map(cat => {
-            const slug = generateSlug(cat.title);
-            const id = `cat-${slug}`;
-            const docRef = doc(firestore, 'categories', id);
-            const dataToSave: ProductCategory = { id, slug, ...cat };
-            return setDoc(docRef, dataToSave);
-          });
-
-          await Promise.all(promises);
-
-          toast({ title: "Hoàn tất!", description: "Các danh mục mặc định đã được tạo thành công." });
-        } catch (error) {
-          console.error("Error seeding categories: ", error);
-          const permissionError = new FirestorePermissionError({
-            path: 'categories',
-            operation: 'create',
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        }
-      };
-
-      seedCategories();
-    }
-  }, [firestore, isLoading, categories, toast]);
 
   const handleAdd = () => {
     setSelectedCategory(null);
