@@ -10,9 +10,11 @@ import { AppProvider } from "@/hooks/use-app-store";
 import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { FirebaseProvider, initializeFirebaseClient } from "@/firebase";
 import { FirebaseStorage } from "firebase/storage";
+import { AnimatePresence } from "framer-motion";
+import { Preloader } from "@/components/preloader";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -51,9 +53,31 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isAdminPage = pathname.startsWith('/admin');
   const isProductPage = pathname.startsWith('/products');
   const isHomePage = pathname === '/';
+  
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // This effect runs only once on the client
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      document.body.style.overflow = 'visible';
+    }, 2500); // Duration of the preloader
+
+    // Prevent scrolling while preloader is active
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = 'visible'; // Ensure scroll is re-enabled on unmount
+    };
+  }, []);
+
 
   return (
     <>
+      <AnimatePresence mode="wait">
+        {isLoading && <Preloader />}
+      </AnimatePresence>
       <div className="relative flex min-h-dvh flex-col bg-background">
         {!isAdminPage && <Header />}
         {!isAdminPage && !isProductPage && !isHomePage && (

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useState} from 'react'; // Added useState
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion'; // <-- Import motion
 
 const heroBanners = [
   {
@@ -81,6 +81,23 @@ interface HomeClientProps {
   latestArticles: NewsArticle[];
 }
 
+// Reusable component for scroll animations
+const ScrollRevealWrapper = ({ children, delay = 0, amount = 0.2 }: { children: React.ReactNode, delay?: number, amount?: number }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount });
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 50 }}
+            transition={{ duration: 0.8, delay, ease: [0.25, 0.25, 0.25, 0.75] }}
+        >
+            {children}
+        </motion.div>
+    );
+};
+
 function Hero() {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
@@ -127,13 +144,19 @@ function Hero() {
                 />
                 
                 <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-20 text-left sm:px-6 lg:px-8">
-                  <h2 className="font-body text-xl tracking-widest uppercase">{banner.title}</h2>
-                  <h1 className="font-headline text-5xl leading-tight md:text-7xl mt-2">
-                    {banner.subtitle}
-                  </h1>
-                  <Button asChild size="lg" className="mt-8 rounded-full bg-white text-black hover:bg-white/90">
-                    <Link href={banner.buttonLink}>{banner.buttonText}</Link>
-                  </Button>
+                   <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
+                    >
+                    <h2 className="font-body text-xl tracking-widest uppercase">{banner.title}</h2>
+                    <h1 className="font-headline text-5xl leading-tight md:text-7xl mt-2">
+                        {banner.subtitle}
+                    </h1>
+                    <Button asChild size="lg" className="mt-8 rounded-full bg-white text-black hover:bg-white/90">
+                        <Link href={banner.buttonLink}>{banner.buttonText}</Link>
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
             </CarouselItem>
@@ -175,10 +198,10 @@ function CategorySection() {
       <section className="py-16 sm:py-24 bg-white">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {categories.map((category) => {
+            {categories.map((category, index) => {
               const image = PlaceHolderImages.find(p => p.id === category.imageId);
               return (
-                <div key={category.slug}>
+                <ScrollRevealWrapper key={category.slug} delay={index * 0.1}>
                     <Link
                         href={`/products?category=${category.slug}`}
                         onClick={(e) => handleCategoryClick(e, category.slug)}
@@ -206,7 +229,7 @@ function CategorySection() {
                         </div>
                     </div>
                     </Link>
-                </div>
+                </ScrollRevealWrapper>
               )
             })}
           </div>
@@ -230,35 +253,39 @@ function WorkshopSection() {
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-                    <div className="text-center lg:text-left">
-                        <p className="font-body text-sm uppercase tracking-widest text-muted-foreground">
-                            MỘT NGÀY TẠI XƯỞNG
-                        </p>
-                        <h2 className="mt-4 font-headline text-4xl md:text-5xl">
-                            Công việc mà chúng tôi yêu thích mỗi ngày
-                        </h2>
-                        <p className="mx-auto mt-6 max-w-xl text-lg font-fraunces text-muted-foreground">
-                            Ghé thăm Tiktok của VIBARY để xem những tư liệu chân thực
-                            nhất – về cách mà chúng tôi hoàn thiện một chiếc bánh thật tinh tế
-                            gửi trao tới bạn.
-                        </p>
-                        <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
-                            <Link href="#">THEO DÕI NGAY</Link>
-                        </Button>
-                    </div>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
-                         <video
-                            ref={videoRef}
-                            className="h-full w-full object-cover"
-                            src="https://res.cloudinary.com/dqhgnzmtk/video/upload/w_1280,q_auto/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
-                            loop
-                            muted
-                            playsInline
-                            autoPlay
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <ScrollRevealWrapper>
+                        <div className="text-center lg:text-left">
+                            <p className="font-body text-sm uppercase tracking-widest text-muted-foreground">
+                                MỘT NGÀY TẠI XƯỞNG
+                            </p>
+                            <h2 className="mt-4 font-headline text-4xl md:text-5xl">
+                                Công việc mà chúng tôi yêu thích mỗi ngày
+                            </h2>
+                            <p className="mx-auto mt-6 max-w-xl text-lg font-fraunces text-muted-foreground">
+                                Ghé thăm Tiktok của VIBARY để xem những tư liệu chân thực
+                                nhất – về cách mà chúng tôi hoàn thiện một chiếc bánh thật tinh tế
+                                gửi trao tới bạn.
+                            </p>
+                            <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
+                                <Link href="#">THEO DÕI NGAY</Link>
+                            </Button>
                         </div>
-                    </div>
+                    </ScrollRevealWrapper>
+                    <ScrollRevealWrapper delay={0.2}>
+                        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
+                            <video
+                                ref={videoRef}
+                                className="h-full w-full object-cover"
+                                src="https://res.cloudinary.com/dqhgnzmtk/video/upload/w_1280,q_auto/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
+                                loop
+                                muted
+                                playsInline
+                                autoPlay
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            </div>
+                        </div>
+                    </ScrollRevealWrapper>
                 </div>
             </div>
         </section>
@@ -333,19 +360,21 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
     return (
         <section className="overflow-x-clip bg-white py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mb-16 text-center">
-                    <h2 className="font-headline text-4xl md:text-5xl">
-                        Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
-                    </h2>
-                    <p className="mx-auto mt-6 max-w-2xl text-lg font-fraunces text-muted-foreground">
-                        Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
-                    </p>
-                    <div className="mt-8">
-                        <Button asChild className="rounded-full bg-black text-white hover:bg-black/80 font-bold" size="lg">
-                            <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
-                        </Button>
+                 <ScrollRevealWrapper>
+                    <div className="mb-16 text-center">
+                        <h2 className="font-headline text-4xl md:text-5xl">
+                            Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
+                        </h2>
+                        <p className="mx-auto mt-6 max-w-2xl text-lg font-fraunces text-muted-foreground">
+                            Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
+                        </p>
+                        <div className="mt-8">
+                            <Button asChild className="rounded-full bg-black text-white hover:bg-black/80 font-bold" size="lg">
+                                <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                 </ScrollRevealWrapper>
             </div>
             
             {featuredDisplayProducts.length > 0 && (
@@ -392,9 +421,11 @@ function HotNews({ articles: latestArticles }: { articles: NewsArticle[] }) {
   return (
     <section className="py-16 sm:py-24 bg-white">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-         <div className="mb-8">
-            <h2 className="font-headline text-3xl md:text-4xl">Tin tức “nóng hổi”</h2>
-        </div>
+         <ScrollRevealWrapper>
+            <div className="mb-8">
+                <h2 className="font-headline text-3xl md:text-4xl">Tin tức “nóng hổi”</h2>
+            </div>
+         </ScrollRevealWrapper>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {isLoading && Array.from({length: 4}).map((_, i) => (
@@ -406,7 +437,9 @@ function HotNews({ articles: latestArticles }: { articles: NewsArticle[] }) {
                 </div>
             ))}
             {latestArticles?.map((article, index) => (
-              <NewsArticleCard key={`${article.id}-${index}`} article={article} />
+              <ScrollRevealWrapper key={`${article.id}-${index}`} delay={index * 0.1}>
+                <NewsArticleCard article={article} />
+              </ScrollRevealWrapper>
             ))}
         </div>
       </div>
