@@ -4,21 +4,24 @@ import { ProductCard } from "@/components/product-card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useAppStore } from "@/hooks/use-app-store";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
-import type { ProductCategory } from "@/lib/types";
+import type { Product, ProductCategory } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 
 export default function ProductsPage() {
-  const { products, isLoadingProducts } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const firestore = useFirestore();
+  
+  // Fetch products directly in this component
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
+
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
 
@@ -123,7 +126,7 @@ export default function ProductsPage() {
              )
           }
             
-          const categoryProducts = products.filter(p => p.categorySlug === category.slug);
+          const categoryProducts = products?.filter(p => p.categorySlug === category.slug) || [];
 
           return (
             <section 

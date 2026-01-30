@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState } from "react";
@@ -29,7 +27,9 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
-import { useAppStore } from "@/hooks/use-app-store";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Product } from "@/lib/types";
 
 const formSchema = z.object({
   preferredFruits: z.string().min(1, "Vui lòng nhập ít nhất một loại trái cây."),
@@ -52,7 +52,10 @@ const steps = [
 ];
 
 export function FlavorQuiz() {
-  const { products } = useAppStore();
+  const firestore = useFirestore();
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const { data: products } = useCollection<Product>(productsCollection);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<{
@@ -103,7 +106,7 @@ export function FlavorQuiz() {
     }
   };
 
-  const recommendedProduct = products.find(p => p.name.toLowerCase() === recommendation?.cakeName.toLowerCase());
+  const recommendedProduct = products?.find(p => p.name.toLowerCase() === recommendation?.cakeName.toLowerCase());
 
   if (isLoading) {
     return (

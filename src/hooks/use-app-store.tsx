@@ -1,6 +1,6 @@
 "use client";
 
-import type { CartItem, Product, ProductCategory } from "@/lib/types";
+import type { CartItem } from "@/lib/types";
 import {
   createContext,
   useContext,
@@ -9,13 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { useToast } from "./use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
-import { products as seedProducts } from "@/lib/data";
-import { generateSlug } from "@/lib/utils";
 
 interface AppContextType {
-  // Cart
   cartItems: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   removeFromCart: (id: string, size?: string) => void;
@@ -23,9 +18,6 @@ interface AppContextType {
   clearCart: () => void;
   cartCount: number;
   totalPrice: number;
-  // Products
-  products: Product[];
-  isLoadingProducts: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,90 +32,7 @@ export const useAppStore = () => {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const { toast } = useToast();
-
-  const firestore = useFirestore();
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
-  
-  // Fetch live data from Firestore
-  const { data: firestoreProducts, isLoading: isLoadingFirestore } = useCollection<Product>(productsCollection);
-  const { data: firestoreCategories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
-
-  // Seed initial products if the collection is empty
-  useEffect(() => {
-    if (firestore && !isLoadingFirestore && firestoreProducts && firestoreProducts.length === 0) {
-      const seedDatabase = async () => {
-        toast({ title: "Thiết lập ban đầu", description: "Đang thêm các sản phẩm mẫu..." });
-        
-        try {
-          const promises = seedProducts.map(product => {
-            const docRef = doc(firestore, 'cakes', product.id);
-            // Ensure slug is generated for seed data
-            const productWithSlug = { ...product, slug: product.slug || product.name.toLowerCase().replace(/ /g, '-') };
-            return setDoc(docRef, productWithSlug);
-          });
-          
-          await Promise.all(promises);
-
-          toast({ title: "Hoàn tất!", description: "Các sản phẩm mẫu đã được thêm thành công." });
-        } catch (error) {
-            console.error("Error seeding products:", error);
-            toast({
-                variant: "destructive",
-                title: "Lỗi",
-                description: "Không thể thêm sản phẩm mẫu."
-            });
-        }
-      };
-
-      seedDatabase();
-    }
-  }, [firestore, isLoadingFirestore, firestoreProducts, toast]);
-
-  // Seed initial categories if the collection is empty
-  useEffect(() => {
-    if (firestore && !isLoadingCategories && firestoreCategories && firestoreCategories.length === 0) {
-      const seedCategories = async () => {
-        toast({ title: "Thiết lập ban đầu", description: "Đang tạo các danh mục sản phẩm mặc định..." });
-
-        const defaultCategories = [
-          { title: "Bánh sinh nhật", subtitle: "Cho ngày đặc biệt", description: "Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật." },
-          { title: "Bánh lẻ", subtitle: "Thưởng thức mỗi ngày", description: "Các loại bánh nhỏ, entremet, và bánh ngọt để bạn tự thưởng cho bản thân." },
-          { title: "Bánh nướng", subtitle: "Giòn tan, thơm lừng", description: "Các loại bánh nướng cổ điển như bánh sừng bò, bánh tart, và nhiều hơn nữa." },
-          { title: "Bánh Tea-Break", subtitle: "Cho tiệc trà & sự kiện", description: "Set bánh nhỏ gọn, đa dạng cho các buổi tiệc trà công ty hoặc sự kiện đặc biệt." },
-        ];
-
-        try {
-          const promises = defaultCategories.map(cat => {
-            const slug = generateSlug(cat.title);
-            const id = `cat-${slug}`;
-            const docRef = doc(firestore, 'categories', id);
-            const dataToSave: ProductCategory = { id, slug, ...cat };
-            return setDoc(docRef, dataToSave);
-          });
-
-          await Promise.all(promises);
-
-          toast({ title: "Hoàn tất!", description: "Các danh mục mặc định đã được tạo thành công." });
-        } catch (error) {
-          console.error("Error seeding categories: ", error);
-           toast({
-                variant: "destructive",
-                title: "Lỗi",
-                description: "Không thể tạo danh mục mặc định."
-            });
-        }
-      };
-
-      seedCategories();
-    }
-  }, [firestore, isLoadingCategories, firestoreCategories, toast]);
-
-
-  // Loading is true only if we have no products yet AND we're still fetching from the server.
-  const isLoadingProducts = products.length === 0 && isLoadingFirestore;
   
   // Load cart from localStorage on initial client-side render
   useEffect(() => {
@@ -139,14 +48,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Effect to update products state when new data arrives from Firestore.
-  useEffect(() => {
-    if (firestoreProducts) {
-      setProducts(firestoreProducts);
-    }
-  }, [firestoreProducts]);
-
-
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -154,80 +55,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems]);
 
-  // Effect to sync cart items with the products from the database/cache
-  useEffect(() => {
-    // This effect runs when products are loaded from cache or updated from Firestore.
-    if (products.length > 0 && cartItems.length > 0) {
-      const productMap = new Map(products.map(p => [p.id, p]));
-      const validCartItems: CartItem[] = [];
-      const removedItems: string[] = [];
-
-      cartItems.forEach(item => {
-        const productInDb = productMap.get(item.id);
-        if (productInDb) {
-          // Sync price, image, and slug from DB to ensure consistency
-          const updatedItem = {
-            ...item,
-            price: productInDb.sizes?.find(s => s.name === item.size)?.price || productInDb.price,
-            imageUrl: productInDb.imageUrl,
-            slug: productInDb.slug
-          };
-          validCartItems.push(updatedItem);
-        } else {
-          removedItems.push(item.name);
-        }
-      });
-
-      if (removedItems.length > 0) {
-        setCartItems(validCartItems);
-        toast({
-          variant: "destructive",
-          title: "Giỏ hàng đã được cập nhật",
-          description: `${removedItems.length} sản phẩm không còn khả dụng và đã được tự động xóa khỏi giỏ hàng.`,
-        });
-      } else if (JSON.stringify(cartItems) !== JSON.stringify(validCartItems)) {
-        // Update cart if other details like price changed
-        setCartItems(validCartItems);
-      }
-    }
-  }, [products, cartItems, toast]);
-
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+    // Note: Stock checking logic is now expected to be handled in the component
+    // that calls this function, before calling it.
     const quantityToAdd = item.quantity || 1;
-    const product = products.find(p => p.id === item.id);
-
-    if (!product || product.stock === undefined) {
-      toast({
-        variant: "destructive",
-        title: "Không thể thêm sản phẩm",
-        description: "Thông tin tồn kho của sản phẩm này không có sẵn.",
-      });
-      return;
-    }
-    
-    const existingItem = cartItems.find(
-      (i) => i.id === item.id && i.size === item.size
-    );
-    const newQuantity = (existingItem?.quantity || 0) + quantityToAdd;
-
-    if (product.stock < newQuantity) {
-      toast({
-        variant: "destructive",
-        title: "Số lượng tồn kho không đủ",
-        description: `Rất tiếc, chỉ còn ${product.stock} sản phẩm "${product.name}" trong kho.`,
-      });
-      return;
-    }
-    
-    const imageUrl = item.imageUrl || product.imageUrl || '';
-    const itemToAdd = { ...item, imageUrl, quantity: quantityToAdd };
+    const itemToAdd = { ...item, quantity: quantityToAdd };
 
     setCartItems((prevItems) => {
+      const existingItem = prevItems.find(
+        (i) => i.id === item.id && i.size === item.size
+      );
       if (existingItem) {
         return prevItems.map((i) =>
           i.id === item.id && i.size === item.size
-            ? { ...i, quantity: newQuantity }
+            ? { ...i, quantity: i.quantity + quantityToAdd }
             : i
         );
       }
@@ -250,16 +92,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateQuantity = (id: string, quantity: number, size?: string) => {
-    const product = products.find(p => p.id === id);
-    if (product && product.stock !== undefined && quantity > product.stock) {
-      toast({
-        variant: "destructive",
-        title: "Số lượng tồn kho không đủ",
-        description: `Chỉ còn ${product.stock} sản phẩm "${product.name}" trong kho.`,
-      });
-      return;
-    }
-
+    // Note: Stock checking logic is handled in the component.
     if (quantity < 1) {
       removeFromCart(id, size);
       return;
@@ -292,8 +125,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         clearCart,
         cartCount,
         totalPrice,
-        products,
-        isLoadingProducts,
       }}
     >
       {children}

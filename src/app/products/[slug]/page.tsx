@@ -17,28 +17,33 @@ import {
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory } from '@/lib/types';
-import { cn, generateSlug } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage() {
     const slug = (useParams().slug || '') as string;
-    const { products, addToCart } = useAppStore();
+    const { addToCart, cartItems } = useAppStore(); // Get cartItems for stock check
+    const { toast } = useToast();
     
     const firestore = useFirestore();
+
+    // Fetch the single product using slug
+    const productQuery = useMemoFirebase(() => {
+        if (!firestore || !slug) return null;
+        return query(collection(firestore, 'cakes'), where('slug', '==', slug));
+    }, [firestore, slug]);
+    const { data: productData, isLoading: isLoadingProduct } = useCollection<Product>(productQuery);
+    const product = productData?.[0]; // The query returns an array, we take the first element
+
+    // Fetch all categories to display the product's category name
     const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
     const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection);
 
-    const product = products.find((p) => {
-        const pSlug = p.slug || generateSlug(p.name);
-        return pSlug === slug;
-    });
-
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
-    const { toast } = useToast();
     
     useEffect(() => {
         if (product) {
@@ -46,15 +51,12 @@ export default function ProductDetailPage() {
         }
     }, [product]);
 
-    if (!product) {
-        if (products.length > 0) {
-            notFound();
-        }
+    if (isLoadingProduct) {
         return (
             <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
                     <Skeleton className="aspect-square w-full rounded-lg" />
-                    <div className="space-y-4">
+                    <div className="mt-8 md:mt-0 space-y-4">
                         <Skeleton className="h-6 w-1/4" />
                         <Skeleton className="h-16 w-3/4" />
                         <Skeleton className="h-10 w-full" />
@@ -64,7 +66,11 @@ export default function ProductDetailPage() {
             </div>
         );
     }
-
+    
+    if (!product) {
+        notFound();
+    }
+    
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
     const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
     
@@ -73,28 +79,49 @@ export default function ProductDetailPage() {
 
     const handleAddToCart = () => {
         if (isOutOfStock) return;
-        addToCart({
-        id: product.id,
-        name: product.name,
-        price: priceToShow,
-        imageUrl: product.imageUrl,
-        slug: product.slug,
-        quantity: quantity,
-        size: selectedSize,
-        });
-        // Do not reset quantity here, user might want to add more later.
-    };
 
-    const handleIncreaseQuantity = () => {
-        if (product && product.stock !== undefined) {
-        if (quantity >= product.stock) {
+        const existingItem = cartItems.find(
+          (i) => i.id === product.id && i.size === selectedSize
+        );
+        const quantityInCart = existingItem?.quantity || 0;
+        const newTotalQuantity = quantityInCart + quantity;
+
+        if (product.stock !== undefined && product.stock < newTotalQuantity) {
             toast({
-            variant: "destructive",
-            title: "Số lượng tồn kho không đủ",
-            description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
+                variant: "destructive",
+                title: "Số lượng tồn kho không đủ",
+                description: `Bạn đã có ${quantityInCart} sản phẩm trong giỏ. Chỉ còn ${product.stock} sản phẩm trong kho.`,
             });
             return;
         }
+
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: priceToShow,
+            imageUrl: product.imageUrl,
+            slug: product.slug,
+            quantity: quantity,
+            size: selectedSize,
+        });
+    };
+
+    const handleIncreaseQuantity = () => {
+        const existingItem = cartItems.find(
+          (i) => i.id === product.id && i.size === selectedSize
+        );
+        const quantityInCart = existingItem?.quantity || 0;
+        const newTotalQuantity = quantityInCart + quantity + 1;
+
+        if (product && product.stock !== undefined) {
+            if (newTotalQuantity > product.stock) {
+                toast({
+                variant: "destructive",
+                title: "Số lượng tồn kho không đủ",
+                description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
+                });
+                return;
+            }
         }
         setQuantity((q) => q + 1);
     };

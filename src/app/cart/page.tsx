@@ -5,11 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, X } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Product } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, totalPrice, cartCount, products } = useAppStore();
+  const { cartItems, updateQuantity, removeFromCart, totalPrice, cartCount } = useAppStore();
+  const { toast } = useToast();
+
+  const firestore = useFirestore();
+  // Fetch all products for stock checking
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const { data: products } = useCollection<Product>(productsCollection);
+
+  const handleUpdateQuantity = (id: string, quantity: number, size?: string) => {
+    const product = products?.find(p => p.id === id);
+    if (product && product.stock !== undefined && quantity > product.stock) {
+        toast({
+            variant: "destructive",
+            title: "Số lượng tồn kho không đủ",
+            description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
+        });
+        return;
+    }
+    updateQuantity(id, quantity, size);
+  }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -26,7 +49,7 @@ export default function CartPage() {
           <div className="lg:col-span-2">
             <ul role="list" className="divide-y divide-border">
               {cartItems.map((item) => {
-                const productInStock = products.find(p => p.id === item.id);
+                const productInStock = products?.find(p => p.id === item.id);
                 const stockAvailable = productInStock?.stock ?? 0;
                 const hasStockIssue = productInStock ? item.quantity > stockAvailable : false;
 
@@ -56,11 +79,11 @@ export default function CartPage() {
                       </div>
                       <div className="flex flex-1 items-end justify-between text-sm">
                         <div className="flex items-center border rounded-md">
-                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}>
+                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.size)}>
                                 <Minus className="h-4 w-4" />
                            </Button>
                            <Input type="text" value={item.quantity} readOnly className="h-8 w-12 border-0 text-center bg-transparent" inputMode="numeric" />
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.size)}>
                                 <Plus className="h-4 w-4" />
                            </Button>
                         </div>
@@ -103,7 +126,7 @@ export default function CartPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button asChild className="w-full" size="lg" disabled={cartItems.some(item => {
+                    <Button asChild className="w-full" size="lg" disabled={!products || cartItems.some(item => {
                         const product = products.find(p => p.id === item.id);
                         return product ? item.quantity > (product.stock ?? 0) : true;
                     })}>
