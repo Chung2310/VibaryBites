@@ -3,7 +3,7 @@
 import { ProductCard } from "@/components/product-card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAppStore } from "@/hooks/use-app-store";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import type { ProductCategory } from "@/lib/types";
@@ -25,12 +25,27 @@ export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Define the desired order
+  const desiredCategoryOrder = ["Bánh sinh nhật", "Bánh lẻ", "Bánh nướng", "Bánh Tea-Break"];
+
+  const sortedCategories = useMemo(() => {
+    if (!categories) return [];
+    return [...categories].sort((a, b) => {
+        const indexA = desiredCategoryOrder.indexOf(a.title);
+        const indexB = desiredCategoryOrder.indexOf(b.title);
+        // If a category is not in the desired order, push it to the end
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
+  }, [categories]);
+
   useEffect(() => {
-    if (isLoadingCategories || !categories || categories.length === 0) return;
+    if (isLoadingCategories || !sortedCategories || sortedCategories.length === 0) return;
 
     const categorySlugFromQuery = searchParams.get('category');
     // Default to the first category if none is in the query params
-    const slugToHandle = categorySlugFromQuery || categories[0].slug;
+    const slugToHandle = categorySlugFromQuery || sortedCategories[0].slug;
     
     setActiveCategory(slugToHandle);
     
@@ -43,7 +58,7 @@ export default function ProductsPage() {
             }, 100);
         }
     }
-  }, [searchParams, categories, isLoadingCategories]);
+  }, [searchParams, sortedCategories, isLoadingCategories]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
     e.preventDefault();
@@ -60,7 +75,7 @@ export default function ProductsPage() {
                     {isLoadingCategories && Array.from({length: 4}).map((_, i) => (
                         <Skeleton key={i} className="h-4 w-24" />
                     ))}
-                    {categories?.map(category => (
+                    {sortedCategories.map(category => (
                         <a
                             key={category.slug}
                             href={`/products?category=${category.slug}`}
@@ -78,7 +93,7 @@ export default function ProductsPage() {
         </nav>
 
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {(isLoadingCategories ? Array.from({length: 4}).map((_, i) => ({ id: `skel-${i}`, slug: `skel-${i}`, title: '', subtitle: '', description: ''})) : (categories || [])).map((category, index) => {
+        {(isLoadingCategories ? Array.from({length: 4}).map((_, i) => ({ id: `skel-${i}`, slug: `skel-${i}`, title: '', subtitle: '', description: ''})) : (sortedCategories || [])).map((category, index) => {
           if (isLoadingCategories) {
              return (
                  <section key={category.id} className="scroll-mt-24">
@@ -101,7 +116,7 @@ export default function ProductsPage() {
                         </div>
                       ))}
                     </div>
-                     {index < (categories?.length || 4) - 1 && (
+                     {index < (sortedCategories.length || 4) - 1 && (
                         <Separator className="my-16 sm:my-24" />
                     )}
                  </section>
@@ -155,7 +170,7 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              {index < (categories?.length || 0) - 1 && (
+              {index < (sortedCategories.length || 0) - 1 && (
                 <Separator className="my-16 sm:my-24" />
               )}
             </section>
