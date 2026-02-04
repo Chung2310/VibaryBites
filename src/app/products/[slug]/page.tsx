@@ -17,11 +17,39 @@ import {
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+
+async function getProductBySlug(firestore: any, slug: string): Promise<Product | null> {
+    if (!firestore || !slug) return null;
+
+    // 1. Try to find by the 'slug' field directly.
+    const productsRef = collection(firestore, 'cakes');
+    const q = query(productsRef, where("slug", "==", slug));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as Product;
+    }
+
+    // 2. If not found, iterate and match by generated slug (for legacy data).
+    const allProductsSnapshot = await getDocs(productsRef);
+    for (const doc of allProductsSnapshot.docs) {
+        const product = doc.data() as Product;
+        // Check if a generated slug from the title matches.
+        if (generateSlug(product.name) === slug) {
+            return { id: doc.id, ...product };
+        }
+    }
+
+    // 3. If still not found, return null.
+    return null;
+}
+
 
 export default function ProductDetailPage() {
     const slug = (useParams().slug || '') as string;
@@ -29,14 +57,9 @@ export default function ProductDetailPage() {
     const { toast } = useToast();
     
     const firestore = useFirestore();
-
-    // Fetch the single product using slug
-    const productQuery = useMemoFirebase(() => {
-        if (!firestore || !slug) return null;
-        return query(collection(firestore, 'cakes'), where('slug', '==', slug));
-    }, [firestore, slug]);
-    const { data: productData, isLoading: isLoadingProduct } = useCollection<Product>(productQuery);
-    const product = productData?.[0]; // The query returns an array, we take the first element
+    const [product, setProduct] = useState<Product | null>(null);
+    const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+    const [error, setError] = useState(false);
 
     // Fetch all categories to display the product's category name
     const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
@@ -46,10 +69,28 @@ export default function ProductDetailPage() {
     const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
     
     useEffect(() => {
-        if (product) {
-            setSelectedSize(product.sizes?.[0]?.name);
+        if (firestore && slug) {
+            setIsLoadingProduct(true);
+            setError(false);
+            getProductBySlug(firestore, slug)
+                .then(productData => {
+                    if (productData) {
+                        setProduct(productData);
+                        setSelectedSize(productData.sizes?.[0]?.name);
+                    } else {
+                        setError(true);
+                    }
+                })
+                .catch(e => {
+                    console.error("Error fetching product:", e);
+                    setError(true);
+                })
+                .finally(() => {
+                    setIsLoadingProduct(false);
+                });
         }
-    }, [product]);
+    }, [firestore, slug]);
+
 
     if (isLoadingProduct) {
         return (
@@ -67,7 +108,7 @@ export default function ProductDetailPage() {
         );
     }
     
-    if (!product) {
+    if (error || !product) {
         notFound();
     }
     
