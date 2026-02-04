@@ -20,7 +20,7 @@ type ProductCardProps = {
 export function ProductCard({ product, hideStockStatus = false, hideDescription = false, hidePrice = false, hideSubtitle = false }: ProductCardProps) {
   const thumbnailUrl = product.imageUrl || '';
   const isOutOfStock = product.stock !== undefined && product.stock <= 0;
-  const sanitizedSlug = generateSlug(product.name);
+  const sanitizedSlug = product.slug || generateSlug(product.name);
 
   return (
     <Card className="group relative flex h-full flex-col overflow-hidden border-0 shadow-none bg-transparent rounded-none">
