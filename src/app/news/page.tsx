@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { NewsArticle } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateSlug } from '@/lib/utils';
 
 function NewsArticleCard({ article }: { article: NewsArticle }) {
   const formattedDate = article.publicationDate
@@ -18,8 +19,10 @@ function NewsArticleCard({ article }: { article: NewsArticle }) {
       })
     : 'No date';
 
+  const sanitizedSlug = article.slug || generateSlug(article.title);
+
   return (
-    <Link href={`/news/${article.slug}`} key={article.id}>
+    <Link href={`/news/${sanitizedSlug}`} key={article.id}>
       <Card className="h-full overflow-hidden transition-shadow hover:shadow-xl">
         {article.imageUrl && (
           <div className="aspect-[4/3] relative">

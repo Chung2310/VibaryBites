@@ -49,6 +49,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { MoreHorizontal, ExternalLink, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateSlug } from '@/lib/utils';
 
 export default function NewsPage() {
     const router = useRouter();
@@ -149,50 +150,53 @@ export default function NewsPage() {
                                 <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                            </TableRow>
                         ))}
-                        {articles && articles.map((article) => (
-                        <TableRow key={article.id}>
-                            <TableCell className="hidden sm:table-cell">
-                            <Image
-                                alt={article.title}
-                                className="aspect-square rounded-md object-cover"
-                                height="64"
-                                src={article.imageUrl || 'https://placehold.co/64x64'}
-                                width="64"
-                            />
-                            </TableCell>
-                            <TableCell className="font-medium max-w-[250px] truncate">{article.title}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline">{article.category}</Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                                {new Date(article.publicationDate).toLocaleDateString('vi-VN')}
-                            </TableCell>
-                            <TableCell>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => router.push(`/admin/news/edit/${article.id}`)}>Chỉnh sửa</DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                   <Link href={`/news/${article.slug}`} target="_blank">
-                                        Xem trước
-                                        <ExternalLink className="h-3 w-3 ml-2" />
-                                   </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openDeleteConfirm(article)} className="text-destructive">
-                                    Xóa
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))}
+                        {articles && articles.map((article) => {
+                          const sanitizedSlug = article.slug || generateSlug(article.title);
+                          return (
+                            <TableRow key={article.id}>
+                                <TableCell className="hidden sm:table-cell">
+                                <Image
+                                    alt={article.title}
+                                    className="aspect-square rounded-md object-cover"
+                                    height="64"
+                                    src={article.imageUrl || 'https://placehold.co/64x64'}
+                                    width="64"
+                                />
+                                </TableCell>
+                                <TableCell className="font-medium max-w-[250px] truncate">{article.title}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline">{article.category}</Badge>
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">
+                                    {new Date(article.publicationDate).toLocaleDateString('vi-VN')}
+                                </TableCell>
+                                <TableCell>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => router.push(`/admin/news/edit/${article.id}`)}>Chỉnh sửa</DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                      <Link href={`/news/${sanitizedSlug}`} target="_blank">
+                                            Xem trước
+                                            <ExternalLink className="h-3 w-3 ml-2" />
+                                      </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={() => openDeleteConfirm(article)} className="text-destructive">
+                                        Xóa
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                          )
+                        })}
                     </TableBody>
                 </Table>
                  {articles?.length === 0 && !isLoading && (
