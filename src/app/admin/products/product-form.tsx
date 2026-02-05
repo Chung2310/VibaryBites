@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,12 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { ImageUploader } from "@/components/image-uploader";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const productSchema = z.object({
     // Basic Info
@@ -74,6 +77,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
   const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
   
+  const [priceType, setPriceType] = useState<'specific' | 'pending'>(
+    product && product.price === 0 && isEditMode ? 'pending' : 'specific'
+  );
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: product ? {
@@ -94,7 +101,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     } : {
         name: "",
         subtitle: "",
-        price: 0,
+        price: 650000,
         stock: 10,
         categorySlug: "",
         description: "",
@@ -108,6 +115,12 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         structure: "",
     },
   });
+
+  useEffect(() => {
+    if (product && isEditMode) {
+      setPriceType(product.price === 0 ? 'pending' : 'specific');
+    }
+  }, [product, isEditMode]);
   
   return (
     <Form {...form}>
@@ -124,7 +137,44 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
             <div className="space-y-6">
                  <h3 className="text-lg font-medium border-b pb-2">Phân loại & Giá</h3>
                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormLabel>Giá</FormLabel><FormControl><Input type="number" placeholder="650000" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField
+                        control={form.control}
+                        name="price"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Giá</FormLabel>
+                                <RadioGroup
+                                    value={priceType}
+                                    onValueChange={(value: 'specific' | 'pending') => {
+                                        setPriceType(value);
+                                        if (value === 'pending') {
+                                            field.onChange(0);
+                                        }
+                                    }}
+                                    className="flex space-x-4 pt-1"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="specific" id="price-specific" /></FormControl>
+                                        <Label htmlFor="price-specific" className="font-normal">Cụ thể</Label>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="pending" id="price-pending" /></FormControl>
+                                        <Label htmlFor="price-pending" className="font-normal">Giá chờ</Label>
+                                    </FormItem>
+                                </RadioGroup>
+                                <FormControl className={priceType === 'pending' ? 'hidden' : 'block'}>
+                                    <Input
+                                        type="number"
+                                        placeholder="650000"
+                                        value={field.value ?? ''}
+                                        onChange={e => field.onChange(Number(e.target.value))}
+                                        disabled={priceType === 'pending'}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField control={form.control} name="stock" render={({ field }) => ( <FormItem><FormLabel>Tồn kho</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                  </div>
                 <FormField control={form.control} name="categorySlug" render={({ field }) => (

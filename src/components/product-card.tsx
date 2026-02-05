@@ -39,9 +39,16 @@ export function ProductCard({ product, hideStockStatus = false, hideDescription 
               <p className="mt-1 font-fraunces text-sm uppercase tracking-wider text-muted-foreground">{product.subtitle}</p>
             )}
             {!hideDescription && <p className="text-sm text-muted-foreground mt-1 font-fraunces line-clamp-2">{product.description}</p>}
-            {!hidePrice && <p className="text-base font-medium mt-2">
-                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}
-            </p>}
+            {!hidePrice && (
+              <p className="text-base font-medium mt-2">
+                {product.price > 0
+                  ? new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(product.price)
+                  : "Giá: Liên hệ"}
+              </p>
+            )}
         </div>
         <div className="relative w-full overflow-hidden aspect-square flex-grow mt-auto">
           {thumbnailUrl && (

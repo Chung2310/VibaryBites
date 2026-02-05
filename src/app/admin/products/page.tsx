@@ -234,7 +234,7 @@ export default function ProductsPage() {
                                 <Badge variant="outline">{categories?.find(c => c.slug === product.categorySlug)?.title || product.categorySlug}</Badge>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
-                                {new Intl.NumberFormat('vi-VN').format(product.price)}đ
+                                {product.price > 0 ? `${new Intl.NumberFormat('vi-VN').format(product.price)}đ` : 'Giá chờ'}
                             </TableCell>
                              <TableCell className={cn("hidden md:table-cell", isOutOfStock && "text-destructive font-bold")}>
                                 {product.stock ?? 'N/A'}

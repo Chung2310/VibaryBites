@@ -1,3 +1,4 @@
+
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -113,13 +114,14 @@ export default function ProductDetailPage() {
     }
     
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+    const isPricePending = product.price === 0;
     const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
     
     const imageUrl = product.imageUrl;
     const detailedDescription = product.detailedDescription || {};
 
     const handleAddToCart = () => {
-        if (isOutOfStock) return;
+        if (isOutOfStock || isPricePending) return;
 
         const existingItem = cartItems.find(
           (i) => i.id === product.id && i.size === selectedSize
@@ -206,6 +208,12 @@ export default function ProductDetailPage() {
                     
                     {isOutOfStock ? (
                         <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
+                    ) : isPricePending ? (
+                        <div className="mt-8">
+                            <Button size="lg" asChild className="w-full bg-black text-white hover:bg-black/80 rounded-md">
+                                <Link href="/contact">Liên hệ để đặt hàng</Link>
+                            </Button>
+                        </div>
                     ) : (
                         <>
                             {product.sizes && product.sizes.length > 0 && (
