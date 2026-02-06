@@ -95,16 +95,12 @@ export default {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-50%)' },
         },
-        'marquee-reverse': {
-          from: { transform: 'translateX(-50%)' },
-          to: { transform: 'translateX(0)' },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         marquee: 'marquee 80s linear infinite',
-        'marquee-reverse': 'marquee-reverse 40s linear infinite',
+        'marquee-fast': 'marquee 25s linear infinite',
       },
     },
   },
