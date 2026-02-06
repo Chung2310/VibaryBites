@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React, {useRef, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
@@ -70,7 +70,7 @@ interface HomeClientProps {
 
 // Reusable component for scroll animations
 const ScrollRevealWrapper = ({ children, delay = 0, amount = 0.2 }: { children: React.ReactNode, delay?: number, amount?: number }) => {
-    const ref = useRef(null);
+    const ref = React.useRef(null);
     const isInView = useInView(ref, { once: true, amount });
 
     return (
@@ -227,20 +227,6 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
-    const videoRef = useRef<HTMLVideoElement>(null);
-
-    const handleMouseEnter = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = false;
-        }
-    };
-
-    const handleMouseLeave = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = true;
-        }
-    };
-
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -266,11 +252,8 @@ function WorkshopSection() {
                     <ScrollRevealWrapper delay={0.2}>
                         <div 
                             className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl"
-                            onMouseEnter={handleMouseEnter}
-                            onMouseLeave={handleMouseLeave}
                         >
                             <video
-                                ref={videoRef}
                                 className="h-full w-full object-cover"
                                 src="https://res.cloudinary.com/djnocnodz/video/upload/v1770360725/0206_2_fddalj.mp4"
                                 loop
