@@ -226,6 +226,20 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const handleMouseEnter = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = false;
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = true;
+        }
+    };
+
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -249,10 +263,15 @@ function WorkshopSection() {
                         </div>
                     </ScrollRevealWrapper>
                     <ScrollRevealWrapper delay={0.2}>
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
+                        <div 
+                            className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                        >
                             <video
+                                ref={videoRef}
                                 className="h-full w-full object-cover"
-                                src="https://res.cloudinary.com/dqhgnzmtk/video/upload/w_1280,q_auto/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
+                                src="https://res.cloudinary.com/djnocnodz/video/upload/v1770352176/file_a_cong_ggtk8s.mp4"
                                 loop
                                 muted
                                 playsInline
