@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React, {useRef, useEffect, useState} from 'react'; // Added useState
+import React, {useRef, useEffect, useState} from 'react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn, generateSlug } from '@/lib/utils';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter } from 'next/navigation';
-import { motion, useInView } from 'framer-motion'; // <-- Import motion
+import { motion, useInView } from 'framer-motion';
 
 const heroBanners = [
   {
@@ -226,16 +226,6 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
-     const videoRef = useRef<HTMLVideoElement>(null);
-
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.play().catch(error => {
-                console.error("Autoplay was prevented:", error);
-            });
-        }
-    }, []);
-
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -261,7 +251,6 @@ function WorkshopSection() {
                     <ScrollRevealWrapper delay={0.2}>
                         <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl">
                             <video
-                                ref={videoRef}
                                 className="h-full w-full object-cover"
                                 src="https://res.cloudinary.com/dqhgnzmtk/video/upload/w_1280,q_auto/v1769312690/6138261-uhd_3840_2160_25fps_dqlliq.mp4"
                                 loop
