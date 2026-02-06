@@ -15,7 +15,7 @@ const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
   return (
     <footer 
-     className="bg-white text-center py-16 sm:py-24 z-0"
+     className="bg-white text-center py-16 sm:py-24"
       ref={ref}
     >
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -30,7 +30,14 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
             </Button>
             <div className="flex justify-center items-center gap-2 text-muted-foreground mt-4">
               <MapPin className="h-4 w-4" />
-              <span>số 3 Nguyễn Văn Trỗi, P.Ninh Xá, Bắc Ninh, Việt Nam</span>
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=số+3+Nguyễn+Văn+Trỗi,+P.Ninh+Xá,+Bắc+Ninh,+Việt+Nam"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                số 3 Nguyễn Văn Trỗi, P.Ninh Xá, Bắc Ninh, Việt Nam
+              </a>
             </div>
         </div>
 
