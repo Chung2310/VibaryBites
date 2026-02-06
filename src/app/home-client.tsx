@@ -130,6 +130,7 @@ function Hero() {
                   data-ai-hint={banner.imageHint}
                 />
                 
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                 <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-20 text-left sm:px-6 lg:px-8">
                    <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -271,7 +272,7 @@ function WorkshopSection() {
                             <video
                                 ref={videoRef}
                                 className="h-full w-full object-cover"
-                                src="https://res.cloudinary.com/djnocnodz/video/upload/v1770352176/file_a_cong_ggtk8s.mp4"
+                                src="https://res.cloudinary.com/djnocnodz/video/upload/v1770360725/0206_2_fddalj.mp4"
                                 loop
                                 muted
                                 playsInline
@@ -443,15 +444,17 @@ function HotNews({ articles: latestArticles }: { articles: NewsArticle[] }) {
 
 export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps) {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Hero />
       <div className="sticky top-20 z-30">
         <AnnouncementBar />
       </div>
-      <FeaturedProducts products={featuredProducts} />
-      <CategorySection />
-      <WorkshopSection />
-      <HotNews articles={latestArticles} />
-    </>
+      <main className="flex-grow">
+        <FeaturedProducts products={featuredProducts} />
+        <CategorySection />
+        <WorkshopSection />
+        <HotNews articles={latestArticles} />
+      </main>
+    </div>
   );
 }

@@ -80,12 +80,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
       <div className="relative flex min-h-dvh flex-col bg-background">
         {!isAdminPage && <Header />}
-        {!isAdminPage && !isProductPage && !isHomePage && (
-          <div className="sticky top-20 z-40">
-            <AnnouncementBar />
-          </div>
-        )}
-        <main className="relative z-10 bg-background flex-grow">{children}</main>
+        <div className="flex-grow">
+          {children}
+        </div>
         {!isAdminPage && <Footer />}
       </div>
       <Toaster />
