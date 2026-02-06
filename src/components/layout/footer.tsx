@@ -58,7 +58,7 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
 
         <div className="mt-20">
             <p className="font-headline text-4xl text-gray-400 italic">Crafted to be shared</p>
-            <h1 className="font-headline text-9xl md:text-[200px] font-bold text-gray-200 tracking-widest mt-4">VIBARY</h1>
+            <h1 className="font-headline text-9xl md:text-[200px] font-bold tracking-widest mt-4 text-transparent bg-clip-text bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300 animate-shimmer bg-[length:200%_auto]">VIBARY</h1>
         </div>
 
         <div className="mt-20 border-t pt-8 text-center text-sm text-muted-foreground">
