@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -62,20 +61,6 @@ const heroBanners = [
     imageHint: "cake decorating"
   }
 ];
-
-const marqueeVariants = {
-  animate: {
-    x: ['0%', '-50%'],
-    transition: {
-      x: {
-        repeat: Infinity,
-        repeatType: "loop",
-        duration: 60,
-        ease: "linear",
-      },
-    },
-  },
-};
 
 interface HomeClientProps {
   featuredProducts: Product[];
@@ -296,7 +281,7 @@ function WorkshopSection() {
 const MarqueeProductCard = React.memo(function MarqueeProductCard({ product }: { product: Product }) {
     const sanitizedSlug = product.slug || generateSlug(product.name);
     return (
-      <div className="group relative mx-8 flex-shrink-0 w-96">
+      <div className="group/card relative mx-8 flex-shrink-0 w-96">
         <Link href={`/products/${sanitizedSlug}`} className="block">
           <div className="relative aspect-square">
             <Image
@@ -304,11 +289,11 @@ const MarqueeProductCard = React.memo(function MarqueeProductCard({ product }: {
               alt={product.name}
               width={500}
               height={500}
-              className="object-contain transition-transform duration-500 group-hover:scale-105"
+              className="object-contain transition-transform duration-500 group-hover/card:scale-105"
             />
           </div>
-          <div className="absolute inset-x-0 bottom-4">
-            <div className="mx-auto w-fit rounded-full bg-white/80 px-4 py-2 text-center text-sm font-semibold uppercase tracking-wider text-black shadow-md backdrop-blur-sm transition-all group-hover:bg-white">
+          <div className="absolute inset-x-0 bottom-8">
+            <div className="mx-auto w-fit rounded-full border border-black bg-white px-4 py-2 text-center text-sm font-semibold uppercase tracking-wider text-black shadow-md transition-all group-hover/card:shadow-lg">
               {product.name}
             </div>
           </div>
@@ -319,7 +304,7 @@ const MarqueeProductCard = React.memo(function MarqueeProductCard({ product }: {
 MarqueeProductCard.displayName = 'MarqueeProductCard';
 
 function FeaturedProducts({ products: featuredDisplayProducts }: { products: Product[] }) {
-    if (!featuredDisplayProducts) {
+    if (!featuredDisplayProducts || featuredDisplayProducts.length === 0) {
       return (
         <section className="py-16 sm:py-24 bg-white">
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -353,13 +338,13 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
     const MarqueeItems = ({ items }: { items: Product[] }) => (
         <>
             {items.map((product) => (
-                <MarqueeProductCard key={product.id} product={product} />
+                <MarqueeProductCard key={`${product.id}-marquee`} product={product} />
             ))}
         </>
     );
 
     return (
-        <section className="overflow-x-clip bg-white py-16 sm:py-24">
+        <section className="overflow-x-hidden bg-white py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                  <ScrollRevealWrapper>
                     <div className="mb-16 text-center">
@@ -379,15 +364,13 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             </div>
             
             {featuredDisplayProducts.length > 0 && (
-                <div className="w-full overflow-hidden">
-                    <motion.div
-                        className="flex"
-                        variants={marqueeVariants}
-                        animate="animate"
+                <div className="group w-full overflow-hidden">
+                    <div
+                        className="flex w-max animate-marquee hover:[animation-play-state:paused]"
                     >
                         <MarqueeItems items={featuredDisplayProducts} />
                         <MarqueeItems items={featuredDisplayProducts} />
-                    </motion.div>
+                    </div>
                 </div>
             )}
         </section>
