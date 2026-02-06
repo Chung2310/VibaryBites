@@ -258,7 +258,7 @@ function WorkshopSection() {
                                 gửi trao tới bạn.
                             </p>
                             <Button asChild className="mt-8 bg-black text-white hover:bg-black/80 rounded-full font-bold" size="lg">
-                                <Link href="https://www.tiktok.com/@vi_bary">THEO DÕI NGAY</Link>
+                                <Link href="https://www.tiktok.com/@vi_bary" target="_blank" rel="noopener noreferrer">THEO DÕI NGAY</Link>
                             </Button>
                         </div>
                     </ScrollRevealWrapper>

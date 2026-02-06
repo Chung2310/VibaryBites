@@ -85,7 +85,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <AnnouncementBar />
           </div>
         )}
-        <main className="relative z-10 bg-background">{children}</main>
+        <main className="relative z-10 bg-background flex-grow">{children}</main>
         {!isAdminPage && <Footer />}
       </div>
       <Toaster />

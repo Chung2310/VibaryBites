@@ -15,7 +15,7 @@ const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
   return (
     <footer 
-     className="bg-white text-center py-16 sm:py-24 sticky bottom-0 z-0"
+     className="bg-white text-center py-16 sm:py-24"
       ref={ref}
     >
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -43,7 +43,7 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
                 <Link href="#" aria-label="Instagram page">
                     <Instagram className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
-                <Link href="#" aria-label="TikTok page">
+                <Link href="https://www.tiktok.com/@vi_bary" aria-label="TikTok page" target="_blank" rel="noopener noreferrer">
                    <TikTokIcon className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
             </div>
