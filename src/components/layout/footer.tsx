@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -16,7 +15,7 @@ const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
   return (
     <footer 
-      className="bg-white text-center py-16 sm:py-24 sticky bottom-0 z-0"
+      className="bg-white text-center py-16 sm:py-24 z-0"
       ref={ref}
     >
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
