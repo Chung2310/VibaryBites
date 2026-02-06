@@ -37,7 +37,7 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
         <div className="mt-12 space-y-4">
             <p className="text-sm tracking-widest uppercase">THEO DÕI VIBARY</p>
             <div className="flex justify-center gap-4">
-                <Link href="#" aria-label="Facebook page">
+                <Link href="https://www.facebook.com/profile.php?id=61576305638969" aria-label="Facebook page" target="_blank" rel="noopener noreferrer">
                     <Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
                 <Link href="#" aria-label="Instagram page">
