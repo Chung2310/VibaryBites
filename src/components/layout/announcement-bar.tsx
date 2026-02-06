@@ -3,7 +3,7 @@
 export function AnnouncementBar() {
   const Item = () => (
     <p className="flex-shrink-0 flex items-center px-8 whitespace-nowrap font-body text-sm text-black text-center tracking-wider h-full">
-      GẤP GÁP ĐẶT BÁNH GỌI 📞 <a href="tel:0907860330" className="hover:underline mx-1">090 786 0330</a> - TRAO BÁNH TẬN TAY, TẠI HÀ NỘI
+      GẤP GÁP ĐẶT BÁNH GỌI 📞 <a href="tel:0912550335" className="hover:underline mx-1">091 255 03 35</a> - TRAO BÁNH TẬN TAY, TẠI BẮC NINH
     </p>
   );
   
