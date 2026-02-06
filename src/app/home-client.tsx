@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -62,14 +63,14 @@ const heroBanners = [
   }
 ];
 
-const marqueeVariantsReverse = {
+const marqueeVariants = {
   animate: {
-    x: ['-50%', '0%'],
+    x: ['0%', '-50%'],
     transition: {
       x: {
         repeat: Infinity,
         repeatType: "loop",
-        duration: 15,
+        duration: 60,
         ease: "linear",
       },
     },
@@ -381,7 +382,7 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
                 <div className="w-full overflow-hidden">
                     <motion.div
                         className="flex"
-                        variants={marqueeVariantsReverse}
+                        variants={marqueeVariants}
                         animate="animate"
                     >
                         <MarqueeItems items={featuredDisplayProducts} />
