@@ -40,7 +40,7 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
                 <Link href="https://www.facebook.com/profile.php?id=61576305638969" aria-label="Facebook page" target="_blank" rel="noopener noreferrer">
                     <Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
-                <Link href="#" aria-label="Instagram page">
+                <Link href="https://www.instagram.com/tiembanhvibary/" aria-label="Instagram page" target="_blank" rel="noopener noreferrer">
                     <Instagram className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
                 <Link href="https://www.tiktok.com/@vi_bary" aria-label="TikTok page" target="_blank" rel="noopener noreferrer">
