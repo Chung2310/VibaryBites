@@ -1,4 +1,3 @@
-
 'use client';
 
 import { faqs } from '@/lib/data';
@@ -53,7 +52,8 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
 
 
 export default function ProductDetailPage() {
-    const slug = (useParams().slug || '') as string;
+    const params = useParams();
+    const slug = (params.slug || '') as string;
     const { addToCart, cartItems } = useAppStore(); // Get cartItems for stock check
     const { toast } = useToast();
     
