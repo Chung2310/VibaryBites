@@ -16,11 +16,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import type { Product, ProductCategory } from '@/lib/types';
+import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
 import { cn, generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 async function getProductBySlug(firestore: any, slug: string): Promise<Product | null> {
@@ -67,6 +67,11 @@ export default function ProductDetailPage() {
     const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
     const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection);
 
+    // Fetch standard birthday cake sizes
+    const birthdaySizesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'birthday_cake_sizes'), orderBy('order')) : null, [firestore]);
+    const { data: birthdayCakeSizes, isLoading: isLoadingSizes } = useCollection<BirthdayCakeSize>(birthdaySizesCollection);
+
+
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
     
@@ -78,7 +83,7 @@ export default function ProductDetailPage() {
                 .then(productData => {
                     if (productData) {
                         setProduct(productData);
-                        setSelectedSize(productData.sizes?.[0]?.name);
+                        // Don't set selectedSize here, let the next effect handle it
                     } else {
                         setError(true);
                     }
@@ -93,8 +98,29 @@ export default function ProductDetailPage() {
         }
     }, [firestore, slug]);
 
+    // This effect runs when the product or standard sizes are loaded/changed
+    useEffect(() => {
+        if (!product) return;
+        
+        const isBirthday = product.categorySlug === 'banh-sinh-nhat';
 
-    if (isLoadingProduct) {
+        if (isBirthday) {
+            // For birthday cakes, set the size once the standard sizes are loaded
+            if (birthdayCakeSizes && birthdayCakeSizes.length > 0) {
+                 setSelectedSize(birthdayCakeSizes[0].name);
+            }
+        } else {
+            // For other products, use their own sizes
+            if (product.sizes && product.sizes.length > 0) {
+                setSelectedSize(product.sizes[0].name);
+            } else {
+                setSelectedSize(undefined);
+            }
+        }
+    }, [product, birthdayCakeSizes]);
+
+
+    if (isLoadingProduct || isLoadingSizes) {
         return (
             <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
@@ -114,9 +140,14 @@ export default function ProductDetailPage() {
         notFound();
     }
     
+    const isBirthdayCake = product.categorySlug === 'banh-sinh-nhat';
+    const availableSizes = isBirthdayCake 
+        ? birthdayCakeSizes?.map(s => ({ name: s.name, price: s.price }))
+        : product.sizes;
+
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
-    const isPricePending = product.price === 0 && (!product.sizes || product.sizes.length === 0);
-    const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
+    const isPricePending = product.price === 0 && (!availableSizes || availableSizes.length === 0);
+    const priceToShow = availableSizes?.find(s => s.name === selectedSize)?.price || product.price;
     
     const imageUrl = product.imageUrl;
     const detailedDescription = product.detailedDescription || {};
@@ -217,11 +248,11 @@ export default function ProductDetailPage() {
                         </div>
                     ) : (
                         <>
-                            {product.sizes && product.sizes.length > 0 && (
+                            {availableSizes && availableSizes.length > 0 && (
                             <div className="mt-8">
                                 <h3 className="font-bold tracking-wider text-sm uppercase">Kích thước</h3>
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                {product.sizes.map((size) => (
+                                {availableSizes.map((size) => (
                                     <Button
                                     key={size.name}
                                     variant={selectedSize === size.name ? 'default' : 'outline'}
