@@ -48,14 +48,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useAuth, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 
-const navLinks = [
+const mainNavLinks = [
   { href: '/admin', label: 'Dashboard', icon: Home },
-  { href: '/admin/products', label: 'Sản phẩm', icon: Package },
+  { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart },
   { href: '/admin/inventory', label: 'Kho hàng', icon: Warehouse },
   { href: '/admin/news', label: 'Tin tức & Blog', icon: Newspaper },
-  { href: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart },
   { href: '/admin/customers', label: 'Khách hàng', icon: Users },
 ];
+
+const productManagementLinks = [
+    { href: '/admin/products', label: 'Sản phẩm', icon: Package },
+    { href: '/admin/categories', label: 'Danh mục', icon: List },
+    { href: '/admin/attributes', label: 'Thuộc tính', icon: Book },
+    { href: '/admin/birthday-sizes', label: 'Cỡ Bánh SN', icon: Ticket },
+]
+
 
 function AdminSidebar() {
   const pathname = usePathname();
@@ -75,8 +82,10 @@ function AdminSidebar() {
   }
 
   const getActiveAccordionItem = () => {
-    const activeItem = navLinks.find(link => pathname.startsWith(link.href));
-    return activeItem ? activeItem.label : undefined;
+    if (productManagementLinks.some(link => pathname.startsWith(link.href))) {
+        return "product-management";
+    }
+    return undefined;
   };
 
   return (
@@ -97,13 +106,13 @@ function AdminSidebar() {
             </div>
             <div className="flex-1 overflow-y-auto">
                 <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isCollapsed && "px-2")}>
-                    {navLinks.map((link) => (
+                    {mainNavLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
                             className={cn(
                                 'flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:text-primary',
-                                pathname.startsWith(link.href) && 'bg-muted text-primary',
+                                pathname === link.href && 'bg-muted text-primary',
                                 isCollapsed && "justify-center"
                             )}
                         >
@@ -111,6 +120,33 @@ function AdminSidebar() {
                             {!isCollapsed && link.label}
                         </Link>
                     ))}
+                    <Accordion type="single" collapsible defaultValue={getActiveAccordionItem()} className="w-full">
+                        <AccordionItem value="product-management" className="border-b-0">
+                            <AccordionTrigger className={cn(
+                                "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground transition-all hover:text-primary hover:no-underline",
+                                isCollapsed && "justify-center",
+                                getActiveAccordionItem() === 'product-management' && 'bg-muted text-primary'
+                            )}>
+                                <LayoutGrid className="h-4 w-4" />
+                                {!isCollapsed && <span className="flex-1 text-left">Quản lý Sản phẩm</span>}
+                            </AccordionTrigger>
+                            <AccordionContent className={cn("pl-8 pr-2 pt-1 pb-0", isCollapsed && "hidden")}>
+                                {productManagementLinks.map(link => (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={cn(
+                                            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                            pathname.startsWith(link.href) && 'text-primary'
+                                        )}
+                                    >
+                                        <link.icon className="h-4 w-4" />
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                 </nav>
             </div>
             <div className="mt-auto p-4">
@@ -240,7 +276,7 @@ export default function AdminLayout({
                   <Image src="/logo.png" alt="Vibary Logo" width={28} height={28} />
                   <span className="sr-only">VIBARY Admin</span>
                 </Link>
-                {navLinks.map(link => (
+                {[...mainNavLinks, ...productManagementLinks].map(link => (
                     <Link
                         key={link.href}
                         href={link.href}

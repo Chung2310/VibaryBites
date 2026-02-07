@@ -184,6 +184,19 @@
         "parLevel": { "type": "number", "description": "The low-stock threshold." }
       },
       "required": [ "id", "name", "stock", "unit", "parLevel" ]
+    },
+     "BirthdayCakeSize": {
+      "title": "BirthdayCakeSize",
+      "type": "object",
+      "description": "Represents a standard size option for birthday cakes.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the size." },
+        "name": { "type": "string", "description": "Display name of the size (e.g., 'Mini (R10 - Cao 10cm)')." },
+        "price": { "type": "number", "description": "Price for this size." },
+        "serving": { "type": "string", "description": "Serving suggestion (e.g., '1-2 người ăn')." },
+        "order": { "type": "number", "description": "A number for sorting the sizes." }
+      },
+      "required": [ "id", "name", "price", "order", "serving" ]
     }
   },
   "auth": {
@@ -349,6 +362,22 @@
             {
               "name": "ingredientId",
               "description": "The unique identifier for the ingredient."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/birthday_cake_sizes/{sizeId}",
+        "definition": {
+          "entityName": "BirthdayCakeSize",
+          "schema": {
+            "$ref": "#/backend/entities/BirthdayCakeSize"
+          },
+          "description": "Stores standard birthday cake size options. Read by all, written by admin.",
+          "params": [
+            {
+              "name": "sizeId",
+              "description": "The unique identifier of the size."
             }
           ]
         }

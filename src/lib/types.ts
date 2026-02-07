@@ -121,3 +121,11 @@ export type ProductCategory = {
   subtitle: string;
   description: string;
 }
+
+export type BirthdayCakeSize = {
+  id: string;
+  name: string;
+  price: number;
+  serving: string;
+  order: number;
+};
