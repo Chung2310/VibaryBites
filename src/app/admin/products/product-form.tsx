@@ -196,24 +196,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                     <FormMessage />
                     </FormItem>
                 )}/>
-                <FormField
-                    control={form.control}
-                    name="sizes"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Tùy chọn Kích thước & Giá</FormLabel>
-                            <FormDescription>Mỗi tùy chọn trên một dòng. Định dạng: Tên size | Giá. Ví dụ: 16cm (6-8 người) | 650000</FormDescription>
-                            <FormControl>
-                                <Textarea
-                                    placeholder={"Bán kính 10 cm, cao 10 cm | 100000\nBán kính 14 cm, cao 7cm | 180000"}
-                                    {...field}
-                                    rows={8}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
             </div>
         </div>
         
