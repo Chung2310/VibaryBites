@@ -53,7 +53,8 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
 
 export default function ProductDetailPage() {
     const params = useParams();
-    const slug = (params.slug || '') as string;
+    const slugParam = params; // Keep a reference to the original params object
+    const slug = (slugParam?.slug || '') as string;
     const { addToCart, cartItems } = useAppStore(); // Get cartItems for stock check
     const { toast } = useToast();
     
@@ -114,7 +115,7 @@ export default function ProductDetailPage() {
     }
     
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
-    const isPricePending = product.price === 0;
+    const isPricePending = product.price === 0 && (!product.sizes || product.sizes.length === 0);
     const priceToShow = product.sizes?.find(s => s.name === selectedSize)?.price || product.price;
     
     const imageUrl = product.imageUrl;

@@ -55,6 +55,7 @@ const productSchema = z.object({
     // Profiles & Structure
     flavorProfile: z.string().optional(),
     structure: z.string().optional(),
+    sizes: z.string().optional(),
 });
 
 
@@ -98,6 +99,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         detailedDescription_accessories: product.detailedDescription?.accessories?.join('\n') || "",
         flavorProfile: product.flavorProfile?.join('\n') || "",
         structure: product.structure?.join('\n') || "",
+        sizes: product.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || "",
     } : {
         name: "",
         subtitle: "",
@@ -113,6 +115,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         detailedDescription_accessories: "01 Chiếc nến sinh nhật\n01 Bộ đĩa và dĩa dành cho 10 người\n01 Dao cắt bánh",
         flavorProfile: "",
         structure: "",
+        sizes: "",
     },
   });
 
@@ -142,7 +145,7 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                         name="price"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Giá</FormLabel>
+                                <FormLabel>Giá cơ bản</FormLabel>
                                 <RadioGroup
                                     value={priceType}
                                     onValueChange={(value: 'specific' | 'pending') => {
@@ -193,6 +196,24 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                     <FormMessage />
                     </FormItem>
                 )}/>
+                <FormField
+                    control={form.control}
+                    name="sizes"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tùy chọn Kích thước & Giá</FormLabel>
+                            <FormDescription>Mỗi tùy chọn trên một dòng. Định dạng: Tên size | Giá. Ví dụ: 16cm (6-8 người) | 650000</FormDescription>
+                            <FormControl>
+                                <Textarea
+                                    placeholder={"Bán kính 10 cm, cao 10 cm | 100000\nBán kính 14 cm, cao 7cm | 180000"}
+                                    {...field}
+                                    rows={8}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
         </div>
         

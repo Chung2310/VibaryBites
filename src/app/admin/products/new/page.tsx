@@ -13,6 +13,19 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { generateSlug } from '@/lib/utils';
 
+const parseSizes = (sizesString?: string): { name: string; price: number }[] => {
+    if (!sizesString) return [];
+    return sizesString.split('\n').filter(line => line.includes('|')).map(line => {
+        const parts = line.split('|');
+        const name = parts[0].trim();
+        const price = Number(parts[1].trim());
+        if (name && !isNaN(price)) {
+            return { name, price };
+        }
+        return null;
+    }).filter((s): s is { name: string; price: number } => s !== null);
+};
+
 export default function NewProductPage() {
     const router = useRouter();
     const firestore = useFirestore();
@@ -42,6 +55,7 @@ export default function NewProductPage() {
                 categorySlug: values.categorySlug,
                 description: values.description,
                 imageUrl: finalImageUrl,
+                sizes: parseSizes(values.sizes),
                 detailedDescription: {
                     flavor: values.detailedDescription_flavor,
                     ingredients: values.detailedDescription_ingredients,
