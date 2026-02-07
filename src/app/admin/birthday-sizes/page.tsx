@@ -107,7 +107,6 @@ export default function BirthdaySizesPage() {
                 <TableHead className='w-[80px]'>Thứ tự</TableHead>
                 <TableHead>Tên cỡ bánh</TableHead>
                 <TableHead>Giá</TableHead>
-                <TableHead className="hidden md:table-cell">Khẩu phần</TableHead>
                 <TableHead className="text-right">Hành động</TableHead>
               </TableRow>
             </TableHeader>
@@ -117,7 +116,6 @@ export default function BirthdaySizesPage() {
                     <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell className='text-right'><Skeleton className="h-8 w-24" /></TableCell>
                 </TableRow>
               ))}
@@ -126,7 +124,6 @@ export default function BirthdaySizesPage() {
                     <TableCell className="font-mono text-center">{item.order}</TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{new Intl.NumberFormat('vi-VN').format(item.price)}đ</TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">{item.serving}</TableCell>
                     <TableCell className="text-right">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(item)} className="mr-2">Sửa</Button>
                         <Button variant="destructive" size="sm" onClick={() => openDeleteConfirm(item)}>Xóa</Button>
@@ -136,7 +133,7 @@ export default function BirthdaySizesPage() {
               )}
                {!isLoading && sizes?.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                         Chưa có cỡ bánh nào. Hãy thêm một cỡ bánh mới.
                     </TableCell>
                 </TableRow>

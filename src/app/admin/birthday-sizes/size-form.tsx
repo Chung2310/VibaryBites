@@ -32,7 +32,6 @@ import { Loader2 } from "lucide-react";
 const formSchema = z.object({
   name: z.string().min(2, { message: "Tên cỡ bánh phải có ít nhất 2 ký tự." }),
   price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
-  serving: z.string().min(2, { message: "Khẩu phần phải có ít nhất 2 ký tự." }),
   order: z.coerce.number().int({ message: "Thứ tự phải là số nguyên." }),
 });
 
@@ -54,7 +53,6 @@ export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
     defaultValues: {
       name: "",
       price: 0,
-      serving: "",
       order: 0,
     },
   });
@@ -66,7 +64,6 @@ export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
       form.reset({
         name: "",
         price: 0,
-        serving: "",
         order: 0,
       });
     }
@@ -136,15 +133,6 @@ export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
                 )}
                 />
             </div>
-            <FormField control={form.control} name="serving" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Khẩu phần</FormLabel>
-                  <FormControl><Input placeholder="VD: 1-2 người ăn" {...field} /></FormControl>
-                   <FormDescription>Gợi ý số người ăn cho khách hàng.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
               <Button type="submit" disabled={isSubmitting}>

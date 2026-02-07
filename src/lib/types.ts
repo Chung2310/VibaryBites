@@ -126,6 +126,5 @@ export type BirthdayCakeSize = {
   id: string;
   name: string;
   price: number;
-  serving: string;
   order: number;
 };

@@ -193,10 +193,9 @@
         "id": { "type": "string", "description": "Unique ID for the size." },
         "name": { "type": "string", "description": "Display name of the size (e.g., 'Mini (R10 - Cao 10cm)')." },
         "price": { "type": "number", "description": "Price for this size." },
-        "serving": { "type": "string", "description": "Serving suggestion (e.g., '1-2 người ăn')." },
         "order": { "type": "number", "description": "A number for sorting the sizes." }
       },
-      "required": [ "id", "name", "price", "order", "serving" ]
+      "required": [ "id", "name", "price", "order" ]
     }
   },
   "auth": {
