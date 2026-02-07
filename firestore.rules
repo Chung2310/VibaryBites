@@ -79,7 +79,7 @@ service cloud.firestore {
     }
 
     match /birthday_cake_sizes/{sizeId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if true; // DEBUG: Temporarily open write access
     }
     
