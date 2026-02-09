@@ -8,7 +8,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAppStore } from "@/hooks/use-app-store";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
@@ -107,7 +107,10 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <div className="flex flex-col gap-6 p-6">
+               <SheetHeader>
+                <SheetTitle className="sr-only">Menu Điều Hướng</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-6">
                 <Link href="/" className="flex items-center gap-2">
                    <Image src="/logo.png" alt="Vibary Logo" width={36} height={36} />
                    <span className="font-headline text-2xl font-bold tracking-widest">
