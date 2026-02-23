@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -359,7 +358,7 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             {featuredDisplayProducts.length > 0 && (
                 <div className="group w-full overflow-hidden">
                     <div
-                        className="flex w-max animate-marquee-reverse hover:[animation-play-state:paused]"
+                        className="flex w-max animate-marquee-reverse"
                     >
                         <MarqueeItems items={featuredDisplayProducts} />
                         <MarqueeItems items={featuredDisplayProducts} />
