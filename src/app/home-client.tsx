@@ -26,7 +26,7 @@ const heroBanners = [
     subtitle: "Bánh Lẻ",
     buttonText: "XEM NGAY",
     buttonLink: "/products?category=banh-le",
-    imageUrl: "https://images.unsplash.com/photo-1621210455430-a93106597a7e?q=80&w=1920&auto=format&fit=crop",
+    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017415/B%C3%A1nh_l%E1%BA%BB_gjqtvr.png",
     description: "A variety of single-serving pastries.",
     imageHint: "individual pastry"
   },
@@ -36,7 +36,7 @@ const heroBanners = [
     subtitle: "Bánh Nướng",
     buttonText: "KHÁM PHÁ",
     buttonLink: "/products?category=banh-nuong",
-    imageUrl: "https://images.unsplash.com/photo-1540336233903-37965564c489?q=80&w=1920&auto=format&fit=crop",
+    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/b%C3%A1nh_n%C6%B0%E1%BB%9Bng_aiwch5.png",
     description: "A beautifully decorated fruit tart.",
     imageHint: "fruit tart"
   },
@@ -46,7 +46,7 @@ const heroBanners = [
     subtitle: "Bánh Sinh Nhật",
     buttonText: "ĐẶT BÁNH",
     buttonLink: "/products?category=banh-sinh-nhat",
-    imageUrl: "https://images.unsplash.com/photo-1627482279883-6d9a15c1d630?q=80&w=1920&auto=format&fit=crop",
+    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/sinh_nh%E1%BA%ADt_hi47kg.png",
     description: "A modern pink birthday cake with decorations.",
     imageHint: "birthday cake"
   },
@@ -56,7 +56,7 @@ const heroBanners = [
     subtitle: "Set Bánh Tea-Break",
     buttonText: "XEM SET BÁNH",
     buttonLink: "/products?category=banh-tea-break",
-    imageUrl: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=1920&auto=format&fit=crop",
+    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017410/tea_break_bt77wi.png",
     description: "An assortment of delicious pastries for a tea party.",
     imageHint: "pastry assortment"
   }
@@ -226,6 +226,19 @@ function CategorySection() {
   }
 
 function WorkshopSection() {
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+
+    const handleMouseEnter = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = false;
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = true;
+        }
+    };
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -251,8 +264,11 @@ function WorkshopSection() {
                     <ScrollRevealWrapper delay={0.2}>
                         <div 
                             className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
                         >
                             <video
+                                ref={videoRef}
                                 className="h-full w-full object-cover"
                                 src="https://res.cloudinary.com/djnocnodz/video/upload/v1770360725/0206_2_fddalj.mp4"
                                 loop
@@ -356,9 +372,9 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             </div>
             
             {featuredDisplayProducts.length > 0 && (
-                <div className="w-full overflow-hidden">
+                <div className="w-full overflow-hidden group/marquee">
                     <div
-                        className="flex w-max animate-marquee-reverse"
+                        className="flex w-max animate-marquee-reverse group-hover/marquee:[animation-play-state:paused]"
                     >
                         <MarqueeItems items={featuredDisplayProducts} />
                         <MarqueeItems items={featuredDisplayProducts} />
