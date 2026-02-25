@@ -21,10 +21,20 @@ import { motion, useInView } from 'framer-motion';
 
 const heroBanners = [
   {
+    id: "hero-banner-3",
+    title: "CHO DỊP ĐẶC BIỆT",
+    subtitle: "Bánh Sinh Nhật",
+    buttonText: "Khám Phá Ngay",
+    buttonLink: "/products?category=banh-sinh-nhat",
+    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/sinh_nh%E1%BA%ADt_hi47kg.png",
+    description: "A modern pink birthday cake with decorations.",
+    imageHint: "birthday cake"
+  },
+  {
     id: "hero-banner-1",
     title: "CHO NHỮNG NGÀY THƯỜNG",
     subtitle: "Bánh Lẻ",
-    buttonText: "XEM NGAY",
+    buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017415/B%C3%A1nh_l%E1%BA%BB_gjqtvr.png",
     description: "A variety of single-serving pastries.",
@@ -34,27 +44,17 @@ const heroBanners = [
     id: "hero-banner-2",
     title: "GIÒN TAN, THƠM LỪNG",
     subtitle: "Bánh Nướng",
-    buttonText: "KHÁM PHÁ",
+    buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-nuong",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/b%C3%A1nh_n%C6%B0%E1%BB%9Bng_aiwch5.png",
     description: "A beautifully decorated fruit tart.",
     imageHint: "fruit tart"
   },
   {
-    id: "hero-banner-3",
-    title: "CHO DỊP ĐẶC BIỆT",
-    subtitle: "Bánh Sinh Nhật",
-    buttonText: "ĐẶT BÁNH",
-    buttonLink: "/products?category=banh-sinh-nhat",
-    imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/sinh_nh%E1%BA%ADt_hi47kg.png",
-    description: "A modern pink birthday cake with decorations.",
-    imageHint: "birthday cake"
-  },
-  {
     id: "hero-banner-4",
     title: "CHO TIỆC TRÀ & SỰ KIỆN",
     subtitle: "Set Bánh Tea-Break",
-    buttonText: "XEM SET BÁNH",
+    buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-tea-break",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017410/tea_break_bt77wi.png",
     description: "An assortment of delicious pastries for a tea party.",
@@ -230,13 +230,13 @@ function WorkshopSection() {
 
     const handleMouseEnter = () => {
         if (videoRef.current) {
-            videoRef.current.muted = false;
+            // videoRef.current.muted = false;
         }
     };
 
     const handleMouseLeave = () => {
         if (videoRef.current) {
-            videoRef.current.muted = true;
+            // videoRef.current.muted = true;
         }
     };
     return (
