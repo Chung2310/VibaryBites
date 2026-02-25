@@ -22,43 +22,43 @@ import { motion, useInView } from 'framer-motion';
 const heroBanners = [
   {
     id: "hero-banner-1",
-    title: "BST BÁNH ENTREMET DÀNH CHO",
-    subtitle: "Mọi dịp đặc biệt của bạn",
-    buttonText: "KHÁM PHÁ NGAY",
-    buttonLink: "/products?collection=special-occasions",
-    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/w_1920,f_auto,q_auto/v1769694694/659b70c2531ac2845a273377_L1000281_m54va0.avif",
-    description: "Beautifully crafted entremet cake on a platter.",
-    imageHint: "entremet cake"
+    title: "CHO NHỮNG NGÀY THƯỜNG",
+    subtitle: "Bánh Lẻ",
+    buttonText: "XEM NGAY",
+    buttonLink: "/products?category=banh-le",
+    imageUrl: "https://images.unsplash.com/photo-1621210455430-a93106597a7e?q=80&w=1920&auto=format&fit=crop",
+    description: "A variety of single-serving pastries.",
+    imageHint: "individual pastry"
   },
   {
     id: "hero-banner-2",
-    title: "HƯƠNG VỊ MÙA HÈ",
-    subtitle: "Bánh Trái Cây Nhiệt Đới",
-    buttonText: "THỬ NGAY",
-    buttonLink: "/products",
-    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/w_1920,f_auto,q_auto/v1769694693/aMgSLmGNHVfTPPcR_120A8985_nof9r9.avif",
-    description: "Close up shot of a slice of layered mousse cake.",
-    imageHint: "mousse cake"
+    title: "GIÒN TAN, THƠM LỪNG",
+    subtitle: "Bánh Nướng",
+    buttonText: "KHÁM PHÁ",
+    buttonLink: "/products?category=banh-nuong",
+    imageUrl: "https://images.unsplash.com/photo-1540336233903-37965564c489?q=80&w=1920&auto=format&fit=crop",
+    description: "A beautifully decorated fruit tart.",
+    imageHint: "fruit tart"
   },
   {
     id: "hero-banner-3",
-    title: "QUÀ TẶNG TINH TẾ",
-    subtitle: "Hộp Bánh Entremet Mini",
-    buttonText: "XEM QUÀ TẶNG",
-    buttonLink: "/products?category=banh-le",
-    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/w_1920,f_auto,q_auto/v1769694763/aC309ydWJ-7kSZ7y_LAFUONG_1.6_Cover_01_gejq78.avif",
-    description: "A variety of colorful French pastries on display.",
-    imageHint: "french pastry"
+    title: "CHO DỊP ĐẶC BIỆT",
+    subtitle: "Bánh Sinh Nhật",
+    buttonText: "ĐẶT BÁNH",
+    buttonLink: "/products?category=banh-sinh-nhat",
+    imageUrl: "https://images.unsplash.com/photo-1627482279883-6d9a15c1d630?q=80&w=1920&auto=format&fit=crop",
+    description: "A modern pink birthday cake with decorations.",
+    imageHint: "birthday cake"
   },
   {
     id: "hero-banner-4",
-    title: "NGHỆ THUẬT LÀM BÁNH",
-    subtitle: "Tạo nên từ tâm huyết",
-    buttonText: "VỀ CHÚNG TÔI",
-    buttonLink: "/about",
-    imageUrl: "https://res.cloudinary.com/dg7eosdgf/image/upload/w_1920,f_auto,q_auto/v1769694693/aFeOnnfc4bHWil8I_LF_Cover_Lovers_kccgcv.avif",
-    description: "A baker decorating a modern cake with precision.",
-    imageHint: "cake decorating"
+    title: "CHO TIỆC TRÀ & SỰ KIỆN",
+    subtitle: "Set Bánh Tea-Break",
+    buttonText: "XEM SET BÁNH",
+    buttonLink: "/products?category=banh-tea-break",
+    imageUrl: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=1920&auto=format&fit=crop",
+    description: "An assortment of delicious pastries for a tea party.",
+    imageHint: "pastry assortment"
   }
 ];
 
@@ -111,7 +111,7 @@ function Hero() {
         plugins={[
           Autoplay({
             delay: 5000,
-            stopOnInteraction: false,
+            stopOnInteraction: true,
           }),
         ]}
       >
@@ -356,7 +356,7 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             </div>
             
             {featuredDisplayProducts.length > 0 && (
-                <div className="group w-full overflow-hidden">
+                <div className="w-full overflow-hidden">
                     <div
                         className="flex w-max animate-marquee-reverse"
                     >
