@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -36,11 +35,9 @@ export function Header() {
 
 
   const isLinkActive = (href: string) => {
-    // For `/products`, we want to match sub-paths as well.
     if (href === '/products') {
       return pathname.startsWith(href);
     }
-    // For all other links, we want an exact match.
     return pathname === href;
   };
 
@@ -106,11 +103,11 @@ export function Header() {
                 <span className="sr-only">Chuyển đổi menu điều hướng</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
+            <SheetContent side="left" className="p-6">
                <SheetHeader>
                 <SheetTitle className="sr-only">Menu Điều Hướng</SheetTitle>
               </SheetHeader>
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-6 mt-4">
                 <Link href="/" className="flex items-center gap-2">
                    <Image src="/logo.png" alt="Vibary Logo" width={36} height={36} />
                    <span className="font-headline text-2xl font-bold tracking-widest">

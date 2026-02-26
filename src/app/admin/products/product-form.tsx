@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,25 +33,18 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
 const productSchema = z.object({
-    // Basic Info
     name: z.string().min(3, { message: "Tên sản phẩm phải có ít nhất 3 ký tự." }),
     subtitle: z.string().optional(),
     price: z.coerce.number().min(0, { message: "Giá không được là số âm." }),
     stock: z.coerce.number().int().min(0, { message: "Số lượng tồn kho phải là số nguyên không âm." }),
     categorySlug: z.string({ required_error: "Vui lòng chọn danh mục." }).min(1, "Vui lòng chọn danh mục."),
     description: z.string().min(10, { message: "Mô tả ngắn phải có ít nhất 10 ký tự." }),
-    
-    // Image Handling
     imageUrl: z.string().url({ message: "Vui lòng nhập một URL hình ảnh hợp lệ." }).optional().or(z.literal('')),
-
-    // Detailed Description
     detailedDescription_flavor: z.string().min(1, "Vui lòng nhập mô tả hương vị."),
     detailedDescription_ingredients: z.string().min(1, "Vui lòng nhập thành phần."),
     detailedDescription_storage: z.string().min(1, "Vui lòng nhập hướng dẫn bảo quản."),
     detailedDescription_dimensions: z.string().min(1, "Vui lòng nhập kích thước & khẩu phần."),
     detailedDescription_accessories: z.string().optional(),
-
-    // Profiles & Structure
     flavorProfile: z.string().optional(),
     structure: z.string().optional(),
     sizes: z.string().optional(),
@@ -111,7 +103,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         detailedDescription_flavor: "",
         detailedDescription_ingredients: "",
         detailedDescription_storage: defaultStorageInstructions,
-        detailedDescription_dimensions: "",
         detailedDescription_accessories: "01 Chiếc nến sinh nhật\n01 Bộ đĩa và dĩa dành cho 10 người\n01 Dao cắt bánh",
         flavorProfile: "",
         structure: "",
@@ -129,7 +120,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {/* --- Main Product Info --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             <div className="space-y-6">
                 <h3 className="text-lg font-medium border-b pb-2">Thông tin cơ bản</h3>
@@ -201,7 +191,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         
         <Separator />
 
-        {/* --- Image URL Input --- */}
         <div className="space-y-2">
            <FormField
                 control={form.control}
@@ -227,7 +216,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
 
         <Separator />
 
-        {/* --- Detailed Description --- */}
         <div className="space-y-4">
             <h3 className="text-lg font-medium">Chi tiết sản phẩm</h3>
             <FormField control={form.control} name="detailedDescription_flavor" render={({ field }) => ( <FormItem><FormLabel>Mô tả hương vị (Flavor)</FormLabel><FormControl><Textarea placeholder="Mousse hoa hồng tinh tế kết hợp với thạch vải nhẹ..." {...field} /></FormControl><FormMessage /></FormItem> )}/>
@@ -239,7 +227,6 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
         
         <Separator />
         
-        {/* --- Flavor & Structure --- */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField control={form.control} name="flavorProfile" render={({ field }) => (
                 <FormItem>
@@ -257,6 +244,10 @@ export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditM
                 <FormMessage />
                 </FormItem>
             )}/>
+        </div>
+
+        <div className="hidden">
+            <FormField control={form.control} name="sizes" render={({ field }) => ( <FormItem><FormControl><Input {...field} /></FormControl></FormItem> )}/>
         </div>
         
         <div className="flex justify-end gap-4 items-center pt-4 border-t mt-8">

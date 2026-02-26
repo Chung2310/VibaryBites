@@ -3,10 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ============================================
-    // CRITICAL: COLLECTION GROUP RULES FIRST
-    // ============================================
-    
     match /{path=**}/orders/{orderId} {
       allow list, get, create, update, delete: if request.auth != null;
     }
@@ -14,10 +10,6 @@ service cloud.firestore {
     match /{path=**}/reviews/{reviewId} {
       allow read: if true;
     }
-    
-    // ============================================
-    // HELPER FUNCTIONS
-    // ============================================
     
     function isSignedIn() {
       return request.auth != null;
@@ -27,18 +19,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Admin check is now simplified to any authenticated user for prototyping
     function isAdmin() {
       return request.auth != null;
     }
     
-    // ============================================
-    // PUBLIC & ADMIN-WRITABLE COLLECTIONS
-    // ============================================
-    
     match /cakes/{cakeId} {
       allow read: if true;
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
       
       match /reviews/{reviewId} {
         allow read: if true;
@@ -49,43 +36,39 @@ service cloud.firestore {
     }
     
     match /categories/{categoryId} {
-      allow read: if true; // Allow public read access for categories
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     match /news_articles/{newsArticleId} {
       allow read: if true;
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
     
     match /quiz_questions/{quizQuestionId} {
       allow read: if true;
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
     
     match /ingredients/{ingredientId} {
       allow read: if isSignedIn();
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
     
     match /settings/{settingId} {
       allow read: if isSignedIn();
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
     
     match /analytics/{analyticsId} {
       allow read: if isSignedIn();
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
 
     match /birthday_cake_sizes/{sizeId} {
       allow read: if true;
-      allow write: if true; // DEBUG: Temporarily open write access
+      allow write: if isAdmin();
     }
-    
-    // ============================================
-    // USER-OWNED DATA
-    // ============================================
     
     match /customers/{customerId} {
       allow create: if isOwner(customerId);

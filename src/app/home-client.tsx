@@ -21,34 +21,34 @@ import { motion, useInView } from 'framer-motion';
 
 const heroBanners = [
   {
-    id: "hero-banner-3",
+    id: "hero-banner-1",
     title: "CHO DỊP ĐẶC BIỆT",
     subtitle: "Bánh Sinh Nhật",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-sinh-nhat",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/sinh_nh%E1%BA%ADt_hi47kg.png",
-    description: "A modern pink birthday cake with decorations.",
+    description: "Bánh sinh nhật cao cấp",
     imageHint: "birthday cake"
   },
   {
-    id: "hero-banner-1",
+    id: "hero-banner-2",
     title: "CHO NHỮNG NGÀY THƯỜNG",
     subtitle: "Bánh Lẻ",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017415/B%C3%A1nh_l%E1%BA%BB_gjqtvr.png",
-    description: "A variety of single-serving pastries.",
+    description: "Bánh lẻ thưởng thức hàng ngày",
     imageHint: "individual pastry"
   },
   {
-    id: "hero-banner-2",
+    id: "hero-banner-3",
     title: "GIÒN TAN, THƠM LỪNG",
     subtitle: "Bánh Nướng",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-nuong",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017408/b%C3%A1nh_n%C6%B0%E1%BB%9Bng_aiwch5.png",
-    description: "A beautifully decorated fruit tart.",
-    imageHint: "fruit tart"
+    description: "Bánh nướng thơm lừng",
+    imageHint: "baked pastry"
   },
   {
     id: "hero-banner-4",
@@ -57,8 +57,8 @@ const heroBanners = [
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-tea-break",
     imageUrl: "https://res.cloudinary.com/djnocnodz/image/upload/v1772017410/tea_break_bt77wi.png",
-    description: "An assortment of delicious pastries for a tea party.",
-    imageHint: "pastry assortment"
+    description: "Set bánh teabreak cho sự kiện",
+    imageHint: "teabreak assortment"
   }
 ];
 
@@ -67,7 +67,6 @@ interface HomeClientProps {
   latestArticles: NewsArticle[];
 }
 
-// Reusable component for scroll animations
 const ScrollRevealWrapper = ({ children, delay = 0, amount = 0.2 }: { children: React.ReactNode, delay?: number, amount?: number }) => {
     const ref = React.useRef(null);
     const isInView = useInView(ref, { once: true, amount });
@@ -372,9 +371,9 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             </div>
             
             {featuredDisplayProducts.length > 0 && (
-                <div className="w-full overflow-hidden group/marquee">
+                <div className="w-full overflow-hidden">
                     <div
-                        className="flex w-max animate-marquee-reverse group-hover/marquee:[animation-play-state:paused]"
+                        className="flex w-max animate-marquee-reverse"
                     >
                         <MarqueeItems items={featuredDisplayProducts} />
                         <MarqueeItems items={featuredDisplayProducts} />

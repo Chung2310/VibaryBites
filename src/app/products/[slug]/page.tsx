@@ -1,12 +1,13 @@
 'use client';
 
+import * as React from 'react';
 import { faqs } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/hooks/use-app-store';
-import { notFound, useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
-import { cn, generateSlug } from '@/lib/utils';
+import { generateSlug } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -26,7 +27,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 async function getProductBySlug(firestore: any, slug: string): Promise<Product | null> {
     if (!firestore || !slug) return null;
 
-    // 1. Try to find by the 'slug' field directly.
     const productsRef = collection(firestore, 'cakes');
     const q = query(productsRef, where("slug", "==", slug));
     const querySnapshot = await getDocs(q);
@@ -36,26 +36,21 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
         return { id: doc.id, ...doc.data() } as Product;
     }
 
-    // 2. If not found, iterate and match by generated slug (for legacy data).
     const allProductsSnapshot = await getDocs(productsRef);
     for (const doc of allProductsSnapshot.docs) {
         const product = doc.data() as Product;
-        // Check if a generated slug from the title matches.
         if (generateSlug(product.name) === slug) {
             return { id: doc.id, ...product };
         }
     }
 
-    // 3. If still not found, return null.
     return null;
 }
 
 
-export default function ProductDetailPage() {
-    const params = useParams();
-    const slugParam = params; // Keep a reference to the original params object
-    const slug = (slugParam?.slug || '') as string;
-    const { addToCart, cartItems } = useAppStore(); // Get cartItems for stock check
+export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = React.use(params);
+    const { addToCart, cartItems } = useAppStore();
     const { toast } = useToast();
     
     const firestore = useFirestore();
@@ -63,11 +58,9 @@ export default function ProductDetailPage() {
     const [isLoadingProduct, setIsLoadingProduct] = useState(true);
     const [error, setError] = useState(false);
 
-    // Fetch all categories to display the product's category name
     const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
     const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection);
 
-    // Fetch standard birthday cake sizes
     const birthdaySizesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'birthday_cake_sizes'), orderBy('order')) : null, [firestore]);
     const { data: birthdayCakeSizes, isLoading: isLoadingSizes } = useCollection<BirthdayCakeSize>(birthdaySizesCollection);
 
@@ -83,7 +76,6 @@ export default function ProductDetailPage() {
                 .then(productData => {
                     if (productData) {
                         setProduct(productData);
-                        // Don't set selectedSize here, let the next effect handle it
                     } else {
                         setError(true);
                     }
@@ -98,19 +90,16 @@ export default function ProductDetailPage() {
         }
     }, [firestore, slug]);
 
-    // This effect runs when the product or standard sizes are loaded/changed
     useEffect(() => {
         if (!product) return;
         
         const isBirthday = product.categorySlug === 'banh-sinh-nhat';
 
         if (isBirthday) {
-            // For birthday cakes, set the size once the standard sizes are loaded
             if (birthdayCakeSizes && birthdayCakeSizes.length > 0) {
                  setSelectedSize(birthdayCakeSizes[0].name);
             }
         } else {
-            // For other products, use their own sizes
             if (product.sizes && product.sizes.length > 0) {
                 setSelectedSize(product.sizes[0].name);
             } else {
@@ -210,7 +199,6 @@ export default function ProductDetailPage() {
         </div>
         <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
-            {/* Image Gallery */}
             <div className="relative h-fit">
                  <div className="aspect-square w-full overflow-hidden rounded-lg">
                     {imageUrl ? (
@@ -230,7 +218,6 @@ export default function ProductDetailPage() {
                 </div>
             </div>
             
-            {/* Product Info */}
             <div className="relative row-start-1 md:row-start-auto">
                 <div className="md:sticky md:top-24">
                     {category && (
@@ -326,7 +313,6 @@ export default function ProductDetailPage() {
             </div>
             </div>
 
-            {/* --- Secondary Details Section --- */}
             <div className="mt-16 border-t border-b">
                 <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x">
                     {detailedDescription?.dimensions && (
@@ -358,7 +344,6 @@ export default function ProductDetailPage() {
                 </div>
             </div>
             
-            {/* --- FAQ Section --- */}
             <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
                 <div className="sm:col-span-1">
                     <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
