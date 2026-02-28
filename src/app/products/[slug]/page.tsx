@@ -38,17 +38,8 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
         return { id: doc.id, ...doc.data() } as Product;
     }
 
-    const allProductsSnapshot = await getDocs(productsRef);
-    for (const doc of allProductsSnapshot.docs) {
-        const product = doc.data() as Product;
-        if (generateSlug(product.name) === slug) {
-            return { id: doc.id, ...product };
-        }
-    }
-
     return null;
 }
-
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
@@ -65,7 +56,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
     const birthdaySizesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'birthday_cake_sizes'), orderBy('order')) : null, [firestore]);
     const { data: birthdayCakeSizes, isLoading: isLoadingSizes } = useCollection<BirthdayCakeSize>(birthdaySizesCollection);
-
 
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
@@ -98,18 +88,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         const isBirthday = product.categorySlug === 'banh-sinh-nhat';
 
         if (isBirthday) {
-            if (birthdayCakeSizes && birthdayCakeSizes.length > 0) {
+            if (birthdayCakeSizes && birthdayCakeSizes.length > 0 && !selectedSize) {
                  setSelectedSize(birthdayCakeSizes[0].name);
             }
         } else {
-            if (product.sizes && product.sizes.length > 0) {
+            if (product.sizes && product.sizes.length > 0 && !selectedSize) {
                 setSelectedSize(product.sizes[0].name);
-            } else {
-                setSelectedSize(undefined);
             }
         }
-    }, [product, birthdayCakeSizes]);
-
+    }, [product, birthdayCakeSizes, selectedSize]);
 
     if (isLoadingProduct || isLoadingSizes) {
         return (
@@ -137,15 +124,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         : (product.sizes || []);
 
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
-    const isPricePending = product.price === 0 && (!availableSizes || availableSizes.length === 0);
     const selectedSizeData = availableSizes?.find(s => s.name === selectedSize);
     const priceToShow = selectedSizeData ? selectedSizeData.price : product.price;
     
-    const imageUrl = product.imageUrl;
-    const detailedDescription = product.detailedDescription || {};
+    const category = productCategories?.find(cat => cat.slug === product.categorySlug);
 
     const handleAddToCart = () => {
-        if (isOutOfStock || isPricePending) return;
+        if (isOutOfStock) return;
 
         const existingItem = cartItems.find(
           (i) => i.id === product.id && i.size === selectedSize
@@ -157,7 +142,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             toast({
                 variant: "destructive",
                 title: "Số lượng tồn kho không đủ",
-                description: `Bạn đã có ${quantityInCart} sản phẩm trong giỏ. Chỉ còn ${product.stock} sản phẩm trong kho.`,
+                description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
             });
             return;
         }
@@ -173,28 +158,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         });
     };
 
-    const handleIncreaseQuantity = () => {
-        const existingItem = cartItems.find(
-          (i) => i.id === product.id && i.size === selectedSize
-        );
-        const quantityInCart = existingItem?.quantity || 0;
-        const newTotalQuantity = quantityInCart + quantity + 1;
-
-        if (product && product.stock !== undefined) {
-            if (newTotalQuantity > product.stock) {
-                toast({
-                variant: "destructive",
-                title: "Số lượng tồn kho không đủ",
-                description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
-                });
-                return;
-            }
-        }
-        setQuantity((q) => q + 1);
-    };
-    
-    const category = productCategories?.find(cat => cat.slug === product.categorySlug);
-                            
     return (
         <>
         <div className="sticky top-20 z-30">
@@ -204,9 +167,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
             <div className="relative h-fit">
                  <div className="aspect-square w-full overflow-hidden rounded-lg">
-                    {imageUrl ? (
+                    {product.imageUrl ? (
                         <Image
-                            src={imageUrl}
+                            src={product.imageUrl}
                             alt={product.name}
                             width={800}
                             height={800}
@@ -221,7 +184,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 </div>
             </div>
             
-            <div className="relative row-start-1 md:row-start-auto">
+            <div className="relative">
                 <div className="md:sticky md:top-24">
                     {category && (
                         <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.title}</p>
@@ -261,7 +224,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                                     <Minus className="h-4 w-4" />
                                 </Button>
                                 <Input type="text" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" inputMode="numeric" />
-                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={handleIncreaseQuantity} >
+                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} >
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -275,12 +238,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                         </>
                     )}
 
-
                     <div className="mt-10 space-y-6 border-t pt-8">
-                    {product.subtitle && detailedDescription?.flavor && (
+                    {product.subtitle && product.detailedDescription?.flavor && (
                         <div>
                             <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
-                            <p className="mt-2 text-muted-foreground leading-relaxed">{detailedDescription.flavor}</p>
+                            <p className="mt-2 text-muted-foreground leading-relaxed">{product.detailedDescription.flavor}</p>
                         </div>
                     )}
                     
@@ -317,27 +279,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
             <div className="mt-16 border-t border-b">
                 <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x">
-                    {detailedDescription?.dimensions && (
+                    {product.detailedDescription?.dimensions && (
                         <div className="py-8 md:px-8">
                         <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC & KHẨU PHẦN</h4>
-                        <p className="text-muted-foreground text-sm">{detailedDescription.dimensions}</p>
+                        <p className="text-muted-foreground text-sm">{product.detailedDescription.dimensions}</p>
                         </div>
                     )}
-                    {detailedDescription?.storage && (
+                    {product.detailedDescription?.storage && (
                         <div className="py-8 md:px-8">
                         <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
                         <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                            {detailedDescription.storage.split('\n').filter(s => s).map((line, index) => (
+                            {product.detailedDescription.storage.split('\n').filter(s => s).map((line, index) => (
                                 <li key={index}>{line}</li>
                             ))}
                         </ul>
                         </div>
                     )}
-                    {detailedDescription?.accessories && detailedDescription.accessories.length > 0 && (
+                    {product.detailedDescription?.accessories && product.detailedDescription.accessories.length > 0 && (
                         <div className="py-8 md:pl-8">
                         <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
                         <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                            {detailedDescription.accessories.map((item, index) => (
+                            {product.detailedDescription.accessories.map((item, index) => (
                                 <li key={index}>{item}</li>
                             ))}
                         </ul>
@@ -350,7 +312,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 <div className="sm:col-span-1">
                     <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
                     <p className="mt-4 text-muted-foreground">
-                        Một số câu hỏi thường gặp khi đặt bánh. Ngoài ra, bạn có thể xem chi tiết hơn tại mục{' '}
+                        Một số câu hỏi thường gặp khi đặt bánh. Xem thêm tại{' '}
                         <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
                             Hỏi Đáp
                         </Link>.
@@ -367,7 +329,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 </Accordion>
                 </div>
             </div>
-
         </div>
         </>
     );

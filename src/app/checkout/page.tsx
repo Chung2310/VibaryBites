@@ -23,13 +23,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-import { useFirestore } from "@/firebase";
-import type { Product } from "@/lib/types";
+const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
 
 const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
-  phone: z.string().min(10, { message: "Vui lòng nhập số điện thoại hợp lệ." }),
-  address: z.string().optional(), // Changed to optional
+  phone: z.string().regex(phoneRegex, { message: "Số điện thoại không hợp lệ (VD: 0912345678)." }),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -38,7 +37,6 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -99,7 +97,7 @@ export default function CheckoutPage() {
         toast({
             variant: "destructive",
             title: "Ôi, đã có lỗi xảy ra!",
-            description: `Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau hoặc liên hệ hotline. Chi tiết lỗi: ${(error as Error).message}`
+            description: `Không thể gửi đơn hàng của bạn. Vui lòng thử lại sau. Chi tiết lỗi: ${(error as Error).message}`
         });
     } finally {
         setIsSubmitting(false);
@@ -137,7 +135,7 @@ export default function CheckoutPage() {
                   <FormField control={form.control} name="phone" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Số Điện Thoại</FormLabel>
-                        <FormControl><Input placeholder="0987654321" {...field} /></FormControl>
+                        <FormControl><Input placeholder="0912345678" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -145,7 +143,7 @@ export default function CheckoutPage() {
                   <FormField control={form.control} name="address" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Địa chỉ (Tùy chọn - Chỉ giao tại Bắc Ninh)</FormLabel>
-                        <FormControl><Input placeholder="123 Phố Example, Phường ABC, TP Bắc Ninh" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Số nhà, tên đường, phường..." {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

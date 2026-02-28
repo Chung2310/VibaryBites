@@ -55,7 +55,6 @@ export function Header() {
           : "bg-white border-transparent"
     )}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Desktop Left Nav */}
         <nav className="hidden items-center gap-6 md:flex flex-1">
           {leftNavLinks.map(link => (
             <Link
@@ -71,7 +70,6 @@ export function Header() {
           ))}
         </nav>
         
-        {/* Logo Center */}
         <div className="flex items-center justify-center">
           <Link href="/" className="flex items-center gap-3">
              <Image src="/logo.png" alt="Vibary Logo" width={36} height={36} />
@@ -81,7 +79,6 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Desktop Right Nav + Cart */}
         <div className="flex items-center justify-end gap-4 flex-1">
           <nav className="hidden items-center gap-6 md:flex">
              {rightNavLinks.map(link => (
@@ -112,7 +109,7 @@ export function Header() {
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="md:hidden border-none bg-transparent text-black">
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">Chuyển đổi menu điều hướng</span>
+                <span className="sr-only">Menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0">
