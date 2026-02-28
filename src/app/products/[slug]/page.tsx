@@ -17,7 +17,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from "@/components/ui/accordion";
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
 import { generateSlug } from '@/lib/utils';

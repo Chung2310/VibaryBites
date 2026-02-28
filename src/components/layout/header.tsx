@@ -50,7 +50,9 @@ export function Header() {
   return (
     <header className={cn(
         "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
-        isScrolled ? "bg-white/80 backdrop-blur-lg shadow-sm border-white/20" : "bg-white border-transparent"
+        isScrolled 
+          ? "bg-white/70 backdrop-blur-md shadow-sm border-white/20" 
+          : "bg-white border-transparent"
     )}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Desktop Left Nav */}

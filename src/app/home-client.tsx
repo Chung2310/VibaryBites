@@ -4,12 +4,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React, {useEffect, useState} from 'react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import React from 'react';
 import { cn, generateSlug } from '@/lib/utils';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import type { Product, NewsArticle, ProductCategory } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { Product, NewsArticle } from '@/lib/types';
 import {
   Carousel,
   CarouselContent,
@@ -19,6 +17,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const heroBanners = [
   {
@@ -104,7 +103,7 @@ function Hero() {
 
 
   return (
-    <section className="relative h-[calc(100vh-120px)] w-full text-white overflow-hidden">
+    <section className="relative h-[calc(100vh-140px)] w-full text-white overflow-hidden">
       <Carousel
         setApi={setApi}
         className="w-full h-full"
@@ -115,7 +114,7 @@ function Hero() {
           }),
         ]}
       >
-        <CarouselContent className="h-[calc(100vh-120px)] m-0">
+        <CarouselContent className="h-[calc(100vh-140px)] m-0">
           {heroBanners.map((banner, index) => (
             <CarouselItem key={banner.id} className="h-full p-0">
               <div className="relative w-full h-full">
@@ -129,10 +128,9 @@ function Hero() {
                   data-ai-hint={banner.imageHint}
                 />
                 
-                {/* Lớp phủ gradient nhẹ để làm nổi bật text ở dưới */}
-                <div className="absolute inset-0 bg-black/10" />
+                <div className="absolute inset-0 bg-black/5" />
                 
-                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-16 text-left sm:px-6 lg:px-8">
+                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-12 text-left sm:px-6 lg:px-8">
                    <motion.div
                       key={`${banner.id}-content`}
                       initial={{ opacity: 0, y: 30 }}
@@ -332,9 +330,9 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
                  </ScrollRevealWrapper>
             </div>
             
-            <div className="w-full overflow-hidden pointer-events-auto">
+            <div className="w-full overflow-hidden pointer-events-none">
                 <div
-                    className="flex w-max animate-marquee-reverse"
+                    className="flex w-max animate-marquee-reverse !animation-play-state-running"
                 >
                     <MarqueeItems items={featuredDisplayProducts} />
                     <MarqueeItems items={featuredDisplayProducts} />

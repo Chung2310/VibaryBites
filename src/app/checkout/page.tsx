@@ -24,13 +24,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 import { useFirestore } from "@/firebase";
-import { runTransaction, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
 
 const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
   phone: z.string().min(10, { message: "Vui lòng nhập số điện thoại hợp lệ." }),
-  address: z.string().min(5, { message: "Vui lòng nhập địa chỉ hợp lệ tại Bắc Ninh." }),
+  address: z.string().optional(), // Changed to optional
   notes: z.string().optional(),
 });
 
@@ -54,76 +53,6 @@ export default function CheckoutPage() {
   async function onSubmit(values: z.infer<typeof checkoutSchema>) {
     setIsSubmitting(true);
     
-    // The stock update transaction logic is temporarily disabled.
-    // This is because the current Firestore security rules only allow admins to update product stock,
-    // which would cause this transaction to fail for regular users.
-    // In a production application, this logic should be moved to a secure backend environment
-    // (e.g., a Cloud Function triggered by a new order document) instead of being run on the client.
-    /*
-    if (!firestore) {
-        toast({
-            variant: "destructive",
-            title: "Lỗi",
-            description: "Không thể kết nối đến cơ sở dữ liệu để cập nhật kho."
-        });
-        setIsSubmitting(false);
-        return;
-    }
-
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const stockIssues: string[] = [];
-
-            const productRefsAndQuantities = cartItems.map(item => ({
-                ref: doc(firestore, 'cakes', item.id),
-                quantity: item.quantity,
-                name: item.name
-            }));
-            
-            const productDocs = await Promise.all(
-                productRefsAndQuantities.map(pq => transaction.get(pq.ref))
-            );
-
-            for (let i = 0; i < productDocs.length; i++) {
-                const productDoc = productDocs[i];
-                const cartItemInfo = productRefsAndQuantities[i];
-
-                if (!productDoc.exists()) {
-                    throw new Error(`Sản phẩm "${cartItemInfo.name}" không tìm thấy trong cơ sở dữ liệu.`);
-                }
-
-                const productData = productDoc.data() as Product;
-                const currentStock = productData.stock ?? 0;
-                
-                if (currentStock < cartItemInfo.quantity) {
-                    stockIssues.push(`${cartItemInfo.name} (chỉ còn ${currentStock} sản phẩm)`);
-                }
-            }
-
-            if (stockIssues.length > 0) {
-                throw new Error(`Không đủ hàng cho: ${stockIssues.join(', ')}.`);
-            }
-
-            // If all stock checks pass, perform the updates
-            for (let i = 0; i < productDocs.length; i++) {
-                const cartItemInfo = productRefsAndQuantities[i];
-                const productData = productDocs[i].data() as Product;
-                const newStock = (productData.stock ?? 0) - cartItemInfo.quantity;
-                transaction.update(cartItemInfo.ref, { stock: newStock });
-            }
-        });
-    } catch (error: any) {
-        console.error("Transaction failed: ", error);
-        toast({
-            variant: "destructive",
-            title: "Lỗi đặt hàng",
-            description: error.message || "Không thể cập nhật số lượng tồn kho. Vui lòng thử lại.",
-        });
-        setIsSubmitting(false);
-        return;
-    }
-    */
-
     const API_URL = '/api/submit-order';
 
     const orderId = `VBR-${Date.now().toString().slice(-6)}`;
@@ -137,7 +66,7 @@ export default function CheckoutPage() {
         orderTime,
         customerName: values.name,
         phone: values.phone,
-        address: values.address,
+        address: values.address || 'Không cung cấp',
         notes: values.notes || '',
         products: productsString,
         totalPrice: new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ'
@@ -215,7 +144,7 @@ export default function CheckoutPage() {
                   />
                   <FormField control={form.control} name="address" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Địa chỉ (chỉ giao tại Bắc Ninh)</FormLabel>
+                        <FormLabel>Địa chỉ (Tùy chọn - Chỉ giao tại Bắc Ninh)</FormLabel>
                         <FormControl><Input placeholder="123 Phố Example, Phường ABC, TP Bắc Ninh" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
