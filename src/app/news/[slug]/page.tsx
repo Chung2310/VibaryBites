@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -8,6 +9,7 @@ import Image from "next/image";
 import type { NewsArticle } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 
 async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArticle | null> {
     const articlesRef = collection(firestore, 'news_articles');
@@ -20,8 +22,9 @@ async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArtic
     return { ...docData, id: querySnapshot.docs[0].id } as NewsArticle;
 }
 
-export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = React.use(params);
+export default function ArticlePage() {
+    const params = useParams();
+    const slug = params?.slug as string;
     const firestore = useFirestore();
     const [article, setArticle] = useState<NewsArticle | null>(null);
     const [isLoading, setIsLoading] = useState(true);

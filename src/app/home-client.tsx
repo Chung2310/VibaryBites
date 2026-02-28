@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -103,20 +104,20 @@ function Hero() {
 
 
   return (
-    <section className="relative h-screen w-full text-white">
+    <section className="relative h-screen w-full text-white overflow-hidden">
       <Carousel
         setApi={setApi}
         className="w-full h-full"
         plugins={[
           Autoplay({
             delay: 5000,
-            stopOnInteraction: true,
+            stopOnInteraction: false,
           }),
         ]}
       >
-        <CarouselContent className="h-screen">
+        <CarouselContent className="h-screen m-0">
           {heroBanners.map((banner, index) => (
-            <CarouselItem key={banner.id} className="h-full">
+            <CarouselItem key={banner.id} className="h-full p-0">
               <div className="relative w-full h-full">
                 <Image
                   src={banner.imageUrl}
@@ -128,18 +129,19 @@ function Hero() {
                   data-ai-hint={banner.imageHint}
                 />
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-20 text-left sm:px-6 lg:px-8">
+                <div className="absolute inset-0 bg-black/20" />
+                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-32 text-left sm:px-6 lg:px-8">
                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
+                      key={`${banner.id}-content`}
+                      initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.4 }}
+                      transition={{ duration: 1, delay: 0.2 }}
                     >
-                    <h2 className="font-body text-xl tracking-widest uppercase">{banner.title}</h2>
-                    <h1 className="font-headline text-5xl leading-tight md:text-7xl mt-2">
+                    <p className="font-body text-sm tracking-[0.3em] uppercase mb-4 opacity-90">{banner.title}</p>
+                    <h1 className="font-headline text-6xl md:text-8xl leading-tight mb-8">
                         {banner.subtitle}
                     </h1>
-                    <Button asChild size="lg" className="mt-8 rounded-full bg-white text-black hover:bg-white/90">
+                    <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-10 h-12 text-sm font-medium tracking-wider transition-transform hover:scale-105">
                         <Link href={banner.buttonLink}>{banner.buttonText}</Link>
                     </Button>
                   </motion.div>
@@ -148,14 +150,14 @@ function Hero() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="absolute bottom-8 right-8 flex space-x-2">
+        <div className="absolute bottom-12 right-12 flex space-x-3 z-20">
             {Array.from({ length: count }).map((_, index) => (
                 <button
                     key={index}
                     onClick={() => api?.scrollTo(index)}
                     className={cn(
-                        "h-1.5 w-12 rounded-full transition-all duration-300",
-                        current === index ? "bg-white" : "bg-white/30"
+                        "h-1 rounded-full transition-all duration-500",
+                        current === index ? "bg-white w-16" : "bg-white/30 w-8"
                     )}
                 />
             ))}
@@ -227,17 +229,6 @@ function CategorySection() {
 function WorkshopSection() {
     const videoRef = React.useRef<HTMLVideoElement>(null);
 
-    const handleMouseEnter = () => {
-        if (videoRef.current) {
-            // videoRef.current.muted = false;
-        }
-    };
-
-    const handleMouseLeave = () => {
-        if (videoRef.current) {
-            // videoRef.current.muted = true;
-        }
-    };
     return (
         <section className="bg-[#F9F7F5] py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -263,8 +254,6 @@ function WorkshopSection() {
                     <ScrollRevealWrapper delay={0.2}>
                         <div 
                             className="relative aspect-video w-full overflow-hidden rounded-lg shadow-xl"
-                            onMouseEnter={handleMouseEnter}
-                            onMouseLeave={handleMouseLeave}
                         >
                             <video
                                 ref={videoRef}
@@ -275,8 +264,6 @@ function WorkshopSection() {
                                 playsInline
                                 autoPlay
                             />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                            </div>
                         </div>
                     </ScrollRevealWrapper>
                 </div>
@@ -312,34 +299,7 @@ MarqueeProductCard.displayName = 'MarqueeProductCard';
 
 function FeaturedProducts({ products: featuredDisplayProducts }: { products: Product[] }) {
     if (!featuredDisplayProducts || featuredDisplayProducts.length === 0) {
-      return (
-        <section className="py-16 sm:py-24 bg-white">
-          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="font-headline text-4xl md:text-5xl">
-                Mang tới trải nghiệm<br/>đặt bánh Pháp cao cấp trực tuyến
-              </h2>
-              <p className="mx-auto mt-6 max-w-2xl text-lg font-fraunces text-muted-foreground">
-                Những chiếc bánh được trang trí lộng lẫy, hoàn hảo cho các bữa tiệc sinh nhật.
-              </p>
-               <div className="mt-8">
-                 <Button asChild className="rounded-full bg-black text-white hover:bg-black/80 font-bold" size="lg">
-                    <Link href="/products?category=banh-sinh-nhat">ĐẶT BÁNH NGAY</Link>
-                </Button>
-              </div>
-            </div>
-            <div className="w-full overflow-hidden mt-8">
-                <div className="flex">
-                    {Array.from({length: 4}).map((_, i) => (
-                        <div key={i} className="relative mx-8 flex-shrink-0 w-96 aspect-square">
-                            <Skeleton className="h-full w-full"/>
-                        </div>
-                    ))}
-                </div>
-            </div>
-          </div>
-        </section>
-      )
+      return null;
     }
 
     const MarqueeItems = ({ items }: { items: Product[] }) => (
@@ -370,16 +330,14 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
                  </ScrollRevealWrapper>
             </div>
             
-            {featuredDisplayProducts.length > 0 && (
-                <div className="w-full overflow-hidden">
-                    <div
-                        className="flex w-max animate-marquee-reverse"
-                    >
-                        <MarqueeItems items={featuredDisplayProducts} />
-                        <MarqueeItems items={featuredDisplayProducts} />
-                    </div>
+            <div className="w-full overflow-hidden pointer-events-auto">
+                <div
+                    className="flex w-max animate-marquee-reverse"
+                >
+                    <MarqueeItems items={featuredDisplayProducts} />
+                    <MarqueeItems items={featuredDisplayProducts} />
                 </div>
-            )}
+            </div>
         </section>
     );
 }
@@ -407,8 +365,6 @@ function NewsArticleCard({ article }: { article: NewsArticle }) {
 
 
 function HotNews({ articles: latestArticles }: { articles: NewsArticle[] }) {
-  const isLoading = !latestArticles;
-
   return (
     <section className="py-16 sm:py-24 bg-white">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -419,14 +375,6 @@ function HotNews({ articles: latestArticles }: { articles: NewsArticle[] }) {
          </ScrollRevealWrapper>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {isLoading && Array.from({length: 4}).map((_, i) => (
-                <div key={i} className="space-y-4">
-                    <Skeleton className="w-full aspect-[4/3] rounded-lg" />
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6" />
-                </div>
-            ))}
             {latestArticles?.map((article, index) => (
               <ScrollRevealWrapper key={`${article.id}-${index}`} delay={index * 0.1}>
                 <NewsArticleCard article={article} />

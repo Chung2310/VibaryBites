@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -23,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 
 async function getProductBySlug(firestore: any, slug: string): Promise<Product | null> {
     if (!firestore || !slug) return null;
@@ -48,8 +50,9 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
 }
 
 
-export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = React.use(params);
+export default function ProductDetailPage() {
+    const params = useParams();
+    const slug = params?.slug as string;
     const { addToCart, cartItems } = useAppStore();
     const { toast } = useToast();
     
@@ -132,11 +135,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     const isBirthdayCake = product.categorySlug === 'banh-sinh-nhat';
     const availableSizes = isBirthdayCake 
         ? birthdayCakeSizes?.map(s => ({ name: s.name, price: s.price }))
-        : product.sizes;
+        : (product.sizes || []);
 
     const isOutOfStock = product.stock !== undefined && product.stock <= 0;
     const isPricePending = product.price === 0 && (!availableSizes || availableSizes.length === 0);
-    const priceToShow = availableSizes?.find(s => s.name === selectedSize)?.price || product.price;
+    const selectedSizeData = availableSizes?.find(s => s.name === selectedSize);
+    const priceToShow = selectedSizeData ? selectedSizeData.price : product.price;
     
     const imageUrl = product.imageUrl;
     const detailedDescription = product.detailedDescription || {};
@@ -227,12 +231,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                     
                     {isOutOfStock ? (
                         <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
-                    ) : isPricePending ? (
-                        <div className="mt-8">
-                            <Button size="lg" asChild className="w-full bg-black text-white hover:bg-black/80 rounded-md">
-                                <Link href="/contact">Liên hệ để đặt hàng</Link>
-                            </Button>
-                        </div>
                     ) : (
                         <>
                             {availableSizes && availableSizes.length > 0 && (
