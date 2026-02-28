@@ -51,7 +51,7 @@ export function Header() {
     <header className={cn(
         "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
         isScrolled 
-          ? "bg-white/70 backdrop-blur-md shadow-sm border-white/20" 
+          ? "bg-white/80 backdrop-blur-md shadow-sm border-white/20" 
           : "bg-white border-transparent"
     )}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -114,13 +114,9 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="left" className="p-0">
                <SheetHeader className="p-6 border-b">
-                <SheetTitle className="sr-only">Menu Điều Hướng</SheetTitle>
-                <Link href="/" className="flex items-center gap-2">
-                   <Image src="/logo.png" alt="Vibary Logo" width={32} height={32} />
-                   <span className="font-headline text-2xl font-bold tracking-widest">
+                <SheetTitle className="text-left font-headline text-2xl font-bold tracking-widest">
                     VIBARY
-                  </span>
-                </Link>
+                </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-6 p-6">
                 <nav className="flex flex-col gap-4">
@@ -128,7 +124,10 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="text-lg font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      className={cn(
+                        "text-lg font-medium transition-colors hover:text-primary",
+                        isLinkActive(link.href) ? "text-primary" : "text-muted-foreground"
+                      )}
                     >
                       {link.label}
                     </Link>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -20,22 +21,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { NewsArticle, ArticleStatus } from './data';
+import type { NewsArticle } from '@/lib/types';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { generateSlug } from '@/lib/utils';
 
 interface NewsDataTableProps {
   articles: NewsArticle[];
   onEdit: (article: NewsArticle) => void;
   onDelete: (article: NewsArticle) => void;
 }
-
-const statusVariantMap: Record<ArticleStatus, "default" | "secondary" | "destructive"> = {
-    [ArticleStatus.Published]: "default",
-    [ArticleStatus.Draft]: "secondary",
-    [ArticleStatus.Hidden]: "destructive",
-};
-
 
 export function NewsDataTable({ articles, onEdit, onDelete }: NewsDataTableProps) {
   return (
@@ -44,10 +39,8 @@ export function NewsDataTable({ articles, onEdit, onDelete }: NewsDataTableProps
         <TableRow>
           <TableHead className="hidden w-[100px] sm:table-cell">Ảnh</TableHead>
           <TableHead>Tiêu đề</TableHead>
-          <TableHead>Loại bài viết</TableHead>
-          <TableHead>Trạng thái</TableHead>
+          <TableHead>Danh mục</TableHead>
           <TableHead className="hidden md:table-cell">Ngày đăng</TableHead>
-          <TableHead className="hidden md:table-cell text-right">Lượt xem</TableHead>
           <TableHead>
             <span className="sr-only">Hành động</span>
           </TableHead>
@@ -62,26 +55,17 @@ export function NewsDataTable({ articles, onEdit, onDelete }: NewsDataTableProps
                   alt={article.title}
                   className="aspect-square rounded-md object-cover"
                   height="64"
-                  src={article.featuredImage}
+                  src={article.imageUrl || 'https://placehold.co/64x64'}
                   width="64"
                 />
               </TableCell>
               <TableCell className="font-medium max-w-[250px] truncate">{article.title}</TableCell>
               <TableCell>
-                <div className="flex flex-wrap gap-1 max-w-[200px]">
-                    {article.categories.slice(0, 2).map(cat => (
-                        <Badge key={cat} variant="outline">{cat}</Badge>
-                    ))}
-                    {article.categories.length > 2 && <Badge variant="outline">...</Badge>}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant={statusVariantMap[article.status]}>{article.status}</Badge>
+                <Badge variant="outline">{article.category}</Badge>
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 {format(new Date(article.publicationDate), 'dd/MM/yyyy', { locale: vi })}
               </TableCell>
-              <TableCell className="hidden md:table-cell text-right">{article.views.toLocaleString('vi-VN')}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -93,7 +77,7 @@ export function NewsDataTable({ articles, onEdit, onDelete }: NewsDataTableProps
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
                     <DropdownMenuItem onSelect={() => onEdit(article)}>Chỉnh sửa</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => window.open(`/news/${article.slug}`, '_blank')}>Xem trước</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => window.open(`/news/${article.slug || generateSlug(article.title)}`, '_blank')}>Xem trước</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => onDelete(article)} className="text-destructive">
                       Xóa
@@ -105,7 +89,7 @@ export function NewsDataTable({ articles, onEdit, onDelete }: NewsDataTableProps
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center">
+            <TableCell colSpan={5} className="h-24 text-center">
               Không tìm thấy bài viết nào.
             </TableCell>
           </TableRow>

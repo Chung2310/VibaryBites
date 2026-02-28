@@ -15,9 +15,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const heroBanners = [
   {
@@ -32,7 +30,7 @@ const heroBanners = [
   },
   {
     id: "hero-banner-2",
-    title: "CHO NHỮNG NGÀY THƯỜNG",
+    title: "CHO NHỮNG NGÀY THƯỜNGBánh",
     subtitle: "Bánh Lẻ",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
@@ -128,7 +126,7 @@ function Hero() {
                       transition={{ duration: 1, delay: 0.2 }}
                     >
                     <p className="font-body text-sm tracking-[0.3em] uppercase mb-4 opacity-90 drop-shadow-md text-white">{banner.title}</p>
-                    <h1 className="font-headline text-6xl md:text-8xl leading-tight mb-8 drop-shadow-xl text-white">
+                    <h1 className="font-headline text-6xl md:text-8xl leading-tight mb-8 drop-shadow-xl text-white uppercase">
                         {banner.subtitle}
                     </h1>
                     <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-10 h-12 text-sm font-medium tracking-wider transition-transform hover:scale-105 shadow-lg">
@@ -227,7 +225,23 @@ export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps
       </div>
       <main className="flex-grow">
         <FeaturedProducts products={featuredProducts} />
-        {/* Rest of components omitted for brevity, but kept in actual implementation */}
+        {latestArticles.length > 0 && (
+            <section className="bg-secondary/20 py-16 sm:py-24">
+                <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 className="font-headline text-4xl mb-12">Tin Tức & Câu Chuyện</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {latestArticles.map(article => (
+                            <Link key={article.id} href={`/news/${article.slug || generateSlug(article.title)}`} className="group">
+                                <div className="aspect-[4/3] relative rounded-lg overflow-hidden mb-4">
+                                    <Image src={article.imageUrl} alt={article.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                                </div>
+                                <h3 className="font-headline text-lg line-clamp-2 group-hover:text-primary transition-colors">{article.title}</h3>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        )}
       </main>
     </div>
   );
