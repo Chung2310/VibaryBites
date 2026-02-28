@@ -32,7 +32,7 @@ const heroBanners = [
   },
   {
     id: "hero-banner-2",
-    title: "CHO NHỮNG NGÀY THƯỜNG",
+    title: "CHO NHỮNG NGÀY THƯỜNGBánh Lẻ",
     subtitle: "Bánh Lẻ",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
@@ -128,7 +128,9 @@ function Hero() {
                   data-ai-hint={banner.imageHint}
                 />
                 
-                <div className="absolute inset-0 bg-black/20" />
+                {/* Lớp phủ gradient để làm nổi bật Header và text */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/20" />
+                
                 <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-16 text-left sm:px-6 lg:px-8">
                    <motion.div
                       key={`${banner.id}-content`}
@@ -136,11 +138,11 @@ function Hero() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 1, delay: 0.2 }}
                     >
-                    <p className="font-body text-sm tracking-[0.3em] uppercase mb-4 opacity-90">{banner.title}</p>
-                    <h1 className="font-headline text-6xl md:text-8xl leading-tight mb-8">
+                    <p className="font-body text-sm tracking-[0.3em] uppercase mb-4 opacity-90 drop-shadow-md">{banner.title}</p>
+                    <h1 className="font-headline text-6xl md:text-8xl leading-tight mb-8 drop-shadow-xl">
                         {banner.subtitle}
                     </h1>
-                    <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-10 h-12 text-sm font-medium tracking-wider transition-transform hover:scale-105">
+                    <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-10 h-12 text-sm font-medium tracking-wider transition-transform hover:scale-105 shadow-lg">
                         <Link href={banner.buttonLink}>{banner.buttonText}</Link>
                     </Button>
                   </motion.div>

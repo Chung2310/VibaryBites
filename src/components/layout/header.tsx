@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -52,7 +51,7 @@ export function Header() {
   return (
     <header className={cn(
       "sticky top-0 z-50 w-full transition-all duration-300 h-20",
-      isHomePage && !isScrolled ? "bg-black/10 backdrop-blur-sm border-transparent" : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
+      isHomePage && !isScrolled ? "bg-black/30 backdrop-blur-md border-transparent shadow-sm" : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
     )}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Desktop Left Nav */}
@@ -64,7 +63,7 @@ export function Header() {
                 data-active={isLinkActive(link.href)}
                 className={cn(
                   "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full",
-                  isHomePage && !isScrolled ? "text-white" : "text-black",
+                  isHomePage && !isScrolled ? "text-white drop-shadow-md" : "text-black",
                   isLinkActive(link.href) && (isHomePage && !isScrolled ? "border border-white" : "border border-black")
                 )}
             >
@@ -76,10 +75,10 @@ export function Header() {
         {/* Logo Center */}
         <div className="flex items-center justify-center">
           <Link href="/" className="flex items-center gap-3">
-             <Image src="/logo.png" alt="Vibary Logo" width={36} height={36} className={cn(isHomePage && !isScrolled && "brightness-0 invert")} />
+             <Image src="/logo.png" alt="Vibary Logo" width={36} height={36} className={cn(isHomePage && !isScrolled && "brightness-0 invert drop-shadow-md")} />
             <span className={cn(
               "font-headline text-3xl font-bold tracking-[0.2em]",
-              isHomePage && !isScrolled ? "text-white" : "text-foreground"
+              isHomePage && !isScrolled ? "text-white drop-shadow-lg" : "text-foreground"
             )}>
               VIBARY
             </span>
@@ -96,7 +95,7 @@ export function Header() {
                     data-active={isLinkActive(link.href)}
                     className={cn(
                       "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full",
-                      isHomePage && !isScrolled ? "text-white" : "text-black",
+                      isHomePage && !isScrolled ? "text-white drop-shadow-md" : "text-black",
                       isLinkActive(link.href) && (isHomePage && !isScrolled ? "border border-white" : "border border-black")
                     )}
                 >
@@ -107,7 +106,7 @@ export function Header() {
           
           <Link href="/cart" className={cn(
             "relative flex items-center gap-1 text-xs font-body uppercase tracking-widest transition-colors hover:opacity-70",
-            isHomePage && !isScrolled ? "text-white" : "text-black"
+            isHomePage && !isScrolled ? "text-white drop-shadow-md" : "text-black"
           )}>
             <ShoppingBag className="h-5 w-5" />
             <span className="hidden md:inline">GIỎ</span>
@@ -120,7 +119,7 @@ export function Header() {
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className={cn("md:hidden border-none bg-transparent", isHomePage && !isScrolled && "text-white")}>
+              <Button variant="outline" size="icon" className={cn("md:hidden border-none bg-transparent", isHomePage && !isScrolled && "text-white drop-shadow-md")}>
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Chuyển đổi menu điều hướng</span>
               </Button>
