@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -41,6 +40,7 @@ export function Header() {
   }, []);
 
   const isLinkActive = (href: string) => {
+    if (!isClient) return false;
     if (href === '/products') {
       return pathname.startsWith(href);
     }
@@ -50,7 +50,7 @@ export function Header() {
   return (
     <header className={cn(
         "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
-        isScrolled 
+        (isClient && isScrolled) 
           ? "bg-white/80 backdrop-blur-md shadow-sm border-white/20" 
           : "bg-white border-transparent"
     )}>
@@ -95,7 +95,11 @@ export function Header() {
              ))}
           </nav>
           
-          <Link href="/cart" className="relative flex items-center gap-1 text-xs font-body uppercase tracking-widest transition-colors hover:opacity-70 text-black">
+          <Link 
+            href="/cart" 
+            aria-label={`Giỏ hàng có ${cartCount} sản phẩm`}
+            className="relative flex items-center gap-1 text-xs font-body uppercase tracking-widest transition-colors hover:opacity-70 text-black"
+          >
             <ShoppingBag className="h-5 w-5" />
             <span className="hidden md:inline">GIỎ</span>
             {isClient && cartCount > 0 && (
@@ -107,7 +111,12 @@ export function Header() {
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden border-none bg-transparent text-black">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="md:hidden border-none bg-transparent text-black"
+                aria-label="Mở menu điều hướng"
+              >
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Menu</span>
               </Button>

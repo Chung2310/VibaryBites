@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -220,11 +219,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
                             <div className="mt-8 flex items-center gap-4">
                             <div className="flex items-center border rounded-md">
-                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Giảm số lượng">
                                     <Minus className="h-4 w-4" />
                                 </Button>
-                                <Input type="text" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" inputMode="numeric" />
-                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} >
+                                <Input type="text" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" inputMode="numeric" aria-label="Số lượng sản phẩm" />
+                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} aria-label="Tăng số lượng">
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>

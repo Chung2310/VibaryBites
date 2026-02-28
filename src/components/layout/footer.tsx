@@ -28,8 +28,8 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
                     HOTLINE 091 255 03 35
                 </a>
             </Button>
-            <div className="flex justify-center items-center gap-2 text-muted-foreground mt-4">
-              <MapPin className="h-4 w-4" />
+            <div className="flex justify-center items-center gap-2 text-muted-foreground mt-4 text-sm">
+              <MapPin className="h-4 w-4 shrink-0" />
               <a
                 href="https://www.google.com/maps/search/?api=1&query=Số+3+Nguyễn+Văn+Trỗi,+P.Ninh+Xá,+Bắc+Ninh,+Việt+Nam"
                 target="_blank"
@@ -44,21 +44,21 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
         <div className="mt-12 space-y-4">
             <p className="text-sm tracking-widest uppercase">THEO DÕI VIBARY</p>
             <div className="flex justify-center gap-4">
-                <Link href="https://www.facebook.com/profile.php?id=61576305638969" aria-label="Facebook page" target="_blank" rel="noopener noreferrer">
+                <Link href="https://www.facebook.com/profile.php?id=61576305638969" aria-label="Theo dõi Vibary trên Facebook" target="_blank" rel="noopener noreferrer">
                     <Facebook className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
-                <Link href="https://www.instagram.com/tiembanhvibary/" aria-label="Instagram page" target="_blank" rel="noopener noreferrer">
+                <Link href="https://www.instagram.com/tiembanhvibary/" aria-label="Theo dõi Vibary trên Instagram" target="_blank" rel="noopener noreferrer">
                     <Instagram className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
-                <Link href="https://www.tiktok.com/@vi_bary" aria-label="TikTok page" target="_blank" rel="noopener noreferrer">
+                <Link href="https://www.tiktok.com/@vi_bary" aria-label="Theo dõi Vibary trên TikTok" target="_blank" rel="noopener noreferrer">
                    <TikTokIcon className="h-5 w-5 text-muted-foreground hover:text-foreground" />
                 </Link>
             </div>
         </div>
 
-        <div className="mt-20">
+        <div className="mt-20 overflow-hidden">
             <p className="font-headline text-4xl text-gray-400 italic">Crafted to be shared</p>
-            <h1 className="font-headline text-9xl md:text-[200px] font-bold tracking-widest mt-4 text-transparent bg-clip-text bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300 animate-shimmer bg-[length:200%_auto]">VIBARY</h1>
+            <h1 className="font-headline text-9xl md:text-[200px] font-bold tracking-widest mt-4 text-transparent bg-clip-text bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300 animate-shimmer bg-[length:200%_auto] leading-none">VIBARY</h1>
         </div>
 
         <div className="mt-20 border-t pt-8 text-center text-sm text-muted-foreground">
