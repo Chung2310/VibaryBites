@@ -16,7 +16,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/accordion';
+} from '@/components/ui/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
 import { generateSlug } from '@/lib/utils';
@@ -226,6 +226,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                         <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.title}</p>
                     )}
                     <h1 className="font-headline text-6xl mt-2">{product.name}</h1>
+                    <p className="text-2xl font-medium mt-4">
+                        {priceToShow > 0 
+                            ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(priceToShow)
+                            : "Giá: Liên hệ"}
+                    </p>
                     
                     {isOutOfStock ? (
                         <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
