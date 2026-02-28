@@ -1,7 +1,7 @@
-
 'use client';
 
 import * as React from 'react';
+import { use } from 'react';
 import { faqs } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/accordion';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
 import { generateSlug } from '@/lib/utils';
@@ -24,7 +24,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useParams } from 'next/navigation';
 
 async function getProductBySlug(firestore: any, slug: string): Promise<Product | null> {
     if (!firestore || !slug) return null;
@@ -50,9 +49,8 @@ async function getProductBySlug(firestore: any, slug: string): Promise<Product |
 }
 
 
-export default function ProductDetailPage() {
-    const params = useParams();
-    const slug = params?.slug as string;
+export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = use(params);
     const { addToCart, cartItems } = useAppStore();
     const { toast } = useToast();
     
