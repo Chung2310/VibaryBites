@@ -29,9 +29,15 @@ export function Header() {
   const { cartCount } = useAppStore();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const isLinkActive = (href: string) => {
@@ -42,7 +48,10 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full h-20 bg-white border-b shadow-sm">
+    <header className={cn(
+        "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
+        isScrolled ? "bg-white/80 backdrop-blur-lg shadow-sm border-white/20" : "bg-white border-transparent"
+    )}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Desktop Left Nav */}
         <nav className="hidden items-center gap-6 md:flex flex-1">
