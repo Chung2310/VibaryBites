@@ -103,7 +103,7 @@ function Hero() {
 
 
   return (
-    <section className="relative h-screen w-full text-white overflow-hidden">
+    <section className="relative h-[calc(100vh-120px)] w-full text-white overflow-hidden">
       <Carousel
         setApi={setApi}
         className="w-full h-full"
@@ -114,7 +114,7 @@ function Hero() {
           }),
         ]}
       >
-        <CarouselContent className="h-screen m-0">
+        <CarouselContent className="h-[calc(100vh-120px)] m-0">
           {heroBanners.map((banner, index) => (
             <CarouselItem key={banner.id} className="h-full p-0">
               <div className="relative w-full h-full">
@@ -129,7 +129,7 @@ function Hero() {
                 />
                 
                 <div className="absolute inset-0 bg-black/20" />
-                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-32 text-left sm:px-6 lg:px-8">
+                <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-16 text-left sm:px-6 lg:px-8">
                    <motion.div
                       key={`${banner.id}-content`}
                       initial={{ opacity: 0, y: 30 }}
@@ -149,7 +149,7 @@ function Hero() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="absolute bottom-12 right-12 flex space-x-3 z-20">
+        <div className="absolute bottom-6 right-12 flex space-x-3 z-20">
             {Array.from({ length: count }).map((_, index) => (
                 <button
                     key={index}
