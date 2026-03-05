@@ -36,6 +36,7 @@ export function Header() {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial scroll
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -47,13 +48,16 @@ export function Header() {
     return pathname === href;
   };
 
+  // Safe classes for hydration
+  const headerClass = cn(
+    "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
+    (isClient && isScrolled) 
+      ? "bg-white/80 backdrop-blur-md shadow-sm border-white/20" 
+      : "bg-white border-transparent"
+  );
+
   return (
-    <header className={cn(
-        "sticky top-0 z-50 w-full h-20 transition-all duration-300 border-b",
-        (isClient && isScrolled) 
-          ? "bg-white/80 backdrop-blur-md shadow-sm border-white/20" 
-          : "bg-white border-transparent"
-    )}>
+    <header className={headerClass}>
       <div className="container mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <nav className="hidden items-center gap-6 md:flex flex-1">
           {leftNavLinks.map(link => (
@@ -64,6 +68,7 @@ export function Header() {
                   "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full text-black",
                   isLinkActive(link.href) && "border border-black"
                 )}
+                aria-current={isLinkActive(link.href) ? 'page' : undefined}
             >
                 {link.label}
             </Link>
@@ -89,6 +94,7 @@ export function Header() {
                       "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full text-black",
                       isLinkActive(link.href) && "border border-black"
                     )}
+                    aria-current={isLinkActive(link.href) ? 'page' : undefined}
                 >
                     {link.label}
                 </Link>
@@ -97,7 +103,7 @@ export function Header() {
           
           <Link 
             href="/cart" 
-            aria-label={`Giỏ hàng có ${cartCount} sản phẩm`}
+            aria-label={isClient ? `Giỏ hàng có ${cartCount} sản phẩm` : "Giỏ hàng"}
             className="relative flex items-center gap-1 text-xs font-body uppercase tracking-widest transition-colors hover:opacity-70 text-black"
           >
             <ShoppingBag className="h-5 w-5" />

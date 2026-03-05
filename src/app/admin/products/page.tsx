@@ -122,25 +122,33 @@ export default function ProductsPage() {
             return;
         }
         
+        // Excel has a hard limit of 32767 characters per cell.
+        // We truncate to stay safe and prevent the "Text length must not exceed 32767 characters" error.
+        const MAX_CELL_LEN = 32760; 
+        const t = (val: any) => {
+            const str = String(val ?? '');
+            return str.length > MAX_CELL_LEN ? str.substring(0, MAX_CELL_LEN) : str;
+        };
+
         // Map products to flat rows for Excel with clear Vietnamese headers
         const exportData = filteredProducts.map(p => ({
-            'ID': p.id,
-            'Tên sản phẩm': p.name,
-            'Tên phụ': p.subtitle || '',
-            'Slug': p.slug,
-            'Mô tả ngắn': p.description,
+            'ID': t(p.id),
+            'Tên sản phẩm': t(p.name),
+            'Tên phụ': t(p.subtitle || ''),
+            'Slug': t(p.slug),
+            'Mô tả ngắn': t(p.description),
             'Giá cơ bản': p.price,
             'Tồn kho': p.stock || 0,
-            'Danh mục (Slug)': p.categorySlug,
-            'URL Ảnh': p.imageUrl,
-            'Mô tả hương vị': p.detailedDescription?.flavor || '',
-            'Thành phần': p.detailedDescription?.ingredients || '',
-            'Hướng dẫn bảo quản': p.detailedDescription?.storage || '',
-            'Kích thước & Khẩu phần': p.detailedDescription?.dimensions || '',
-            'Phụ kiện (Mỗi dòng 1 cái)': p.detailedDescription?.accessories?.join('\n') || '',
-            'Cảm giác vị (Mỗi dòng 1 tag)': p.flavorProfile?.join('\n') || '',
-            'Cấu trúc lớp (Từ trên xuống)': p.structure?.join('\n') || '',
-            'Các size bánh (Tên | Giá)': p.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || '',
+            'Danh mục (Slug)': t(p.categorySlug),
+            'URL Ảnh': t(p.imageUrl),
+            'Mô tả hương vị': t(p.detailedDescription?.flavor || ''),
+            'Thành phần': t(p.detailedDescription?.ingredients || ''),
+            'Hướng dẫn bảo quản': t(p.detailedDescription?.storage || ''),
+            'Kích thước & Khẩu phần': t(p.detailedDescription?.dimensions || ''),
+            'Phụ kiện (Mỗi dòng 1 cái)': t(p.detailedDescription?.accessories?.join('\n') || ''),
+            'Cảm giác vị (Mỗi dòng 1 tag)': t(p.flavorProfile?.join('\n') || ''),
+            'Cấu trúc lớp (Từ trên xuống)': t(p.structure?.join('\n') || ''),
+            'Các size bánh (Tên | Giá)': t(p.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || ''),
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
