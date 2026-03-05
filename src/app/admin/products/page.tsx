@@ -1,4 +1,3 @@
-
 'use client';
 import {
   File,
@@ -60,6 +59,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn, generateSlug } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
@@ -122,15 +122,52 @@ export default function ProductsPage() {
             return;
         }
         
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredProducts, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `vibary-products-${activeCategorySlug}-${new Date().toISOString().split('T')[0]}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        // Map products to flat rows for Excel with clear Vietnamese headers
+        const exportData = filteredProducts.map(p => ({
+            'ID': p.id,
+            'Tên sản phẩm': p.name,
+            'Tên phụ': p.subtitle || '',
+            'Slug': p.slug,
+            'Mô tả ngắn': p.description,
+            'Giá cơ bản': p.price,
+            'Tồn kho': p.stock || 0,
+            'Danh mục (Slug)': p.categorySlug,
+            'URL Ảnh': p.imageUrl,
+            'Mô tả hương vị': p.detailedDescription?.flavor || '',
+            'Thành phần': p.detailedDescription?.ingredients || '',
+            'Hướng dẫn bảo quản': p.detailedDescription?.storage || '',
+            'Kích thước & Khẩu phần': p.detailedDescription?.dimensions || '',
+            'Phụ kiện (Mỗi dòng 1 cái)': p.detailedDescription?.accessories?.join('\n') || '',
+            'Cảm giác vị (Mỗi dòng 1 tag)': p.flavorProfile?.join('\n') || '',
+            'Cấu trúc lớp (Từ trên xuống)': p.structure?.join('\n') || '',
+            'Các size bánh (Tên | Giá)': p.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || '',
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
         
-        toast({ title: "Xuất file thành công", description: `Đã xuất ${filteredProducts.length} sản phẩm.` });
+        // Set column widths for better readability
+        const wscols = [
+            {wch: 15}, {wch: 30}, {wch: 20}, {wch: 25}, {wch: 40}, 
+            {wch: 10}, {wch: 10}, {wch: 20}, {wch: 50}, {wch: 50},
+            {wch: 50}, {wch: 50}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 30}, {wch: 30}
+        ];
+        ws['!cols'] = wscols;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Danh sách Sản phẩm");
+        
+        // Generate buffer and trigger download
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vibary-products-${activeCategorySlug}-${new Date().toISOString().split('T')[0]}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        toast({ title: "Xuất file thành công", description: `Đã xuất ${filteredProducts.length} sản phẩm ra file Excel.` });
     };
 
     const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,34 +177,66 @@ export default function ProductsPage() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                const content = e.target?.result as string;
-                const importedData = JSON.parse(content);
-                const productsToImport = Array.isArray(importedData) ? importedData : [importedData];
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    toast({ variant: "destructive", title: "Lỗi", description: "File Excel không có dữ liệu." });
+                    return;
+                }
 
                 let count = 0;
-                for (const item of productsToImport) {
-                    if (!item.name) continue;
+                for (const row of jsonData as any[]) {
+                    const name = row['Tên sản phẩm'];
+                    if (!name) continue;
                     
-                    const id = item.id || `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-                    const docRef = doc(firestore, 'cakes', id);
-                    const data = {
-                        ...item,
+                    const id = row['ID'] || `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+                    
+                    // Parse nested structures and arrays from stringified versions
+                    const sizesStr = String(row['Các size bánh (Tên | Giá)'] || '');
+                    const sizes = sizesStr.split('\n').filter(l => l.includes('|')).map(line => {
+                        const [n, p] = line.split('|');
+                        return { name: n.trim(), price: Number(p.trim()) };
+                    });
+
+                    const productData: Product = {
                         id,
-                        slug: item.slug || generateSlug(item.name)
+                        name: String(name),
+                        subtitle: String(row['Tên phụ'] || ''),
+                        slug: String(row['Slug'] || generateSlug(name)),
+                        description: String(row['Mô tả ngắn'] || ''),
+                        price: Number(row['Giá cơ bản']) || 0,
+                        stock: Number(row['Tồn kho']) || 0,
+                        categorySlug: String(row['Danh mục (Slug)'] || 'banh-sinh-nhat'),
+                        imageUrl: String(row['URL Ảnh'] || ''),
+                        detailedDescription: {
+                            flavor: String(row['Mô tả hương vị'] || ''),
+                            ingredients: String(row['Thành phần'] || ''),
+                            storage: String(row['Hướng dẫn bảo quản'] || ''),
+                            dimensions: String(row['Kích thước & Khẩu phần'] || ''),
+                            accessories: String(row['Phụ kiện (Mỗi dòng 1 cái)'] || '').split('\n').map(s => s.trim()).filter(Boolean),
+                        },
+                        flavorProfile: String(row['Cảm giác vị (Mỗi dòng 1 tag)'] || '').split('\n').map(s => s.trim()).filter(Boolean),
+                        structure: String(row['Cấu trúc lớp (Từ trên xuống)'] || '').split('\n').map(s => s.trim()).filter(Boolean),
+                        sizes: sizes.length > 0 ? sizes : undefined
                     };
                     
-                    await setDoc(docRef, data, { merge: true });
+                    const docRef = doc(firestore, 'cakes', id);
+                    await setDoc(docRef, productData, { merge: true });
                     count++;
                 }
 
-                toast({ title: "Nhập file thành công", description: `Đã cập nhật/thêm ${count} sản phẩm.` });
+                toast({ title: "Nhập file thành công", description: `Đã cập nhật/thêm ${count} sản phẩm từ file Excel.` });
                 if (fileInputRef.current) fileInputRef.current.value = '';
             } catch (error: any) {
-                console.error("Lỗi nhập file:", error);
-                toast({ variant: "destructive", title: "Lỗi nhập file", description: "Định dạng file JSON không hợp lệ hoặc xảy ra lỗi trong quá trình tải lên." });
+                console.error("Lỗi nhập file Excel:", error);
+                toast({ variant: "destructive", title: "Lỗi nhập file", description: "Định dạng file Excel không đúng hoặc dữ liệu bị lỗi. Vui lòng kiểm tra lại." });
             }
         };
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(file);
     };
 
     return (
@@ -215,21 +284,21 @@ export default function ProductsPage() {
               <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Xuất File
+                  Xuất File Excel
                 </span>
               </Button>
 
               <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Nhập File
+                  Nhập File Excel
                 </span>
               </Button>
               <input 
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleImport} 
-                accept=".json" 
+                accept=".xlsx, .xls, .csv" 
                 className="hidden" 
               />
 
@@ -246,7 +315,7 @@ export default function ProductsPage() {
               <CardHeader>
                 <CardTitle>Danh sách sản phẩm</CardTitle>
                 <CardDescription>
-                    Quản lý danh sách sản phẩm của tiệm.
+                    Quản lý danh sách sản phẩm của tiệm bằng file Excel hoặc giao diện trực tiếp.
                 </CardDescription>
               </CardHeader>
               <CardContent>
