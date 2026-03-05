@@ -1,3 +1,4 @@
+
 'use client';
 import {
   File,
@@ -123,37 +124,39 @@ export default function ProductsPage() {
         }
         
         // Excel has a hard limit of 32767 characters per cell.
-        // We truncate to stay safe and prevent the "Text length must not exceed 32767 characters" error.
         const MAX_CELL_LEN = 32760; 
         const t = (val: any) => {
             const str = String(val ?? '');
             return str.length > MAX_CELL_LEN ? str.substring(0, MAX_CELL_LEN) : str;
         };
 
-        // Map products to flat rows for Excel with clear Vietnamese headers
-        const exportData = filteredProducts.map(p => ({
-            'ID': t(p.id),
-            'Tên sản phẩm': t(p.name),
-            'Tên phụ': t(p.subtitle || ''),
-            'Slug': t(p.slug),
-            'Mô tả ngắn': t(p.description),
-            'Giá cơ bản': p.price,
-            'Tồn kho': p.stock || 0,
-            'Danh mục (Slug)': t(p.categorySlug),
-            'URL Ảnh': t(p.imageUrl),
-            'Mô tả hương vị': t(p.detailedDescription?.flavor || ''),
-            'Thành phần': t(p.detailedDescription?.ingredients || ''),
-            'Hướng dẫn bảo quản': t(p.detailedDescription?.storage || ''),
-            'Kích thước & Khẩu phần': t(p.detailedDescription?.dimensions || ''),
-            'Phụ kiện (Mỗi dòng 1 cái)': t(p.detailedDescription?.accessories?.join('\n') || ''),
-            'Cảm giác vị (Mỗi dòng 1 tag)': t(p.flavorProfile?.join('\n') || ''),
-            'Cấu trúc lớp (Từ trên xuống)': t(p.structure?.join('\n') || ''),
-            'Các size bánh (Tên | Giá)': t(p.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || ''),
-        }));
+        // Map products to flat rows for Excel with human-readable headers
+        const exportData = filteredProducts.map(p => {
+            const category = categories?.find(c => c.slug === p.categorySlug);
+            return {
+                'ID': t(p.id),
+                'Tên sản phẩm': t(p.name),
+                'Tên phụ': t(p.subtitle || ''),
+                'Slug': t(p.slug),
+                'Mô tả ngắn': t(p.description),
+                'Giá cơ bản': p.price,
+                'Tồn kho': p.stock || 0,
+                'Danh mục': t(category ? category.title : p.categorySlug),
+                'URL Ảnh': t(p.imageUrl),
+                'Mô tả hương vị': t(p.detailedDescription?.flavor || ''),
+                'Thành phần': t(p.detailedDescription?.ingredients || ''),
+                'Hướng dẫn bảo quản': t(p.detailedDescription?.storage || ''),
+                'Kích thước & Khẩu phần': t(p.detailedDescription?.dimensions || ''),
+                'Phụ kiện (Mỗi dòng 1 cái)': t(p.detailedDescription?.accessories?.join('\n') || ''),
+                'Cảm giác vị (Mỗi dòng 1 tag)': t(p.flavorProfile?.join('\n') || ''),
+                'Cấu trúc lớp (Từ trên xuống)': t(p.structure?.join('\n') || ''),
+                'Các size bánh (Tên | Giá)': t(p.sizes?.map(s => `${s.name} | ${s.price}`).join('\n') || ''),
+            };
+        });
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         
-        // Set column widths for better readability
+        // Set column widths
         const wscols = [
             {wch: 15}, {wch: 30}, {wch: 20}, {wch: 25}, {wch: 40}, 
             {wch: 10}, {wch: 10}, {wch: 20}, {wch: 50}, {wch: 50},
@@ -203,12 +206,20 @@ export default function ProductsPage() {
                     
                     const id = row['ID'] || `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
                     
-                    // Parse nested structures and arrays from stringified versions
+                    // Parse nested structures
                     const sizesStr = String(row['Các size bánh (Tên | Giá)'] || '');
                     const sizes = sizesStr.split('\n').filter(l => l.includes('|')).map(line => {
                         const [n, p] = line.split('|');
                         return { name: n.trim(), price: Number(p.trim()) };
                     });
+
+                    // Resolve category slug from title or slug provided in Excel
+                    let categoryVal = String(row['Danh mục'] || row['Danh mục (Slug)'] || 'banh-sinh-nhat');
+                    const matchedCategory = categories?.find(c => 
+                        c.title.toLowerCase() === categoryVal.toLowerCase() || 
+                        c.slug.toLowerCase() === categoryVal.toLowerCase()
+                    );
+                    const categorySlug = matchedCategory ? matchedCategory.slug : 'banh-sinh-nhat';
 
                     const productData: Product = {
                         id,
@@ -218,7 +229,7 @@ export default function ProductsPage() {
                         description: String(row['Mô tả ngắn'] || ''),
                         price: Number(row['Giá cơ bản']) || 0,
                         stock: Number(row['Tồn kho']) || 0,
-                        categorySlug: String(row['Danh mục (Slug)'] || 'banh-sinh-nhat'),
+                        categorySlug: categorySlug,
                         imageUrl: String(row['URL Ảnh'] || ''),
                         detailedDescription: {
                             flavor: String(row['Mô tả hương vị'] || ''),
