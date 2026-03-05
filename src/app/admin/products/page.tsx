@@ -6,6 +6,7 @@ import {
   PlusCircle,
   Loader2,
   ListFilter,
+  Upload,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import type { Product, ProductCategory } from '@/lib/types';
 import {
   AlertDialog,
@@ -54,15 +55,18 @@ import {
 
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, generateSlug } from '@/lib/utils';
 
 export default function ProductsPage() {
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
@@ -73,7 +77,6 @@ export default function ProductsPage() {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { toast } = useToast();
 
     const filteredProducts = useMemo(() => {
         if (!products) return [];
@@ -112,6 +115,60 @@ export default function ProductsPage() {
             setSelectedProduct(undefined);
         }
     }
+
+    const handleExport = () => {
+        if (!filteredProducts || filteredProducts.length === 0) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không có sản phẩm nào để xuất." });
+            return;
+        }
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredProducts, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `vibary-products-${activeCategorySlug}-${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        
+        toast({ title: "Xuất file thành công", description: `Đã xuất ${filteredProducts.length} sản phẩm.` });
+    };
+
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !firestore) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const content = e.target?.result as string;
+                const importedData = JSON.parse(content);
+                const productsToImport = Array.isArray(importedData) ? importedData : [importedData];
+
+                let count = 0;
+                for (const item of productsToImport) {
+                    if (!item.name) continue;
+                    
+                    const id = item.id || `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+                    const docRef = doc(firestore, 'cakes', id);
+                    const data = {
+                        ...item,
+                        id,
+                        slug: item.slug || generateSlug(item.name)
+                    };
+                    
+                    await setDoc(docRef, data, { merge: true });
+                    count++;
+                }
+
+                toast({ title: "Nhập file thành công", description: `Đã cập nhật/thêm ${count} sản phẩm.` });
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            } catch (error: any) {
+                console.error("Lỗi nhập file:", error);
+                toast({ variant: "destructive", title: "Lỗi nhập file", description: "Định dạng file JSON không hợp lệ hoặc xảy ra lỗi trong quá trình tải lên." });
+            }
+        };
+        reader.readAsText(file);
+    };
 
     return (
         <>
@@ -154,12 +211,28 @@ export default function ProductsPage() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button size="sm" variant="outline" className="h-8 gap-1">
+              
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Xuất File
                 </span>
               </Button>
+
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Nhập File
+                </span>
+              </Button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImport} 
+                accept=".json" 
+                className="hidden" 
+              />
+
               <Button size="sm" className="h-8 gap-1" onClick={() => router.push('/admin/products/new')}>
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
