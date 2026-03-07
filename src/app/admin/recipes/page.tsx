@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -18,8 +18,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { RecipeEditor } from './recipe-editor';
+import { Loader2 } from 'lucide-react';
 
-export default function RecipesPage() {
+function RecipesContent() {
     const firestore = useFirestore();
     const searchParams = useSearchParams();
     const initialProductId = searchParams.get('productId');
@@ -113,4 +114,12 @@ export default function RecipesPage() {
             </div>
         </div>
     );
+}
+
+export default function RecipesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <RecipesContent />
+    </Suspense>
+  );
 }

@@ -1,9 +1,10 @@
+
 'use client';
 
 import { ProductCard } from "@/components/product-card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import type { Product, ProductCategory } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +12,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 
-export default function ProductsPage() {
+function ProductsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -183,5 +184,17 @@ export default function ProductsPage() {
     </div>
     <AnnouncementBar />
     </>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-24 text-center">
+        <div className="animate-pulse font-headline text-2xl">Đang tải danh sách sản phẩm...</div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }

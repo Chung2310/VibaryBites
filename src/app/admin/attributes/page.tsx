@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
@@ -21,7 +21,7 @@ import { ProductAttributesForm, type ProductAttributesFormValues } from './produ
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
-export default function AttributesPage() {
+function AttributesContent() {
     const firestore = useFirestore();
     const searchParams = useSearchParams();
     const initialProductId = searchParams.get('productId');
@@ -148,4 +148,12 @@ export default function AttributesPage() {
             </Card>
         </div>
     );
+}
+
+export default function AttributesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <AttributesContent />
+    </Suspense>
+  );
 }
