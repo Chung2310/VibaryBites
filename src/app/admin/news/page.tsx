@@ -1,3 +1,4 @@
+
 'use client';
 import {
   File,
@@ -173,7 +174,7 @@ export default function NewsPage() {
                     const articleData: NewsArticle = {
                         id,
                         title: String(title),
-                        slug: String(row['Slug'] || generateSlug(title)),
+                        slug: String(row['Slug'] || generateSlug(String(title))),
                         category: String(row['Danh mục'] || 'Chuyện của Tiệm'),
                         author: String(row['Tác giả'] || 'Vibary Team'),
                         excerpt: String(row['Tóm tắt'] || ''),
@@ -341,3 +342,4 @@ export default function NewsPage() {
         </>
     )
 }
+
