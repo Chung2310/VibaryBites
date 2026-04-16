@@ -11,6 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { Button } from "@/components/ui/button";
+import { PackageOpen, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 function ProductsContent() {
   const router = useRouter();
@@ -69,117 +72,139 @@ function ProductsContent() {
     router.push(`${pathname}?category=${slug}`, { scroll: false });
   };
 
+  const hasNoData = !isLoadingCategories && !isLoadingProducts && (!categories || categories.length === 0) && (!products || products.length === 0);
 
   return (
     <>
-    <div className="bg-background">
-        <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
-            <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
-                    {isLoadingCategories && Array.from({length: 4}).map((_, i) => (
-                        <Skeleton key={i} className="h-4 w-24" />
-                    ))}
-                    {sortedCategories.map(category => (
-                        <a
-                            key={category.slug}
-                            href={`/products?category=${category.slug}`}
-                            onClick={(e) => handleNavClick(e, category.slug)}
-                            className={cn(
-                                "text-sm font-lexend uppercase text-[#0A0A0A] hover:opacity-70 transition-all whitespace-nowrap pb-1",
-                                activeCategory === category.slug ? 'border-b-2 border-[#0A0A0A]' : 'border-b-2 border-transparent'
-                            )}
-                        >
-                            {category.title}
-                        </a>
-                    ))}
+    <div className="bg-background min-h-[60vh]">
+        {!hasNoData && (
+            <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
+                <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
+                        {isLoadingCategories && Array.from({length: 4}).map((_, i) => (
+                            <Skeleton key={i} className="h-4 w-24" />
+                        ))}
+                        {sortedCategories.map(category => (
+                            <a
+                                key={category.slug}
+                                href={`/products?category=${category.slug}`}
+                                onClick={(e) => handleNavClick(e, category.slug)}
+                                className={cn(
+                                    "text-sm font-lexend uppercase text-[#0A0A0A] hover:opacity-70 transition-all whitespace-nowrap pb-1",
+                                    activeCategory === category.slug ? 'border-b-2 border-[#0A0A0A]' : 'border-b-2 border-transparent'
+                                )}
+                            >
+                                {category.title}
+                            </a>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </nav>
+            </nav>
+        )}
 
       <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {(isLoadingCategories ? Array.from({length: 4}).map((_, i) => ({ id: `skel-${i}`, slug: `skel-${i}`, title: '', subtitle: '', description: ''})) : (sortedCategories || [])).map((category, index) => {
-          if (isLoadingCategories) {
-             return (
-                 <section key={category.id} className="scroll-mt-24">
-                    <div className="mb-12 pt-12 text-center">
-                        <Skeleton className="h-4 w-1/4 mx-auto mb-2" />
-                        <Skeleton className="h-12 w-1/2 mx-auto mb-2" />
-                        <Skeleton className="h-4 w-3/4 mx-auto mt-4" />
+        {hasNoData ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+                <div className="bg-muted p-6 rounded-full">
+                    <PackageOpen className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="font-headline text-3xl">Chưa có sản phẩm nào</h2>
+                    <p className="text-muted-foreground max-w-md font-fraunces">
+                        Dự án Firebase của bạn hiện đang trống. Hãy đăng nhập vào trang quản trị để thêm danh mục và sản phẩm đầu tiên nhé!
+                    </p>
+                </div>
+                <Button asChild size="lg" className="rounded-full">
+                    <Link href="/admin/products">
+                        Đến Trang Quản Trị <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </div>
+        ) : (
+            (isLoadingCategories ? Array.from({length: 4}).map((_, i) => ({ id: `skel-${i}`, slug: `skel-${i}`, title: '', subtitle: '', description: ''})) : (sortedCategories || [])).map((category, index) => {
+            if (isLoadingCategories) {
+                return (
+                    <section key={category.id} className="scroll-mt-24">
+                        <div className="mb-12 pt-12 text-center">
+                            <Skeleton className="h-4 w-1/4 mx-auto mb-2" />
+                            <Skeleton className="h-12 w-1/2 mx-auto mb-2" />
+                            <Skeleton className="h-4 w-3/4 mx-auto mt-4" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="sm:px-8">
+                            <div className="space-y-4">
+                                <div className="p-4 space-y-2">
+                                <Skeleton className="h-6 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-4 w-1/4" />
+                                </div>
+                                <Skeleton className="relative w-full aspect-square" />
+                            </div>
+                            </div>
+                        ))}
+                        </div>
+                        {index < (sortedCategories.length || 4) - 1 && (
+                            <Separator className="my-16 sm:my-24" />
+                        )}
+                    </section>
+                )
+            }
+                
+            const categoryProducts = products?.filter(p => p.categorySlug === category.slug) || [];
+
+            return (
+                <section 
+                    key={category.slug} 
+                    id={category.slug} 
+                    ref={el => sectionRefs.current[category.slug] = el}
+                    className="scroll-mt-24"
+                >
+                <div className="mb-12 pt-12 text-center">
+                    <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.subtitle}</p>
+                    <div className="inline-block text-left">
+                    <h1 className="font-headline text-4xl md:text-5xl mt-2 uppercase font-bold">{category.title}</h1>
+                    <Separator className="my-2 h-0.5 w-full bg-foreground" />
                     </div>
-                     <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
-                       {Array.from({ length: 3 }).map((_, i) => (
+                    <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
+                    {category.description}
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
+                    {isLoadingProducts && categoryProducts.length === 0 ? (
+                    Array.from({ length: 3 }).map((_, i) => (
                         <div key={i} className="sm:px-8">
-                          <div className="space-y-4">
+                        <div className="space-y-4">
                             <div className="p-4 space-y-2">
-                              <Skeleton className="h-6 w-3/4" />
-                              <Skeleton className="h-4 w-1/2" />
-                              <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-4 w-1/4" />
                             </div>
                             <Skeleton className="relative w-full aspect-square" />
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                     {index < (sortedCategories.length || 4) - 1 && (
-                        <Separator className="my-16 sm:my-24" />
-                    )}
-                 </section>
-             )
-          }
-            
-          const categoryProducts = products?.filter(p => p.categorySlug === category.slug) || [];
-
-          return (
-            <section 
-                key={category.slug} 
-                id={category.slug} 
-                ref={el => sectionRefs.current[category.slug] = el}
-                className="scroll-mt-24"
-            >
-              <div className="mb-12 pt-12 text-center">
-                <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.subtitle}</p>
-                <div className="inline-block text-left">
-                  <h1 className="font-headline text-4xl md:text-5xl mt-2 uppercase font-bold">{category.title}</h1>
-                  <Separator className="my-2 h-0.5 w-full bg-foreground" />
-                </div>
-                <p className="mx-auto mt-4 max-w-2xl text-lg font-fraunces text-muted-foreground">
-                  {category.description}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 sm:divide-x">
-                {isLoadingProducts && categoryProducts.length === 0 ? (
-                   Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="sm:px-8">
-                      <div className="space-y-4">
-                        <div className="p-4 space-y-2">
-                          <Skeleton className="h-6 w-3/4" />
-                          <Skeleton className="h-4 w-1/2" />
-                          <Skeleton className="h-4 w-1/4" />
-                        </div>
-                        <Skeleton className="relative w-full aspect-square" />
-                      </div>
-                    </div>
-                  ))
-                ) : categoryProducts.length > 0 ? (
-                    categoryProducts.map((product) => (
-                        <div key={product.id} className="sm:px-8">
-                            <ProductCard product={product} hideDescription={true} />
                         </div>
                     ))
-                ) : (
-                    <div className="sm:col-span-3 text-center text-muted-foreground py-8">
-                        Chưa có sản phẩm nào trong danh mục này.
-                    </div>
-                )}
-              </div>
+                    ) : categoryProducts.length > 0 ? (
+                        categoryProducts.map((product) => (
+                            <div key={product.id} className="sm:px-8">
+                                <ProductCard product={product} hideDescription={true} />
+                            </div>
+                        ))
+                    ) : (
+                        <div className="sm:col-span-3 text-center text-muted-foreground py-8">
+                            Chưa có sản phẩm nào trong danh mục này.
+                        </div>
+                    )}
+                </div>
 
-              {index < (sortedCategories.length || 0) - 1 && (
-                <Separator className="my-16 sm:my-24" />
-              )}
-            </section>
-          );
-        })}
+                {index < (sortedCategories.length || 0) - 1 && (
+                    <Separator className="my-16 sm:my-24" />
+                )}
+                </section>
+            );
+            })
+        )}
       </div>
     </div>
     <AnnouncementBar />
