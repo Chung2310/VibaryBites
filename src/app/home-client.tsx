@@ -30,7 +30,7 @@ const heroBanners = [
   },
   {
     id: "hero-banner-2",
-    title: "CHO NHỮNG NGÀY THƯỜNGBánh",
+    title: "CHO NHỮNG NGÀY THƯỜNG",
     subtitle: "Bánh Lẻ",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
@@ -183,7 +183,7 @@ MarqueeProductCard.displayName = 'MarqueeProductCard';
 function FeaturedProducts({ products: featuredDisplayProducts }: { products: Product[] }) {
     if (!featuredDisplayProducts || featuredDisplayProducts.length === 0) return null;
 
-    // Chỉ hiển thị bánh sinh nhật theo yêu cầu của người dùng
+    // CHỈ hiển thị bánh sinh nhật tại đây
     const birthdayCakes = featuredDisplayProducts.filter(p => p.categorySlug === 'banh-sinh-nhat');
 
     if (birthdayCakes.length === 0) return null;

@@ -107,7 +107,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        marquee: 'marquee 80s linear infinite',
+        marquee: 'marquee 120s linear infinite',
         'marquee-fast': 'marquee 60s linear infinite',
         'marquee-reverse': 'marquee-reverse 180s linear infinite',
         shimmer: 'shimmer 8s ease-in-out infinite',
