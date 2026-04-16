@@ -2,19 +2,9 @@ import { HomeClient } from './home-client';
 import { getProducts, getNewsArticles } from '@/lib/server-data';
 
 async function getHomePageData() {
-    const birthdayCakesQuery = getProducts({ categorySlug: 'banh-sinh-nhat' });
-    const latestArticlesQuery = getNewsArticles({ limit: 4, orderBy: 'publicationDate', order: 'desc' });
-
-    const [birthdayCakes, latestArticles] = await Promise.all([
-        birthdayCakesQuery,
-        latestArticlesQuery,
-    ]);
-
-    let featuredProducts = birthdayCakes;
-    if (birthdayCakes.length === 0) {
-        // Fallback to any 6 products if no birthday cakes are found
-        featuredProducts = await getProducts({ limit: 6 });
-    }
+    // Chỉ lấy sản phẩm thuộc danh mục bánh sinh nhật cho trang chủ
+    const featuredProducts = await getProducts({ categorySlug: 'banh-sinh-nhat', limit: 20 });
+    const latestArticles = await getNewsArticles({ limit: 4, orderBy: 'publicationDate', order: 'desc' });
 
     return { featuredProducts, latestArticles };
 }
