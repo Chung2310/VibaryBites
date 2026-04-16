@@ -2,6 +2,8 @@
 import {
   File,
   PlusCircle,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,18 +22,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { BirthdayCakeSize } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, deleteDoc, doc, query, orderBy, setDoc } from 'firebase/firestore';
 import { SizeForm } from './size-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function BirthdaySizesPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const sizesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'birthday_cake_sizes'), orderBy('order')) : null, [firestore]);
   const { data: sizes, isLoading } = useCollection<BirthdayCakeSize>(sizesCollection);
 
@@ -40,7 +45,6 @@ export default function BirthdaySizesPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [sizeToDelete, setSizeToDelete] = useState<BirthdayCakeSize | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { toast } = useToast();
 
   const handleAdd = () => {
     setSelectedSize(null);
@@ -78,6 +82,82 @@ export default function BirthdaySizesPage() {
     }
   };
 
+  const handleExport = () => {
+    if (!sizes || sizes.length === 0) {
+      toast({ variant: "destructive", title: "Lỗi", description: "Không có dữ liệu để xuất." });
+      return;
+    }
+
+    const exportData = sizes.map(item => ({
+      'ID': item.id,
+      'Tên cỡ bánh': item.name,
+      'Giá (VNĐ)': item.price,
+      'Thứ tự hiển thị': item.order,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cỡ bánh sinh nhật");
+
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vibary-birthday-sizes-${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "Xuất file thành công", description: `Đã xuất ${sizes.length} cỡ bánh ra file Excel.` });
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !firestore) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast({ variant: "destructive", title: "Lỗi", description: "File Excel không có dữ liệu." });
+          return;
+        }
+
+        let count = 0;
+        for (const row of jsonData as any[]) {
+          const name = row['Tên cỡ bánh'];
+          if (!name) continue;
+
+          const id = row['ID'] || `size-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          const sizeData: BirthdayCakeSize = {
+            id,
+            name: String(name),
+            price: Number(row['Giá (VNĐ)']) || 0,
+            order: Number(row['Thứ tự hiển thị']) || 0,
+          };
+
+          const docRef = doc(firestore, 'birthday_cake_sizes', id);
+          await setDoc(docRef, sizeData, { merge: true });
+          count++;
+        }
+
+        toast({ title: "Nhập file thành công", description: `Đã cập nhật/thêm ${count} cỡ bánh từ file Excel.` });
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (error: any) {
+        console.error("Lỗi nhập file Excel:", error);
+        toast({ variant: "destructive", title: "Lỗi nhập file", description: "Định dạng file Excel không đúng hoặc dữ liệu bị lỗi." });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   return (
     <>
       <div className="flex items-center gap-4 mb-4">
@@ -85,10 +165,21 @@ export default function BirthdaySizesPage() {
           Quản lý Cỡ Bánh Sinh Nhật
         </h1>
         <div className="hidden items-center gap-2 md:ml-auto md:flex">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <File className="h-4 w-4 mr-2" />
-            Xuất file
+            Xuất file Excel
           </Button>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" />
+            Nhập file Excel
+          </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            accept=".xlsx, .xls" 
+            className="hidden" 
+          />
           <Button size="sm" onClick={handleAdd}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Thêm cỡ bánh
