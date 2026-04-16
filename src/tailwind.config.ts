@@ -95,6 +95,10 @@ export default {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-50%)' },
         },
+        'marquee-reverse': {
+          from: { transform: 'translateX(-50%)' },
+          to: { transform: 'translateX(0)' },
+        },
         shimmer: {
           '0%, 100%': { 'background-position': '-200% center' },
           '50%': { 'background-position': '200% center' },
@@ -105,6 +109,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         marquee: 'marquee 80s linear infinite',
         'marquee-fast': 'marquee 25s linear infinite',
+        'marquee-reverse': 'marquee-reverse 180s linear infinite',
         shimmer: 'shimmer 8s ease-in-out infinite',
       },
     },

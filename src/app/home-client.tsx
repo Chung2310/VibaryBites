@@ -183,6 +183,11 @@ MarqueeProductCard.displayName = 'MarqueeProductCard';
 function FeaturedProducts({ products: featuredDisplayProducts }: { products: Product[] }) {
     if (!featuredDisplayProducts || featuredDisplayProducts.length === 0) return null;
 
+    // Chỉ hiển thị bánh sinh nhật theo yêu cầu của người dùng
+    const birthdayCakes = featuredDisplayProducts.filter(p => p.categorySlug === 'banh-sinh-nhat');
+
+    if (birthdayCakes.length === 0) return null;
+
     return (
         <section className="overflow-x-hidden bg-white py-16 sm:py-24">
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -204,10 +209,10 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
             </div>
             <div className="w-full overflow-hidden pointer-events-none">
                 <div className="flex w-max animate-marquee-reverse !animation-play-state-running">
-                    {featuredDisplayProducts.map((product) => (
+                    {birthdayCakes.map((product) => (
                         <MarqueeProductCard key={`${product.id}-marquee-1`} product={product} />
                     ))}
-                    {featuredDisplayProducts.map((product) => (
+                    {birthdayCakes.map((product) => (
                         <MarqueeProductCard key={`${product.id}-marquee-2`} product={product} />
                     ))}
                 </div>
