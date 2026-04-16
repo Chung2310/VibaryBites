@@ -2,6 +2,10 @@
 import {
   File,
   PlusCircle,
+  Upload,
+  MoreHorizontal,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,25 +47,26 @@ import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { MoreHorizontal, ExternalLink, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateSlug } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 export default function NewsPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const { toast } = useToast();
 
     const openDeleteConfirm = (article: NewsArticle) => {
         setSelectedArticle(article);
@@ -99,6 +104,99 @@ export default function NewsPage() {
         }
     };
 
+    const handleExport = () => {
+        if (!articles || articles.length === 0) {
+            toast({ variant: "destructive", title: "Lỗi", description: "Không có bài viết nào để xuất." });
+            return;
+        }
+
+        const MAX_CELL_LEN = 32760;
+        const t = (val: any) => {
+            const str = String(val ?? '');
+            return str.length > MAX_CELL_LEN ? str.substring(0, MAX_CELL_LEN) : str;
+        };
+
+        const exportData = articles.map(article => ({
+            'ID': t(article.id),
+            'Tiêu đề': t(article.title),
+            'Slug': t(article.slug || generateSlug(article.title)),
+            'Danh mục': t(article.category),
+            'Tác giả': t(article.author),
+            'Tóm tắt': t(article.excerpt),
+            'Nội dung (HTML)': t(article.content),
+            'Ngày đăng': t(article.publicationDate),
+            'URL Ảnh': t(article.imageUrl),
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Danh sách Bài viết");
+
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vibary-news-${new Date().toISOString().split('T')[0]}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        toast({ title: "Xuất file thành công", description: `Đã xuất ${articles.length} bài viết ra file Excel.` });
+    };
+
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !firestore) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    toast({ variant: "destructive", title: "Lỗi", description: "File Excel không có dữ liệu." });
+                    return;
+                }
+
+                let count = 0;
+                for (const row of jsonData as any[]) {
+                    const title = row['Tiêu đề'];
+                    if (!title) continue;
+                    
+                    const id = row['ID'] || `news-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+                    
+                    const articleData: NewsArticle = {
+                        id,
+                        title: String(title),
+                        slug: String(row['Slug'] || generateSlug(title)),
+                        category: String(row['Danh mục'] || 'Chuyện của Tiệm'),
+                        author: String(row['Tác giả'] || 'Vibary Team'),
+                        excerpt: String(row['Tóm tắt'] || ''),
+                        content: String(row['Nội dung (HTML)'] || ''),
+                        publicationDate: String(row['Ngày đăng'] || new Date().toISOString()),
+                        imageUrl: String(row['URL Ảnh'] || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image'),
+                    };
+                    
+                    const docRef = doc(firestore, 'news_articles', id);
+                    await setDoc(docRef, articleData, { merge: true });
+                    count++;
+                }
+
+                toast({ title: "Nhập file thành công", description: `Đã cập nhật/thêm ${count} bài viết từ file Excel.` });
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            } catch (error: any) {
+                console.error("Lỗi nhập file Excel:", error);
+                toast({ variant: "destructive", title: "Lỗi nhập file", description: "Định dạng file Excel không đúng hoặc dữ liệu bị lỗi. Vui lòng kiểm tra lại." });
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     return (
         <>
           <div className="flex items-center mb-4 gap-4">
@@ -106,12 +204,25 @@ export default function NewsPage() {
               Quản lý Tin tức & Blog
             </h1>
             <div className="hidden items-center gap-2 md:ml-auto md:flex">
-              <Button size="sm" variant="outline" className="h-8 gap-1">
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                 <File className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Xuất File
+                  Xuất File Excel
                 </span>
               </Button>
+              <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Nhập File Excel
+                </span>
+              </Button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImport} 
+                accept=".xlsx, .xls" 
+                className="hidden" 
+              />
               <Button size="sm" className="h-8 gap-1" onClick={() => router.push('/admin/news/new')}>
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
