@@ -123,14 +123,12 @@ export default function ProductsPage() {
             return;
         }
         
-        // Excel has a hard limit of 32767 characters per cell.
         const MAX_CELL_LEN = 32760; 
         const t = (val: any) => {
             const str = String(val ?? '');
             return str.length > MAX_CELL_LEN ? str.substring(0, MAX_CELL_LEN) : str;
         };
 
-        // Map products to flat rows for Excel with human-readable headers
         const exportData = filteredProducts.map(p => {
             const category = categories?.find(c => c.slug === p.categorySlug);
             return {
@@ -156,7 +154,6 @@ export default function ProductsPage() {
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         
-        // Set column widths
         const wscols = [
             {wch: 15}, {wch: 30}, {wch: 20}, {wch: 25}, {wch: 40}, 
             {wch: 10}, {wch: 10}, {wch: 20}, {wch: 50}, {wch: 50},
@@ -167,7 +164,6 @@ export default function ProductsPage() {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Danh sách Sản phẩm");
         
-        // Generate buffer and trigger download
         const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         
@@ -206,14 +202,12 @@ export default function ProductsPage() {
                     
                     const id = row['ID'] || `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
                     
-                    // Parse nested structures
                     const sizesStr = String(row['Các size bánh (Tên | Giá)'] || '');
                     const sizes = sizesStr.split('\n').filter(l => l.includes('|')).map(line => {
                         const [n, p] = line.split('|');
                         return { name: n.trim(), price: Number(p.trim()) };
                     });
 
-                    // Resolve category slug from title or slug provided in Excel
                     let categoryVal = String(row['Danh mục'] || row['Danh mục (Slug)'] || 'banh-sinh-nhat');
                     const matchedCategory = categories?.find(c => 
                         c.title.toLowerCase() === categoryVal.toLowerCase() || 
@@ -221,7 +215,7 @@ export default function ProductsPage() {
                     );
                     const categorySlug = matchedCategory ? matchedCategory.slug : 'banh-sinh-nhat';
 
-                    const productData: Product = {
+                    const productData: any = {
                         id,
                         name: String(name),
                         subtitle: String(row['Tên phụ'] || ''),
@@ -240,8 +234,13 @@ export default function ProductsPage() {
                         },
                         flavorProfile: String(row['Cảm giác vị (Mỗi dòng 1 tag)'] || '').split('\n').map(s => s.trim()).filter(Boolean),
                         structure: String(row['Cấu trúc lớp (Từ trên xuống)'] || '').split('\n').map(s => s.trim()).filter(Boolean),
-                        sizes: sizes.length > 0 ? sizes : undefined
                     };
+                    
+                    if (sizes.length > 0) {
+                        productData.sizes = sizes;
+                    } else {
+                        productData.sizes = []; // Tránh undefined làm Firestore báo lỗi
+                    }
                     
                     const docRef = doc(firestore, 'cakes', id);
                     await setDoc(docRef, productData, { merge: true });
