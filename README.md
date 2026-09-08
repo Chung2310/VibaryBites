@@ -4,9 +4,10 @@ Cửa hàng Next.js 15 và trang quản trị sử dụng MongoDB. Đăng nhập
 
 ## Cấu hình và chạy
 
-Cài Node.js 20.19+ và chạy `npm install`. Cấu hình `.env` (hoặc `.env.local`, được ưu tiên nếu cùng tên biến):
+Cài Node.js 20.19+ và chạy `npm install`. Cấu hình `.env`. Launcher đọc `APP_ENV` và `PORT` từ file này; biến môi trường của process được ưu tiên:
 
 ```dotenv
+APP_ENV=development
 PORT=3009
 MONGODB_URI="mongodb://127.0.0.1:27017/luxcare"
 MONGODB_USER=
@@ -22,7 +23,7 @@ ADMIN_NAME=Quản trị viên
 ```sh
 npm run db:setup
 npm run admin:init
-npm run dev
+npm run serve
 ```
 
 Mở `http://localhost:3009`, đăng nhập tại `/admin/login` bằng tài khoản trong `.env`. Nếu chưa chạy `admin:init`, lần đăng nhập đầu sẽ khởi tạo admin khi database chưa có quản trị viên. Nếu thiếu thông tin cấu hình, hệ thống không tạo tài khoản mặc định. Khi đã có admin, thay đổi `.env` **không đổi tên đăng nhập/mật khẩu tài khoản hiện có**.
@@ -32,6 +33,15 @@ Mật khẩu được băm bằng scrypt với salt riêng. Session có hạn 12
 Khi triển khai qua domain/proxy, đặt `APP_ORIGIN=https://your-domain` đúng origin công khai; API ghi yêu cầu Origin khớp để chống CSRF. Local mặc định dùng origin của request. Cloudinary dùng `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` nếu tải ảnh.
 
 Đặt/hủy đơn sử dụng MongoDB transaction, cần Atlas hoặc replica set. MongoDB standalone chạy được catalog và đăng nhập nhưng chưa hỗ trợ đặt/hủy đơn.
+
+## Chọn môi trường chạy
+
+- `APP_ENV=development`: `npm run serve` chạy dev với Turbopack, tự cập nhật khi sửa mã.
+- `APP_ENV=production`: chạy `npm run build` trước, sau đó `npm run serve` để kiểm tra bản production.
+- `npm run dev` luôn chọn development; `npm start` luôn chọn production, bất kể giá trị APP_ENV hợp lệ trong cấu hình.
+- Không cần đặt NODE_ENV trong .env; launcher đặt đúng giá trị theo chế độ đã chọn. APP_ENV không tự đổi database hay thông tin kết nối.
+- Thay đổi .env cần dừng server cũ và chạy lại. Production cần build lại khi mã nguồn thay đổi. Docker vẫn chạy production qua entrypoint riêng.
+- Chỉ chạy một server dev trên cùng thư mục để tránh dùng chung .next. Dùng `npm run serve -- --port 3010` để ghi đè cổng.
 
 ## API
 
@@ -86,7 +96,7 @@ Danh mục sản phẩm cập nhật URL bằng History API, không gọi lại 
 
 Cấu hình tham khảo dự án Luxcare: GitHub Actions → GHCR → VPS qua SSH, nhánh `develop` và `production`. Image dùng Node.js 22 và [Next.js standalone](https://nextjs.org/docs/app/getting-started/deploying), chạy bằng user không phải root. `.env` và dữ liệu nhập cũ không được đưa vào image.
 
-`PORT` trong `.env` điều khiển cả ứng dụng và ánh xạ cổng Docker, mặc định `3009` nếu thiếu/trống. Biến môi trường của process được ưu tiên; local còn hỗ trợ `.env.local` và `npm start -- --port 3010`. Compose dùng [cú pháp mặc định `${PORT:-3009}`](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/).
+`PORT` trong `.env` điều khiển cả ứng dụng và ánh xạ cổng Docker, mặc định `3009` nếu thiếu/trống. Biến môi trường của process được ưu tiên; launcher đọc `.env` và hỗ trợ `npm run serve -- --port 3010`. Compose dùng [cú pháp mặc định `${PORT:-3009}`](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/).
 
 Chạy Docker trên máy có Docker Engine và Compose v2:
 

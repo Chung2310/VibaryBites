@@ -1,7 +1,8 @@
 ﻿'use client';
 import { usePathname } from 'next/navigation';
-import { Header } from './header';
-import { Footer } from './footer';
+import dynamic from 'next/dynamic';
+const Header = dynamic(() => import('./header').then(module => module.Header), { loading: () => <div className="h-20 border-b" /> });
+const Footer = dynamic(() => import('./footer').then(module => module.Footer));
 import { AppProvider } from '@/hooks/use-app-store';
 import { Toaster } from '@/components/ui/toaster';
 export function SiteShell({ children }: { children: React.ReactNode }) {

@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/select";
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { RichTextEditor } from './rich-text-editor';
+import dynamic from 'next/dynamic';
+const RichTextEditor = dynamic(() => import('./rich-text-editor').then(module => module.RichTextEditor), { ssr: false, loading: () => <div role="status" className="min-h-64 rounded-md border p-4 text-sm text-muted-foreground">Đang tải trình soạn thảo…</div> });
 import { ImageUploader } from '@/components/image-uploader';
 
 const formSchema = z.object({

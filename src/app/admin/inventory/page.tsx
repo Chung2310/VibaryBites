@@ -27,7 +27,8 @@ import { useState } from 'react';
 import type { Ingredient } from '@/lib/types';
 import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
 import { collection, deleteDoc, doc } from '@/lib/data-client';
-import { IngredientForm } from './ingredient-form';
+import dynamic from 'next/dynamic';
+const IngredientForm = dynamic(() => import('./ingredient-form').then(module => module.IngredientForm), { loading: () => <p role="status" className="p-4 text-sm text-muted-foreground">Đang tải biểu mẫu…</p> });
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -154,11 +155,11 @@ export default function InventoryPage() {
         </CardFooter>
       </Card>
       
-      <IngredientForm 
+      {isFormOpen && <IngredientForm
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
         ingredient={selectedIngredient}
-      />
+      />}
 
        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>

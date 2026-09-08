@@ -1,5 +1,6 @@
 ﻿'use client';
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
+import { prefetchAdminData } from '@/lib/admin-prefetch';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -28,14 +29,23 @@ const navGroups = [
   ] },
 ];
 const isActive = (pathname: string, href: string) => pathname === href || (href !== '/admin' && pathname.startsWith(href + '/'));
+function NavigationPending() {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 role="status" aria-label="Đang chuyển trang" className="ml-auto h-4 w-4 shrink-0 animate-spin" /> : null;
+}
 function Navigation({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const warmRoute = (href: string) => {
+    router.prefetch(href);
+    prefetchAdminData(href);
+  };
   return <nav aria-label="Điều hướng quản trị" className="space-y-6 px-3 py-5">
     {navGroups.map(group => <div key={group.label}>
       {!collapsed && <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>}
-      <div className="space-y-1">{group.links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={onNavigate} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} aria-current={isActive(pathname, href) ? 'page' : undefined}
+      <div className="space-y-1">{group.links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} prefetch={true} onMouseEnter={() => warmRoute(href)} onFocus={() => warmRoute(href)} onTouchStart={() => warmRoute(href)} onClick={onNavigate} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined} aria-current={isActive(pathname, href) ? 'page' : undefined}
         className={cn('flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', isActive(pathname, href) ? 'bg-primary/50 font-semibold text-primary-foreground' : 'text-muted-foreground', collapsed && 'justify-center px-0')}
-      ><Icon className="h-[18px] w-[18px] shrink-0" />{!collapsed && label}</Link>)}</div>
+      ><Icon className="h-[18px] w-[18px] shrink-0" />{!collapsed && label}<NavigationPending /></Link>)}</div>
     </div>)}
   </nav>;
 }

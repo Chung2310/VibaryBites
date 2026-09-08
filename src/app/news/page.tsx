@@ -3,7 +3,7 @@ import { getNewsArticles } from '@/lib/server-data';
 export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/intent-link";
 import type { NewsArticle } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateSlug } from '@/lib/utils';

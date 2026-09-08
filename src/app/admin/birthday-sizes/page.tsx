@@ -26,7 +26,8 @@ import { useState, useRef } from 'react';
 import type { BirthdayCakeSize } from '@/lib/types';
 import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
 import { collection, deleteDoc, doc, query, orderBy, setDoc } from '@/lib/data-client';
-import { SizeForm } from './size-form';
+import dynamic from 'next/dynamic';
+const SizeForm = dynamic(() => import('./size-form').then(module => module.SizeForm), { loading: () => <p role="status" className="p-4 text-sm text-muted-foreground">Đang tải biểu mẫu…</p> });
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -236,11 +237,11 @@ export default function BirthdaySizesPage() {
         </CardFooter>
       </Card>
       
-      <SizeForm 
+      {isFormOpen && <SizeForm
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
         size={selectedSize}
-      />
+      />}
 
        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>

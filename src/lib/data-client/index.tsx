@@ -24,6 +24,7 @@ export const limit = (value: number): Constraint => ({ field: 'limit', value });
 export const query = (reference: Reference, ...constraints: Constraint[]): Reference => ({ ...reference, constraints: [...reference.constraints, ...constraints] });
 const publicResources = new Set(['cakes', 'categories', 'news_articles', 'birthday_cake_sizes']);
 const dataCache = createRequestCache(15000);
+export function clearDataCache() { dataCache.invalidate(); }
 export function invalidateData(resource: string) {
   dataCache.invalidate('/api/data/' + encodeURIComponent(resource));
   window.dispatchEvent(new CustomEvent(changed, { detail: resource }));

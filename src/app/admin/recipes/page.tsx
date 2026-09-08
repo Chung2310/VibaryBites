@@ -17,7 +17,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { RecipeEditor } from './recipe-editor';
+import dynamic from 'next/dynamic';
+const RecipeEditor = dynamic(() => import('./recipe-editor').then(module => module.RecipeEditor), { loading: () => <p role="status" className="p-4">Đang tải công thức…</p> });
 import { Loader2 } from 'lucide-react';
 
 function RecipesContent() {

@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { AdminUser } from './types';
+import { clearDataCache } from '@/lib/data-client';
 type AuthState = { user: AdminUser | null; isUserLoading: boolean; userError: Error | null };
 type AuthActions = { signIn: (username: string, password: string) => Promise<void>; signOut: () => Promise<void>; refresh: () => Promise<void> };
 const Context = createContext<(AuthState & { auth: AuthActions }) | null>(null);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUserId = data.user?.id ?? null;
         if (lastUserId.current !== newUserId) {
           lastUserId.current = newUserId;
+          clearDataCache();
           window.dispatchEvent(new Event('vibary:auth-changed'));
         }
       }
@@ -28,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setState(previous => ({ ...previous, isUserLoading: false, userError: error as Error }));
         if (lastUserId.current !== null) {
           lastUserId.current = null;
+          clearDataCache();
           window.dispatchEvent(new Event('vibary:auth-changed'));
         }
       }

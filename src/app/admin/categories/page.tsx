@@ -26,7 +26,8 @@ import { useState, useRef } from 'react';
 import type { ProductCategory } from '@/lib/types';
 import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
 import { collection, deleteDoc, doc, setDoc } from '@/lib/data-client';
-import { CategoryForm } from './category-form';
+import dynamic from 'next/dynamic';
+const CategoryForm = dynamic(() => import('./category-form').then(module => module.CategoryForm), { loading: () => <p role="status" className="p-4 text-sm text-muted-foreground">Đang tải biểu mẫu…</p> });
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -238,11 +239,11 @@ export default function CategoriesPage() {
         </CardFooter>
       </Card>
       
-      <CategoryForm 
+      {isFormOpen && <CategoryForm
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
         category={selectedCategory}
-      />
+      />}
 
        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={isDeleting ? () => {} : setIsDeleteConfirmOpen}>
             <AlertDialogContent>

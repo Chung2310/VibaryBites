@@ -15,7 +15,8 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { motion, useInView } from 'framer-motion';
+import { LazyMotion, m, useInView } from 'framer-motion';
+const loadMotionFeatures = () => import('@/lib/motion-features').then(module => module.default);
 
 const heroBanners = [
   {
@@ -80,14 +81,14 @@ const ScrollRevealWrapper = ({ children, delay = 0, amount = 0.2 }: { children: 
     const isInView = useInView(ref, { once: true, amount });
 
     return (
-        <motion.div
+        <m.div
             ref={ref}
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 50 }}
             transition={{ duration: 0.8, delay, ease: [0.25, 0.25, 0.25, 0.75] }}
         >
             {children}
-        </motion.div>
+        </m.div>
     );
 };
 
@@ -129,9 +130,9 @@ function Hero() {
                   data-ai-hint={banner.imageHint}
                 />
                 <div className="container relative mx-auto flex h-full max-w-7xl flex-col items-start justify-end px-4 pb-16 text-left sm:px-6 lg:px-8">
-                   <motion.div
+                   <m.div
                       key={`${banner.id}-content`}
-                      initial={{ opacity: 0, y: 30 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 1, delay: 0.2 }}
                     >
@@ -142,7 +143,7 @@ function Hero() {
                     <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-10 h-12 text-sm font-medium tracking-wider transition-transform hover:scale-105 shadow-lg">
                         <Link href={banner.buttonLink}>{banner.buttonText}</Link>
                     </Button>
-                  </motion.div>
+                  </m.div>
                 </div>
               </div>
             </CarouselItem>
@@ -233,6 +234,7 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
 
 export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps) {
   return (
+    <LazyMotion features={loadMotionFeatures} strict>
     <div className="flex flex-col min-h-screen">
       <Hero />
       <div className="sticky top-20 z-30">
@@ -259,5 +261,6 @@ export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps
         )}
       </main>
     </div>
+    </LazyMotion>
   );
 }

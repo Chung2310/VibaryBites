@@ -17,7 +17,10 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProductAttributesForm, type ProductAttributesFormValues } from './product-attributes-form';
+import type { ProductAttributesFormValues } from './product-attributes-form';
+import dynamic from 'next/dynamic';
+import { ContentLoading } from '@/components/content-loading';
+const ProductAttributesForm = dynamic(() => import('./product-attributes-form').then(module => module.ProductAttributesForm), { loading: ContentLoading });
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 

@@ -17,7 +17,9 @@
     "admin:init": "node --conditions=react-server --import tsx scripts/create-admin.ts",
     "test:auth": "node --conditions=react-server --import tsx --test tests/auth.test.ts",
     "test:navigation": "node scripts/measure-navigation.mjs",
-    "test:port": "node --test tests/port.test.mjs"
+    "test:port": "node --test tests/port.test.mjs",
+    "serve": "node scripts/run-next.mjs auto",
+    "test:environment": "node --test tests/environment.test.mjs"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",

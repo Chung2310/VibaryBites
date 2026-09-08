@@ -7,7 +7,10 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import dynamic from 'next/dynamic';
+const MobileNavigation = dynamic(() => import('./mobile-navigation').then(module => module.MobileNavigation), {
+ loading: () => <div role="status" className="fixed left-0 top-20 z-50 rounded-lg border bg-background p-6">Đang tải menu…</div>,
+});
 import { useAppStore } from "@/hooks/use-app-store";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
@@ -29,6 +32,8 @@ export function Header() {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     setIsClient(true);
@@ -117,43 +122,8 @@ export function Header() {
             )}
           </Link>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="md:hidden border-none bg-transparent text-black"
-                aria-label="Mở menu điều hướng"
-              >
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-               <SheetHeader className="p-6 border-b">
-                <SheetTitle className="text-left font-headline text-2xl font-bold tracking-widest">
-                    VIBARY
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-6 p-6">
-                <nav className="flex flex-col gap-4">
-                  {[...leftNavLinks, ...rightNavLinks].map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                prefetch={true}
-                      className={cn(
-                        "text-lg font-medium transition-colors hover:text-primary",
-                        isLinkActive(link.href) ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <Button variant="outline" size="icon" className="md:hidden border-none bg-transparent text-black" aria-label="Mở menu điều hướng" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu className="h-6 w-6" /></Button>
+          {mobileOpen && <MobileNavigation links={[...leftNavLinks, ...rightNavLinks]} onClose={() => setMobileOpen(false)} />}
         </div>
       </div>
     </header>
