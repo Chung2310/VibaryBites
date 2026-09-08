@@ -1,4 +1,4 @@
-﻿import 'server-only';
+import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { getDb } from './mongodb';
 import { HttpError } from './http';
@@ -14,8 +14,30 @@ export function getSessionToken(request: Request) {
 }
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
-  const expected = process.env.APP_ORIGIN || new URL(request.url).origin;
-  if (!origin || origin !== new URL(expected).origin) throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
+  if (!origin) throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
+
+  if (process.env.APP_ORIGIN) {
+    // Neu co APP_ORIGIN thi kiem tra chinh xac
+    if (origin !== new URL(process.env.APP_ORIGIN).origin) {
+      throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
+    }
+    return;
+  }
+
+  // Khong co APP_ORIGIN: server co the chay sau reverse proxy nen request.url la dia chi noi bo.
+  // Fallback: so sanh origin voi host header de chap nhan ca IP truc tiep va domain.
+  const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+  const proto = request.headers.get('x-forwarded-proto') || new URL(request.url).protocol.replace(':', '');
+  if (host) {
+    const expectedOrigin = `${proto}://${host}`;
+    if (origin === expectedOrigin) return;
+  }
+
+  // Last resort: neu origin khop voi request.url origin (dev local)
+  const requestOrigin = new URL(request.url).origin;
+  if (origin === requestOrigin) return;
+
+  throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
 }
 export function publicUser(user: AdminAccount): AdminUser {
   return { id: user._id, username: user.username, displayName: user.displayName };
