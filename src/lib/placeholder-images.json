@@ -57,13 +57,13 @@
     {
       "id": "about-banner",
       "description": "Banner image for the about page.",
-      "imageUrl": "https://placehold.co/1600x900/D4CCC5/333333?text=About+Us",
+      "imageUrl": "/images/cong-ty-co-phan-vibary.png",
       "imageHint": "pastry kitchen"
     },
     {
       "id": "about-location",
       "description": "Vibary storefront in Bac Ninh.",
-      "imageUrl": "https://placehold.co/1200x600/E0E0E0/333333?text=Our+Location",
+      "imageUrl": "/images/cong-ty-co-phan-vibary.png",
       "imageHint": "storefront shop"
     },
     {
