@@ -17,6 +17,7 @@ test('environment selection, process precedence and explicit mode overrides', ()
   };
   const output=result=>{assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout.trim());};
   let result=output(run()); assert.equal(result.args[1],'dev'); assert.equal(result.nodeEnv,'development');assert.ok(result.args.includes('--turbopack'));
+  result=output(run('auto',{NODE_ENV:'production'}));assert.equal(result.args[1],'start');assert.ok(!result.args.includes('--turbopack'));
   writeFileSync(join(dir,'.env'),'APP_ENV=production');
   result=output(run());assert.equal(result.args[1],'start');assert.equal(result.nodeEnv,'production');assert.ok(!result.args.includes('--turbopack'));
   assert.equal(output(run('auto',{APP_ENV:'development'})).args[1],'dev');

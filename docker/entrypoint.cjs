@@ -33,6 +33,8 @@ async function setupDb() {
       await client.connect();
       break;
     } catch (err) {
+      // Failed attempts must release their sockets and monitoring resources.
+      await client.close();
       console.warn(`[entrypoint] MongoDB not ready (attempt ${attempt}/10): ${err.message}`);
       if (attempt === 10) throw err;
       await new Promise(r => setTimeout(r, 3000));

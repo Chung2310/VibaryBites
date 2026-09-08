@@ -19,7 +19,8 @@
     "test:navigation": "node scripts/measure-navigation.mjs",
     "test:port": "node --test tests/port.test.mjs",
     "serve": "node scripts/run-next.mjs auto",
-    "test:environment": "node --test tests/environment.test.mjs"
+    "test:environment": "node --test tests/environment.test.mjs",
+    "test:entrypoint": "node --test tests/entrypoint.test.cjs"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
@@ -66,11 +67,11 @@
     "genkit": "^1.20.0",
     "lucide-react": "^0.475.0",
     "mongodb": "^6.21.0",
-    "next": "15.5.9",
+    "next": "15.5.25",
     "patch-package": "^8.0.0",
-    "react": "^19.2.1",
+    "react": "19.2.8",
     "react-day-picker": "^9.11.3",
-    "react-dom": "^19.2.1",
+    "react-dom": "19.2.8",
     "react-dropzone": "^14.2.3",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.1",

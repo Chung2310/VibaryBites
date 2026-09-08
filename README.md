@@ -132,3 +132,29 @@ docker compose -p vibary-bites-production --env-file .env --env-file .env.image 
 ```
 
 Nếu tài khoản admin đầu tiên được tạo bằng email ở phiên bản cũ, điền ADMIN_USERNAME rồi chạy npm run admin:init (hoặc đăng nhập lần đầu với tên mới). Hệ thống chỉ bổ sung tên đăng nhập cho initial-admin; giữ nguyên ID, mật khẩu, quyền và dữ liệu. ADMIN_EMAIL không còn được dùng để đăng nhập hay khởi tạo.
+
+## Kiểm soát tài nguyên VPS
+
+Compose giới hạn mỗi container mặc định 1 CPU, 1 GiB RAM (không dùng thêm swap), 128 task/thread và V8 old-space 512 MiB. Đây là giới hạn bảo vệ host; vượt RAM có thể khiến container bị OOM/restart. Chừa RAM cho hệ điều hành, MongoDB và các dịch vụ khác, tính riêng cả develop/production nếu cùng VPS. Điều chỉnh trong ENV_FILE/ENV_FILE_PROD:
+
+```dotenv
+APP_CPU_LIMIT=1.0
+APP_MEMORY_LIMIT=1g
+APP_NODE_OPTIONS=--max-old-space-size=512
+```
+
+V8 heap phải nhỏ hơn RAM container để còn chỗ cho Buffer, xử lý ảnh và native libraries. Giới hạn Compose chỉ áp dụng lúc chạy container; build thủ công trên VPS vẫn có thể dùng nhiều tài nguyên. Workflow build trên GitHub rồi kéo image về VPS bằng --no-build. Docker luôn ép NODE_ENV/APP_ENV=production; npm run serve dùng NODE_ENV=production khi APP_ENV không được đặt. Với npm/PM2 trên VPS, dùng npm start sau khi build và cấu hình giới hạn tại process manager/systemd.
+
+Khi tái diễn, thu thập các lệnh chỉ đọc sau ngay lúc CPU/RAM tăng (không gửi .env hoặc docker inspect đầy đủ vì có thể lộ mật khẩu):
+
+```sh
+free -h
+ps -eo pid,ppid,comm,%cpu,%mem,rss --sort=-%cpu | head -20
+docker stats --no-stream
+cd /opt/vibary-bites/production
+container_id=$(docker compose -p vibary-bites-production --env-file .env --env-file .env.image -f docker-compose.yml ps -aq vibary-bites)
+docker inspect --format 'OOM={{.State.OOMKilled}} Restarts={{.RestartCount}} Memory={{.HostConfig.Memory}} NanoCPUs={{.HostConfig.NanoCpus}}' "$container_id"
+docker logs --tail 100 "$container_id"
+```
+
+Next.js đã nâng từ 15.5.9 lên 15.5.25, React/React DOM lên 19.2.8. Bản cũ nằm trong phạm vi lỗi DoS Server Components [GHSA-8h8q-6873-q5fj](https://github.com/vercel/next.js/security/advisories/GHSA-8h8q-6873-q5fj). Chưa có log/metrics VPS để kết luận lỗ hổng này là nguyên nhân sự cố thực tế.

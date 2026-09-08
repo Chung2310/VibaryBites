@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 config({ path: '.env' });
 const [requestedMode = 'auto', ...args] = process.argv.slice(2);
 if (!['auto', 'dev', 'start'].includes(requestedMode)) throw new Error('Expected auto, dev or start');
-const appEnv = process.env.APP_ENV?.trim() || 'development';
+const appEnv = process.env.APP_ENV?.trim() || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
 if (!['development', 'production'].includes(appEnv)) {
   console.error('APP_ENV must be development or production.');
   process.exit(1);
