@@ -16,6 +16,7 @@ COPY --from=builder --chown=node:node /app/.next-production/standalone ./
 COPY --from=builder --chown=node:node /app/.next-production/static ./.next-production/static
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --chown=node:node docker/entrypoint.cjs docker/healthcheck.cjs ./docker/
+COPY --chown=node:node src/lib/backend/indexes.cjs ./docker/indexes.cjs
 USER node
 EXPOSE 3009
 HEALTHCHECK --interval=15s --timeout=8s --start-period=30s --retries=5 CMD ["node", "docker/healthcheck.cjs"]

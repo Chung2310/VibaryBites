@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { MongoClient } from 'mongodb';
 import { getMongoConfig } from '../src/lib/backend/mongodb-config';
+import { ensureUniqueStringIndex } from '../src/lib/backend/indexes.cjs';
 import { products } from '../src/lib/data';
 import { resourceSchemas } from '../src/lib/backend/schemas';
 config({ path: '.env' });
@@ -13,7 +14,7 @@ async function main() {
     for (const name of ['cakes', 'categories', 'news_articles', 'birthday_cake_sizes', 'ingredients', 'customers', 'orders']) {
       if (!(await db.listCollections({ name }).hasNext())) await db.createCollection(name);
     }
-    for (const name of ['cakes', 'categories', 'news_articles']) await db.collection(name).createIndex({ slug: 1 }, { unique: true });
+    for (const name of ['cakes', 'categories', 'news_articles']) await ensureUniqueStringIndex(db.collection(name), 'slug');
     await db.collection('cakes').createIndex({ categorySlug: 1, _id: 1 });
     await db.collection('news_articles').createIndex({ publicationDate: -1 });
     await db.collection('orders').createIndex({ orderDate: -1 });

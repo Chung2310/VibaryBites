@@ -117,3 +117,16 @@ for (const change of ['expire', 'revoke', 'demote', 'delete-account'] as const) 
   }
  });
 }
+
+test('login succeeds with a pre-existing full unique username_1 index and preserves the password', async () => {
+ const users=(await getDb()).collection<AdminAccount>('admin_users');
+ const original=await users.findOne({_id:'initial-admin'});
+ assert.ok(original);
+ await users.dropIndex('vibary_username_unique_string_v1');
+ await users.createIndex({username:1},{unique:true});
+ await assert.rejects(users.createIndex({username:1},{unique:true,partialFilterExpression:{username:{$type:'string'}}}), {code:86});
+ const response=await login(request('login',{username:original.username,password}));
+ assert.equal(response.status,200);
+ assert.equal((await users.findOne({_id:'initial-admin'}))?.passwordHash,original.passwordHash);
+ assert.ok((await users.indexes()).some(index=>index.name==='username_1' && index.unique));
+});

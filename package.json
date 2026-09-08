@@ -20,7 +20,8 @@
     "test:port": "node --test tests/port.test.mjs",
     "serve": "node scripts/run-next.mjs auto",
     "test:environment": "node --test tests/environment.test.mjs",
-    "test:entrypoint": "node --test tests/entrypoint.test.cjs"
+    "test:entrypoint": "node --test tests/entrypoint.test.cjs",
+    "test:indexes": "tsx --test tests/indexes.test.ts"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",

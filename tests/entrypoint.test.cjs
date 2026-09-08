@@ -14,12 +14,13 @@ for (const failures of [2, 10]) {
       async close() { this.closed = true; }
       db() { return {
         listCollections: () => ({ hasNext: async () => true }),
-        collection: () => ({ createIndex: async () => {} }),
+        collection: () => ({ listIndexes: () => ({ toArray: async () => [] }), createIndex: async () => {} }),
       }; }
     }
     await runInNewContext(source, {
       require: name => {
         if (name === 'mongodb') return { MongoClient };
+        if (name === './indexes.cjs') return require('../src/lib/backend/indexes.cjs');
         if (name === '../server.js') { starts++; return {}; }
         throw new Error(name);
       },

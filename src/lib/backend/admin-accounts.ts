@@ -1,13 +1,14 @@
 ﻿import 'server-only';
 import { z } from 'zod';
 import { getDb } from './mongodb';
+import { ensureUniqueStringIndex } from './indexes.cjs';
 import { hashPassword } from './password';
 import { usernameSchema } from '../auth/username';
 export type AdminAccount = { _id: string; username: string; displayName: string; passwordHash: string; role: 'admin' | 'user'; disabled: boolean; createdAt: Date };
 export async function ensureAuthIndexes() {
   const db = await getDb();
   const users = db.collection('admin_users');
-  await users.createIndex({ username: 1 }, { unique: true, partialFilterExpression: { username: { $type: 'string' } } });
+  await ensureUniqueStringIndex(users, 'username');
   const oldIndex = (await users.indexes()).find(index => index.name === 'email_1' && index.key.email === 1 && Object.keys(index.key).length === 1);
   if (oldIndex) {
     try { await users.dropIndex('email_1'); }

@@ -1,5 +1,6 @@
 'use strict';
 const { MongoClient } = require('mongodb');
+const { ensureUniqueStringIndex } = require('./indexes.cjs');
 
 const port = process.env.PORT || '3009';
 if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
@@ -55,9 +56,9 @@ async function setupDb() {
 
     // Tao indexes cho cac collection chinh (khop voi setup-db.ts)
     // admin_* indexes do ensureAuthIndexes() trong app xu ly khi dang nhap lan dau
-    await db.collection('cakes').createIndex({ slug: 1 }, { unique: true });
-    await db.collection('categories').createIndex({ slug: 1 }, { unique: true });
-    await db.collection('news_articles').createIndex({ slug: 1 }, { unique: true });
+    await ensureUniqueStringIndex(db.collection('cakes'), 'slug');
+    await ensureUniqueStringIndex(db.collection('categories'), 'slug');
+    await ensureUniqueStringIndex(db.collection('news_articles'), 'slug');
     await db.collection('cakes').createIndex({ categorySlug: 1, _id: 1 });
     await db.collection('news_articles').createIndex({ publicationDate: -1 });
     await db.collection('orders').createIndex({ orderDate: -1 });

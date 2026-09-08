@@ -28,6 +28,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:port
       - run: npm run test:environment
+      - run: npm run test:indexes
       - run: npm run test:entrypoint
       - run: npm run test:cache
       - run: npm run test:auth
