@@ -51,17 +51,15 @@ async function setupDb() {
       }
     }
 
-    // Tao indexes
-    await db.collection('cakes').createIndex({ slug: 1 }, { unique: true, sparse: true });
-    await db.collection('categories').createIndex({ slug: 1 }, { unique: true, sparse: true });
-    await db.collection('news_articles').createIndex({ slug: 1 }, { unique: true, sparse: true });
+    // Tao indexes cho cac collection chinh (khop voi setup-db.ts)
+    // admin_* indexes do ensureAuthIndexes() trong app xu ly khi dang nhap lan dau
+    await db.collection('cakes').createIndex({ slug: 1 }, { unique: true });
+    await db.collection('categories').createIndex({ slug: 1 }, { unique: true });
+    await db.collection('news_articles').createIndex({ slug: 1 }, { unique: true });
     await db.collection('cakes').createIndex({ categorySlug: 1, _id: 1 });
     await db.collection('news_articles').createIndex({ publicationDate: -1 });
     await db.collection('orders').createIndex({ orderDate: -1 });
     await db.collection('orders').createIndex({ customerId: 1 });
-    await db.collection('admin_users').createIndex({ username: 1 }, { unique: true, sparse: true });
-    await db.collection('admin_sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-    await db.collection('admin_login_attempts').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
     console.log('[entrypoint] MongoDB collections and indexes are ready.');
 
