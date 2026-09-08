@@ -24,7 +24,7 @@ const heroBanners = [
     subtitle: "Bánh Sinh Nhật",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-sinh-nhat",
-    imageUrl: "https://res.cloudinary.com/dxukxjf6w/image/upload/v1772266481/remove_s0qzsi.png",
+    imageUrl: "/images/banner/1.webp",
     description: "Bánh sinh nhật cao cấp",
     imageHint: "birthday cake"
   },
@@ -34,7 +34,7 @@ const heroBanners = [
     subtitle: "Bánh Lẻ",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-le",
-    imageUrl: "https://res.cloudinary.com/dxukxjf6w/image/upload/v1772266481/remove_3_fehqd7.png",
+    imageUrl: "/images/banner/2.webp",
     description: "Bánh lẻ thưởng thức hàng ngày",
     imageHint: "individual pastry"
   },
@@ -44,7 +44,7 @@ const heroBanners = [
     subtitle: "Bánh Nướng",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-nuong",
-    imageUrl: "https://res.cloudinary.com/dxukxjf6w/image/upload/v1772266482/remove_2_g2tk2v.png",
+    imageUrl: "/images/banner/3.webp",
     description: "Bánh nướng thơm lừng",
     imageHint: "baked pastry"
   },
@@ -54,9 +54,19 @@ const heroBanners = [
     subtitle: "Set Bánh Tea-Break",
     buttonText: "Khám Phá Ngay",
     buttonLink: "/products?category=banh-tea-break",
-    imageUrl: "https://res.cloudinary.com/dxukxjf6w/image/upload/v1772266483/remove_4_ubqovo.png",
+    imageUrl: "/images/banner/4.webp",
     description: "Set bánh teabreak cho sự kiện",
     imageHint: "teabreak assortment"
+  },
+  {
+    id: "hero-banner-5",
+    title: "TINH TẾ & SANG TRỌNG",
+    subtitle: "Bánh Entremet",
+    buttonText: "Khám Phá Ngay",
+    buttonLink: "/products",
+    imageUrl: "/images/banner/5.webp",
+    description: "Bánh entremet cao cấp",
+    imageHint: "entremet cake"
   }
 ];
 

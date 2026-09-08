@@ -111,37 +111,37 @@
     {
       "id": "faq-step-1",
       "description": "Illustration for choosing a product.",
-      "imageUrl": "https://placehold.co/300x250/F8F0E3/333333?text=Step+1",
+      "imageUrl": "/images/cachmua/1.webp",
       "imageHint": "shopping cart"
     },
     {
       "id": "faq-step-2",
       "description": "Illustration for writing a wish.",
-      "imageUrl": "https://placehold.co/300x250/E3F8F0/333333?text=Step+2",
+      "imageUrl": "/images/cachmua/2.webp",
       "imageHint": "greeting card"
     },
     {
       "id": "faq-step-3",
       "description": "Illustration for filling information.",
-      "imageUrl": "https://placehold.co/300x250/F0E3F8/333333?text=Step+3",
+      "imageUrl": "/images/cachmua/3.webp",
       "imageHint": "information form"
     },
     {
       "id": "faq-step-4",
       "description": "Illustration for payment.",
-      "imageUrl": "https://placehold.co/300x250/E3EBF8/333333?text=Step+4",
+      "imageUrl": "/images/cachmua/4.webp",
       "imageHint": "payment methods"
     },
     {
       "id": "faq-step-5",
       "description": "Illustration for confirmation.",
-      "imageUrl": "https://placehold.co/300x250/D4CCC5/333333?text=Step+5",
+      "imageUrl": "/images/cachmua/5.webp",
       "imageHint": "phone confirmation"
     },
     {
       "id": "faq-step-6",
       "description": "Illustration for delivery.",
-      "imageUrl": "https://placehold.co/300x250/F4DDDD/333333?text=Step+6",
+      "imageUrl": "/images/cachmua/6.webp",
       "imageHint": "delivery person"
     }
   ]
