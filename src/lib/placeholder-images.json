@@ -3,55 +3,55 @@
     {
       "id": "collection-special-occasion",
       "description": "A beautiful cake for a special occasion.",
-      "imageUrl": "https://placehold.co/800x600/EDE0D4/333333?text=Special+Occasion",
+      "imageUrl": "/images/product/BeinBlossom2.avif",
       "imageHint": "celebration cake"
     },
     {
       "id": "collection-heart-shaped",
       "description": "A heart-shaped cake, perfect for romantic events.",
-      "imageUrl": "https://placehold.co/800x600/F4DDDD/333333?text=Heart+Cake",
+      "imageUrl": "/images/product/BelovedDarling2.avif",
       "imageHint": "heart cake"
     },
     {
       "id": "collection-half",
       "description": "A half entremet for smaller gatherings.",
-      "imageUrl": "https://placehold.co/800x600/D4E2F0/333333?text=Small+Cake",
+      "imageUrl": "/images/product/ALittleGrace2.avif",
       "imageHint": "small cake"
     },
     {
       "id": "collection-baby",
       "description": "A small, cute cake from the baby collection.",
-      "imageUrl": "https://placehold.co/800x600/D4F0E2/333333?text=Baby+Cake",
+      "imageUrl": "/images/product/anhbia.jpg",
       "imageHint": "cute cake"
     },
     {
       "id": "blog-1",
       "description": "Image for founder story article.",
-      "imageUrl": "https://placehold.co/800x600/F4DDDD/333333?text=Blog+Post",
+      "imageUrl": "/images/product/SecretGarden2.avif",
       "imageHint": "pink entremet"
     },
     {
       "id": "blog-2",
       "description": "Image for behind the scenes article.",
-      "imageUrl": "https://placehold.co/800x600/F8EFD4/333333?text=Blog+Post",
+      "imageUrl": "/images/product/OneSunnyDay2.avif",
       "imageHint": "yellow entremet"
     },
     {
       "id": "blog-3",
       "description": "Image for shopping guide article.",
-      "imageUrl": "https://placehold.co/800x600/E3F8E9/333333?text=Blog+Post",
+      "imageUrl": "/images/product/BeinBlossom2.avif",
       "imageHint": "white entremet"
     },
     {
       "id": "blog-4",
       "description": "An elegant entremet cake.",
-      "imageUrl": "https://placehold.co/800x600/E0E0E0/333333?text=Blog+Post",
+      "imageUrl": "/images/product/BelovedDarling2.avif",
       "imageHint": "entremet cake"
     },
     {
       "id": "quiz-banner",
       "description": "Banner image for the flavor quiz section.",
-      "imageUrl": "https://placehold.co/1200x800/F0E3F8/333333?text=Quiz",
+      "imageUrl": "/images/cong-ty-co-phan-vibary.png",
       "imageHint": "cake slice"
     },
     {
@@ -75,7 +75,7 @@
     {
       "id": "category-salty-cake",
       "description": "A variety of salty cakes.",
-      "imageUrl": "https://placehold.co/600x800/D4E2F0/333333?text=Salty+Pastry",
+      "imageUrl": "/images/product/anhbia.jpg",
       "imageHint": "salty pastry"
     },
     {
@@ -99,13 +99,13 @@
     {
       "id": "category-other-food",
       "description": "Other types of food.",
-      "imageUrl": "https://placehold.co/600x800/F0E3F8/333333?text=Other+Food",
+      "imageUrl": "/images/product/anhbia.jpg",
       "imageHint": "food platter"
     },
     {
       "id": "faq-illustration",
       "description": "Illustration for the how-to-buy page.",
-      "imageUrl": "https://placehold.co/600x400/FFFFFF/333333?text=How+To+Buy",
+      "imageUrl": "/images/cong-ty-co-phan-vibary.png",
       "imageHint": "line art drawing"
     },
     {
