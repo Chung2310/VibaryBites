@@ -1,4 +1,4 @@
-﻿import { test } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -20,7 +20,7 @@ test('launcher uses .env PORT, fallback and explicit CLI override',()=>{
   assert.equal(port(run()),'3009');
   writeFileSync(join(dir,'.env'),'PORT="4123"\n');assert.equal(port(run()),'4123');
   assert.equal(port(run([], {PORT:'4222'})),'4222');
-  writeFileSync(join(dir,'.env.local'),'PORT=4333\n');assert.equal(port(run()),'4333');
+  writeFileSync(join(dir,'.env.local'),'PORT=4333\n');assert.equal(port(run()),'4123');
   rmSync(join(dir,'.env.local'));
   assert.equal(port(run(['--port','4210'])),'4210');
   writeFileSync(join(dir,'.env'),'PORT=\n');assert.equal(port(run()),'3009');

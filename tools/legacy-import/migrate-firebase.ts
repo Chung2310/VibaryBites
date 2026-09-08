@@ -1,4 +1,4 @@
-﻿import { config } from 'dotenv';
+import { config } from 'dotenv';
 import { migratePublic, publicCollections } from './firestore-public';
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
@@ -9,7 +9,6 @@ import { getMongoConfig } from './mongodb-config';
 import { firebaseConfig } from './config';
 import { collectionNames, groupCollections, migrateCollection, type SourceDocument } from './firestore-migration';
 
-config({ path: '../../.env.local' });
 config({ path: '../../.env' });
 async function* pages(query: Query, batchSize: number): AsyncGenerator<QueryDocumentSnapshot> {
   let cursor: QueryDocumentSnapshot | undefined;

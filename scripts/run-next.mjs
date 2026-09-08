@@ -1,8 +1,7 @@
 import { config } from 'dotenv';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-config({ path: '.env.local' });
-config();
+config({ path: '.env' });
 const [mode, ...args] = process.argv.slice(2);
 if (!['dev', 'start'].includes(mode)) throw new Error('Expected dev or start');
 let port = process.env.PORT || '3009';

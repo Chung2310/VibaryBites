@@ -1,8 +1,7 @@
-﻿import { config } from 'dotenv';
+import { config } from 'dotenv';
 import { initializeAdminFromEnv, ensureAuthIndexes } from '../src/lib/backend/admin-accounts';
 import { getMongoClient } from '../src/lib/backend/mongodb';
-config({ path: '.env.local' });
-config();
+config({ path: '.env' });
 async function main() {
   try {
     await ensureAuthIndexes();

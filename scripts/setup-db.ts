@@ -1,10 +1,9 @@
-﻿import { config } from 'dotenv';
+import { config } from 'dotenv';
 import { MongoClient } from 'mongodb';
 import { getMongoConfig } from '../src/lib/backend/mongodb-config';
 import { products } from '../src/lib/data';
 import { resourceSchemas } from '../src/lib/backend/schemas';
-config({ path: '.env.local' });
-config();
+config({ path: '.env' });
 async function main() {
   const { uri, options } = getMongoConfig();
   const client = new MongoClient(uri, options);
