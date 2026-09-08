@@ -1,260 +1,87 @@
+﻿'use client';
 
-'use client';
-import {
-  Activity,
-  ArrowUpRight,
-  DollarSign,
-  AlertTriangle,
-  ShoppingCart
-} from 'lucide-react';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, ArrowUpRight, Wallet, AlertTriangle, ShoppingCart, Plus, RefreshCw, PackageCheck, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
-import Link from 'next/link';
-import { useCollection, useDoc, useDatabase, useDataMemo } from '@/lib/data-client';
-import { collection, collectionGroup, doc, query, orderBy } from '@/lib/data-client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo } from 'react';
+import { useCollection, useDoc, useDatabase, useDataMemo, collection, doc, query, orderBy, invalidateData } from '@/lib/data-client';
+import { shopDateKey, summarizeOrders } from '@/lib/admin-dashboard';
+import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
 
+const currency = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+const dateFormat = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
-    new: { text: 'Mới', className: 'bg-blue-100 text-blue-800' },
-    processing: { text: 'Đang làm', className: 'bg-yellow-100 text-yellow-800' },
-    shipping: { text: 'Đang giao', className: 'bg-indigo-100 text-indigo-800' },
-    completed: { text: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
-    cancelled: { text: 'Đã hủy', className: 'bg-red-100 text-red-800' },
+  new: { text: 'Mới', className: 'bg-blue-50 text-blue-800 border-blue-200' },
+  processing: { text: 'Đang làm', className: 'bg-amber-50 text-amber-800 border-amber-200' },
+  shipping: { text: 'Đang giao', className: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+  completed: { text: 'Hoàn thành', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  cancelled: { text: 'Đã hủy', className: 'bg-red-50 text-red-800 border-red-200' },
 };
-
-
 function RecentOrderRow({ order }: { order: Order }) {
-    const database = useDatabase();
-    const customerRef = useDataMemo(
-        () => (database && order.customerId ? doc(database, 'customers', order.customerId) : null),
-        [database, order.customerId]
-    );
-    const { data: customer, isLoading } = useDoc<CustomerProfile>(customerRef);
-
-    return (
-         <TableRow>
-            <TableCell>
-                <div className="flex items-center gap-2">
-                    <Avatar className="hidden h-9 w-9 sm:flex">
-                        <AvatarImage src={customer?.photoURL} alt="Avatar" />
-                        <AvatarFallback>{customer?.firstName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-1">
-                       {isLoading ? <Skeleton className="h-4 w-24" /> : <p className="text-sm font-medium leading-none">{customer ? `${customer.firstName} ${customer.lastName}` : 'Khách vãng lai'}</p> }
-                        <p className="text-xs text-muted-foreground">{order.id}</p>
-                    </div>
-                </div>
-            </TableCell>
-            <TableCell className="text-right">
-                <div className="font-medium">{new Intl.NumberFormat('vi-VN').format(order.totalAmount)}đ</div>
-                <Badge className={`text-xs mt-1 ${statusMapping[order.orderStatus].className}`} variant="outline">{statusMapping[order.orderStatus].text}</Badge>
-            </TableCell>
-        </TableRow>
-    );
+  const database = useDatabase();
+  const customerRef = useDataMemo(() => order.customerId && !order.customer ? doc(database, 'customers', order.customerId) : null, [database, order.customerId, order.customer]);
+  const { data, isLoading, error } = useDoc<CustomerProfile>(customerRef);
+  const customer = order.customer || data;
+  const status = statusMapping[order.orderStatus];
+  return <TableRow>
+    <TableCell className="py-4">
+      {isLoading ? <Skeleton className="h-4 w-28" /> : <p className="font-medium">{customer ? `${customer.firstName} ${customer.lastName}` : error ? 'Chưa tải được khách hàng' : 'Khách vãng lai'}</p>}
+      <p className="mt-1 max-w-40 truncate text-xs text-muted-foreground" title={order.id}>#{order.id}</p>
+    </TableCell>
+    <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">{Number.isFinite(Date.parse(order.orderDate)) ? dateFormat.format(new Date(order.orderDate)) : '—'}</TableCell>
+    <TableCell className="text-right">
+      <p className="whitespace-nowrap font-semibold tabular-nums">{currency.format(order.totalAmount)}</p>
+      <Badge variant="outline" className={`mt-1 whitespace-nowrap text-[11px] ${status?.className || ''}`}>{status?.text || order.orderStatus}</Badge>
+    </TableCell>
+  </TableRow>;
 }
-
+function LoadingList() {
+  return <div className="space-y-4" aria-label="Đang tải dữ liệu">{[0, 1, 2].map(key => <Skeleton key={key} className="h-12 w-full" />)}</div>;
+}
 export default function Dashboard() {
   const database = useDatabase();
-  
-  // --- Data Fetching ---
-  const ingredientsCollection = useDataMemo(() => database ? collection(database, 'ingredients') : null, [database]);
-  const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
-
-  const allOrdersQuery = useDataMemo(() => database ? query(collectionGroup(database, 'orders'), orderBy('orderDate', 'desc')) : null, [database]);
-  const { data: allOrders, isLoading: isLoadingOrders } = useCollection<Order>(allOrdersQuery);
-
-  // --- KPI Calculation ---
-  const { revenueToday, newOrdersCount, processingOrdersCount, recentOrders } = useMemo(() => {
-    if (!allOrders) {
-        return { revenueToday: 0, newOrdersCount: 0, processingOrdersCount: 0, recentOrders: [] };
-    }
-    
-    const sortedOrders = [...allOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    
-    let revenueToday = 0;
-    let newOrdersCount = 0;
-    let processingOrdersCount = 0;
-
-    for (const order of sortedOrders) {
-        if (order.orderDate.startsWith(todayStr)) {
-            revenueToday += order.totalAmount;
-        }
-        if (order.orderStatus === 'new') {
-            newOrdersCount++;
-        }
-        if (order.orderStatus === 'processing') {
-            processingOrdersCount++;
-        }
-    }
-    
-    const recentOrders = sortedOrders.slice(0, 5);
-
-    return { revenueToday, newOrdersCount, processingOrdersCount, recentOrders };
-  }, [allOrders]);
-
-  const lowStockAlerts = ingredients?.filter(item => item.stock < item.parLevel) || [];
-
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
-        <div className='flex gap-2'>
-            <Button asChild><Link href="/admin/orders">Tạo đơn hàng</Link></Button>
-            <Button asChild variant="outline"><Link href="/admin/products/new">Thêm sản phẩm</Link></Button>
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Doanh thu hôm nay
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingOrders ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{new Intl.NumberFormat('vi-VN').format(revenueToday)}đ</div>}
-            <p className="text-xs text-muted-foreground">
-              Tổng doanh thu trong ngày
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đơn hàng mới</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingOrders ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">+{newOrdersCount}</div>}
-            <p className="text-xs text-muted-foreground">
-              Số đơn hàng cần xác nhận
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang xử lý</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingOrders ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">{processingOrdersCount}</div> }
-            <p className="text-xs text-muted-foreground">
-              Số đơn hàng đang trong bếp
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cảnh báo kho</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingIngredients ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">{lowStockAlerts.length}</div>}
-            <p className="text-xs text-muted-foreground">
-              Nguyên liệu sắp hết
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
-              <CardTitle>Giao dịch gần đây</CardTitle>
-              <CardDescription>
-                Bạn có {newOrdersCount} đơn hàng mới cần xử lý.
-              </CardDescription>
-            </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/admin/orders">
-                Xem tất cả
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead className="text-right">Tổng tiền</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingOrders && Array.from({length: 5}).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell>
-                             <div className="flex items-center gap-2">
-                                <Skeleton className="h-9 w-9 rounded-full" />
-                                <div className="grid gap-1">
-                                    <Skeleton className="h-4 w-24" />
-                                    <Skeleton className="h-3 w-32" />
-                                </div>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <Skeleton className="h-5 w-24" />
-                        </TableCell>
-                    </TableRow>
-                ))}
-                {recentOrders.map(order => <RecentOrderRow key={order.id} order={order} />)}
-                {!isLoadingOrders && recentOrders.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center">Không có đơn hàng nào.</TableCell>
-                    </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Sản phẩm bán chạy</CardTitle>
-            <CardDescription>
-              Top sản phẩm bán chạy nhất trong tháng này (dữ liệu tĩnh).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             <div className="space-y-4">
-                {[
-                  { name: 'BE IN BLOSSOM', sold: 120 },
-                  { name: 'BELOVED DARLING', sold: 98 },
-                  { name: 'A LITTLE GRACE', sold: 75 },
-                  { name: 'SUMMER CALLING', sold: 60 },
-                  { name: 'A GENTLE BLEND', sold: 45 },
-                ].map((product) => (
-                  <div key={product.name} className="flex items-center">
-                    <p className="text-sm font-medium leading-none flex-1">{product.name}</p>
-                    <p className="text-sm font-medium text-muted-foreground">{product.sold} đã bán</p>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </>
-  );
+  const ingredientsRef = useDataMemo(() => collection(database, 'ingredients'), [database]);
+  const ordersRef = useDataMemo(() => query(collection(database, 'orders'), orderBy('orderDate', 'desc')), [database]);
+  const { data: ingredients, isLoading: loadingStock, error: stockError } = useCollection<Ingredient>(ingredientsRef);
+  const { data: orders, isLoading: loadingOrders, error: ordersError } = useCollection<Order>(ordersRef);
+  const [today, setToday] = useState(() => shopDateKey(new Date()));
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(shopDateKey(new Date())), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const summary = useMemo(() => summarizeOrders(orders || [], new Date(today + 'T12:00:00+07:00')), [orders, today]);
+  const lowStock = useMemo(() => (ingredients || []).filter(item => item.stock < item.parLevel).sort((a, b) => a.stock / a.parLevel - b.stock / b.parLevel), [ingredients]);
+  const metrics = [
+    { label: 'Giá trị đơn hôm nay', value: currency.format(summary.orderValueToday), hint: 'Đơn tạo hôm nay, không gồm đơn hủy', icon: Wallet, href: '/admin/orders', loading: loadingOrders, error: ordersError, color: 'bg-rose-50 text-rose-700' },
+    { label: 'Đơn hàng mới', value: summary.newOrders, hint: 'Đang chờ bạn xác nhận', icon: ShoppingCart, href: '/admin/orders', loading: loadingOrders, error: ordersError, color: 'bg-blue-50 text-blue-700' },
+    { label: 'Đang chế biến', value: summary.processingOrders, hint: 'Đơn đang được chuẩn bị trong bếp', icon: Activity, href: '/admin/orders', loading: loadingOrders, error: ordersError, color: 'bg-violet-50 text-violet-700' },
+    { label: 'Cần nhập nguyên liệu', value: lowStock.length, hint: 'Tồn kho dưới mức tối thiểu', icon: AlertTriangle, href: '/admin/inventory', loading: loadingStock, error: stockError, color: 'bg-amber-50 text-amber-700' },
+  ];
+  return <>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div><p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">VIBARY / Tổng quan</p><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Cửa hàng hôm nay</h1><p className="mt-2 text-sm text-muted-foreground">Theo dõi đơn hàng và những việc cần xử lý.</p></div>
+      <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link href="/admin/orders"><ShoppingCart className="mr-2 h-4 w-4" />Quản lý đơn</Link></Button><Button asChild><Link href="/admin/products/new"><Plus className="mr-2 h-4 w-4" />Thêm sản phẩm</Link></Button></div>
+    </div>
+    {(ordersError || stockError) && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>Không thể tải {ordersError && stockError ? 'đơn hàng và kho' : ordersError ? 'đơn hàng' : 'kho nguyên liệu'}. Số liệu có thể chưa đầy đủ.</p><Button variant="outline" size="sm" onClick={() => { if (ordersError) invalidateData('orders'); if (stockError) invalidateData('ingredients'); }}><RefreshCw className="mr-2 h-4 w-4" />Thử lại</Button></div>}
+    <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      {metrics.map(({ label, value, hint, icon: Icon, href, loading, error, color }) => <Link key={label} href={href} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Card className="h-full rounded-xl shadow-sm transition-shadow hover:shadow-md"><CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle><span className={`rounded-lg p-2 ${color}`}><Icon className="h-5 w-5" /></span></CardHeader><CardContent>{loading ? <Skeleton className="h-9 w-32" /> : <p className="break-words text-2xl font-semibold tracking-tight tabular-nums">{error ? '—' : value}</p>}<p className="mt-2 text-xs leading-relaxed text-muted-foreground">{hint}</p></CardContent></Card></Link>)}
+    </div>
+    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <Card className="min-w-0 rounded-xl shadow-sm">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0"><div><CardTitle className="text-lg">Đơn hàng gần đây</CardTitle><CardDescription className="mt-1">5 đơn mới nhất của cửa hàng</CardDescription></div><Button asChild variant="ghost" size="sm"><Link href="/admin/orders">Xem tất cả<ArrowUpRight className="ml-1 h-4 w-4" /></Link></Button></CardHeader>
+        <CardContent>{loadingOrders ? <LoadingList /> : ordersError ? <p className="py-12 text-center text-sm text-muted-foreground">Chưa tải được danh sách đơn hàng.</p> : <Table><TableHeader><TableRow><TableHead>Khách hàng / Mã đơn</TableHead><TableHead className="hidden xl:table-cell">Ngày đặt</TableHead><TableHead className="text-right">Giá trị / Trạng thái</TableHead></TableRow></TableHeader><TableBody>{summary.recentOrders.map(order => <RecentOrderRow key={order.id} order={order} />)}{summary.recentOrders.length === 0 && <TableRow><TableCell colSpan={3} className="h-40 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-7 w-7" />Chưa có đơn hàng nào.</TableCell></TableRow>}</TableBody></Table>}</CardContent>
+      </Card>
+      <Card className="min-w-0 rounded-xl shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><AlertTriangle className="h-5 w-5 text-amber-600" />Nguyên liệu cần nhập</CardTitle><CardDescription>Ưu tiên nguyên liệu có tỷ lệ tồn thấp nhất.</CardDescription></CardHeader><CardContent>
+        {loadingStock ? <LoadingList /> : stockError ? <p className="py-8 text-center text-sm text-muted-foreground">Chưa tải được tồn kho.</p> : lowStock.length === 0 ? <div className="py-8 text-center text-sm text-muted-foreground"><PackageCheck className="mx-auto mb-3 h-8 w-8 text-emerald-600" />{ingredients?.length ? 'Tồn kho đang ở mức an toàn.' : 'Chưa có nguyên liệu trong kho.'}</div> : <ul className="divide-y">{lowStock.slice(0, 5).map(item => <li key={item.id} className="flex items-center justify-between gap-3 py-3 first:pt-0"><div className="min-w-0"><p className="break-words text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">Mức tối thiểu: {item.parLevel} {item.unit}</p></div><Badge variant="outline" className="shrink-0 border-amber-200 bg-amber-50 text-amber-800">{item.stock} {item.unit}</Badge></li>)}</ul>}
+        <Button asChild variant="outline" className="mt-4 w-full"><Link href="/admin/inventory">Quản lý kho<ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>
+      </CardContent></Card>
+    </div>
+    <Card className="rounded-xl shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Trophy className="h-5 w-5 text-rose-600" />Sản phẩm bán chạy tháng này</CardTitle><CardDescription>Theo số lượng trong đơn hoàn thành, đặt trong tháng hiện tại (giờ Việt Nam).</CardDescription></CardHeader><CardContent>
+      {loadingOrders ? <LoadingList /> : ordersError ? <p className="py-6 text-sm text-muted-foreground">Chưa tải được thống kê sản phẩm.</p> : summary.topProducts.length === 0 ? <p className="py-6 text-sm text-muted-foreground">Chưa có sản phẩm từ đơn hoàn thành trong tháng này.</p> : <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{summary.topProducts.map((product, index) => <li key={product.id} className="flex items-center gap-3 rounded-xl border bg-muted/20 p-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/40 text-sm font-semibold">{index + 1}</span><div className="min-w-0"><p className="break-words text-sm font-medium">{product.name}</p><p className="mt-1 text-xs text-muted-foreground">{product.sold} sản phẩm đã bán</p></div></li>)}</ol>}
+    </CardContent></Card>
+  </>;
 }
