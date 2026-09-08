@@ -6,6 +6,7 @@ import { UploadCloud, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { apiFetch } from '@/lib/data-client';
 import { cn } from '@/lib/utils';
 
 interface ImageUploaderProps {
@@ -27,17 +28,10 @@ export function ImageUploader({ value, onChange, disabled }: ImageUploaderProps)
         formData.append('file', file);
 
         try {
-          const response = await fetch('/api/upload-cloudinary', {
+          const { imageUrl } = await apiFetch('/api/upload-cloudinary', {
             method: 'POST',
             body: formData,
           });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Upload failed');
-          }
-
-          const { imageUrl } = await response.json();
           onChange(imageUrl);
           toast({ title: "Thành công", description: "Ảnh đã được tải lên." });
 

@@ -54,24 +54,23 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, deleteDoc, doc, setDoc } from '@/lib/data-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn, generateSlug } from '@/lib/utils';
-import * as XLSX from 'xlsx';
 
 export default function ProductsPage() {
-    const firestore = useFirestore();
+    const database = useDatabase();
     const router = useRouter();
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+    const productsCollection = useDataMemo(() => database ? collection(database, 'cakes') : null, [database]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
-    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+    const categoriesCollection = useDataMemo(() => database ? collection(database, 'categories') : null, [database]);
     const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
     const [activeCategorySlug, setActiveCategorySlug] = useState('all');
 
@@ -91,10 +90,10 @@ export default function ProductsPage() {
     }
     
     const handleDelete = async () => {
-        if (!selectedProduct || !firestore) return;
+        if (!selectedProduct || !database) return;
 
         setIsDeleting(true);
-        const docRef = doc(firestore, 'cakes', selectedProduct.id);
+        const docRef = doc(database, 'cakes', selectedProduct.id);
         
         try {
             await deleteDoc(docRef);
@@ -105,11 +104,7 @@ export default function ProductsPage() {
                 variant: 'destructive',
             });
         } catch (error) {
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
@@ -117,7 +112,8 @@ export default function ProductsPage() {
         }
     }
 
-    const handleExport = () => {
+    const handleExport = async () => {
+        const XLSX = await import('xlsx');
         if (!filteredProducts || filteredProducts.length === 0) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không có sản phẩm nào để xuất." });
             return;
@@ -179,11 +175,12 @@ export default function ProductsPage() {
 
     const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !firestore) return;
+        if (!file || !database) return;
 
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
+        const XLSX = await import('xlsx');
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
@@ -242,7 +239,7 @@ export default function ProductsPage() {
                         productData.sizes = []; // Tránh undefined làm Firestore báo lỗi
                     }
                     
-                    const docRef = doc(firestore, 'cakes', id);
+                    const docRef = doc(database, 'cakes', id);
                     await setDoc(docRef, productData, { merge: true });
                     count++;
                 }

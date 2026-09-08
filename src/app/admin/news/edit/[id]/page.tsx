@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { doc, setDoc } from '@/lib/data-client';
+import { useDatabase, useDoc, useDataMemo } from '@/lib/data-client';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -19,19 +19,19 @@ export default function EditNewsArticlePage() {
     const params = useParams();
     const articleId = (params.id || '') as string;
     
-    const firestore = useFirestore();
+    const database = useDatabase();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const articleDocRef = useMemoFirebase(() => {
-        if (!firestore || !articleId) return null;
-        return doc(firestore, 'news_articles', articleId);
-    }, [firestore, articleId]);
+    const articleDocRef = useDataMemo(() => {
+        if (!database || !articleId) return null;
+        return doc(database, 'news_articles', articleId);
+    }, [database, articleId]);
 
     const { data: article, isLoading } = useDoc<NewsArticle>(articleDocRef);
     
     const handleFormSubmit = async (values: NewsFormValues) => {
-        if (!firestore || !article || !articleDocRef) {
+        if (!database || !article || !articleDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy bài viết.' });
             return;
         }
@@ -57,12 +57,6 @@ export default function EditNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật bài viết:", error);
-            const permissionError = new FirestorePermissionError({
-                path: articleDocRef.path,
-                operation: 'update',
-                requestResourceData: values,
-            });
-            errorEmitter.emit('permission-error', permissionError);
 
             toast({
                 variant: 'destructive',

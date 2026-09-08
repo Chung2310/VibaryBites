@@ -1,4 +1,3 @@
-import type { Order, Customer } from './types';
 import { subDays } from 'date-fns';
 
 function createRecentDate(daysAgo: number) {

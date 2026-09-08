@@ -1,8 +1,6 @@
 
-'use client';
-
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { getNewsArticles } from '@/lib/server-data';
+export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,7 +20,7 @@ function NewsArticleCard({ article }: { article: NewsArticle }) {
   const sanitizedSlug = article.slug || generateSlug(article.title);
 
   return (
-    <Link href={`/news/${sanitizedSlug}`} key={article.id}>
+    <Link href={`/news/${sanitizedSlug}`} prefetch={false} key={article.id}>
       <Card className="h-full overflow-hidden transition-shadow hover:shadow-xl">
         {article.imageUrl && (
           <div className="aspect-[4/3] relative">
@@ -68,11 +66,8 @@ function NewsArticleCardSkeleton() {
 }
 
 
-export default function NewsPage() {
-  const firestore = useFirestore();
-  const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
-  const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
-
+export default async function NewsPage() {
+  const articles = await getNewsArticles({ orderBy: 'publicationDate', order: 'desc' });
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-12 text-center">
@@ -83,7 +78,6 @@ export default function NewsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading && Array.from({length: 3}).map((_, i) => <NewsArticleCardSkeleton key={i} />)}
         {articles?.map((article) => (
           <NewsArticleCard key={article.id} article={article} />
         ))}

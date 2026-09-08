@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { usernameSchema } from '@/lib/auth/username';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+
+import { useAuth } from '@/lib/auth/provider';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +26,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Email không hợp lệ.' }),
+  username: usernameSchema,
   password: z.string().min(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự.' }),
 });
 
@@ -39,7 +40,7 @@ export default function AdminLoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -54,15 +55,10 @@ export default function AdminLoginPage() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      await auth.signIn(data.username, data.password);
       // On successful sign-in, the admin layout's useEffect will handle redirection.
     } catch (error: any) {
-        let description = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            description = 'Email hoặc mật khẩu không chính xác.';
-        } else if (error.code === 'auth/too-many-requests') {
-            description = 'Tài khoản đã bị tạm khóa do quá nhiều lần thử. Vui lòng thử lại sau.'
-        }
+        const description = error.message || "Không thể đăng nhập.";
        toast({
         variant: 'destructive',
         title: 'Đăng nhập thất bại',
@@ -85,22 +81,22 @@ export default function AdminLoginPage() {
           </Link>
           <CardTitle className="text-2xl">Đăng Nhập Quản Trị</CardTitle>
           <CardDescription>
-            Vui lòng nhập email và mật khẩu của bạn để truy cập.
+            Vui lòng nhập tên đăng nhập và mật khẩu của bạn để truy cập.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="on">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Tên đăng nhập</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
-                        placeholder="admin@vibary.com"
+                        type="text" autoComplete="username" autoCapitalize="none"
+                        placeholder="admin"
                         {...field}
                       />
                     </FormControl>
@@ -115,7 +111,7 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Mật khẩu</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,60 +1,31 @@
-'use server';
-
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, collection, query, where, limit, orderBy, getDocs, Firestore } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
+﻿import 'server-only';
+import { getDb, serialize, type StoreDocument } from '@/lib/backend/mongodb';
 import type { Product, NewsArticle, ProductCategory } from '@/lib/types';
-
-let app: FirebaseApp;
-let db: Firestore;
-
-if (!getApps().length) {  
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
-db = getFirestore(app);
-
-
 export async function getProducts(options: { categorySlug?: string; limit?: number } = {}): Promise<Product[]> {
-    const productsRef = collection(db, 'cakes');
-    
-    const constraints = [];
-    if (options.categorySlug) {
-        constraints.push(where('categorySlug', '==', options.categorySlug));
-    }
-    if (options.limit) {
-        constraints.push(limit(options.limit));
-    }
-
-    const q = query(productsRef, ...constraints);
-
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+  const db = await getDb();
+  const result = await db.collection<StoreDocument>('cakes').find(options.categorySlug ? { categorySlug: options.categorySlug } : {}).limit(options.limit ? Math.max(1, Math.min(options.limit, 200)) : 0).toArray();
+  return result.map(serialize) as Product[];
 }
-
 export async function getNewsArticles(options: { limit?: number; orderBy?: string; order?: 'asc' | 'desc' } = {}): Promise<NewsArticle[]> {
-    const articlesRef = collection(db, 'news_articles');
-
-    const constraints = [];
-    if (options.orderBy && options.order) {
-        constraints.push(orderBy(options.orderBy, options.order));
-    }
-    if (options.limit) {
-        constraints.push(limit(options.limit));
-    }
-    
-    const q = query(articlesRef, ...constraints);
-    
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NewsArticle));
+  const db = await getDb();
+  const sort = options.orderBy === 'publicationDate' ? 'publicationDate' : '_id';
+  const result = await db.collection<StoreDocument>('news_articles').find().sort({ [sort]: options.order === 'desc' ? -1 : 1 }).limit(Math.max(1, Math.min(options.limit || 200, 200))).toArray();
+  return result.map(serialize) as NewsArticle[];
+}
+export async function getCategories(): Promise<ProductCategory[]> {
+  const result = await (await getDb()).collection<StoreDocument>('categories').find().toArray();
+  return result.map(serialize) as ProductCategory[];
 }
 
-export async function getCategories(): Promise<ProductCategory[]> {
-    const categoriesRef = collection(db, 'categories');
-    const snapshot = await getDocs(categoriesRef);
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductCategory));
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const row = await (await getDb()).collection<StoreDocument>('cakes').findOne({ slug });
+  return row ? serialize(row) as Product : null;
+}
+export async function getBirthdayCakeSizes(): Promise<import('@/lib/types').BirthdayCakeSize[]> {
+  const rows = await (await getDb()).collection<StoreDocument>('birthday_cake_sizes').find().sort({ order: 1, _id: 1 }).toArray();
+  return rows.map(serialize) as import('@/lib/types').BirthdayCakeSize[];
+}
+export async function getArticleBySlug(slug: string): Promise<NewsArticle | null> {
+  const row = await (await getDb()).collection<StoreDocument>('news_articles').findOne({ slug });
+  return row ? serialize(row) as NewsArticle : null;
 }

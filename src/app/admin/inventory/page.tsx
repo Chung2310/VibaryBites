@@ -25,8 +25,8 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useState } from 'react';
 import type { Ingredient } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, deleteDoc, doc } from '@/lib/data-client';
 import { IngredientForm } from './ingredient-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -34,8 +34,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2 } from 'lucide-react';
 
 export default function InventoryPage() {
-  const firestore = useFirestore();
-  const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
+  const database = useDatabase();
+  const ingredientsCollection = useDataMemo(() => database ? collection(database, 'ingredients') : null, [database]);
   const { data: ingredients, isLoading } = useCollection<Ingredient>(ingredientsCollection);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -61,9 +61,9 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async () => {
-    if (!ingredientToDelete || !firestore) return;
+    if (!ingredientToDelete || !database) return;
     setIsDeleting(true);
-    const docRef = doc(firestore, 'ingredients', ingredientToDelete.id);
+    const docRef = doc(database, 'ingredients', ingredientToDelete.id);
     
     try {
         await deleteDoc(docRef);
@@ -71,12 +71,8 @@ export default function InventoryPage() {
         setIsDeleteConfirmOpen(false);
         setIngredientToDelete(null);
     } catch (error) {
-        const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    } finally {
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
+        } finally {
         setIsDeleting(false);
     }
   };

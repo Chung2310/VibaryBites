@@ -2,9 +2,11 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: process.env.DOCKER_BUILD === '1' ? 'standalone' : undefined,
+  distDir: process.env.NODE_ENV === 'development' ? '.next' : '.next-production',
+  outputFileTracingRoot: process.cwd(),
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: true,

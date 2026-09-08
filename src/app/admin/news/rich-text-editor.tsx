@@ -140,9 +140,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-          underline: false,
-      }),
+      StarterKit,
       Table.configure({
         resizable: true,
       }),

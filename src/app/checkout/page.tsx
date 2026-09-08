@@ -1,6 +1,7 @@
 
 "use client";
 
+import { invalidateData } from '@/lib/data-client';
 import { useAppStore } from "@/hooks/use-app-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +20,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
+const phoneRegex = /^0[35789][0-9]{8}$/;
 
 const checkoutSchema = z.object({
   name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự." }),
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pendingOrder = useRef<{ signature: string; key: string } | null>(null);
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
@@ -53,22 +55,18 @@ export default function CheckoutPage() {
     
     const API_URL = '/api/submit-order';
 
-    const orderId = `VBR-${Date.now().toString().slice(-6)}`;
-    const orderTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-    const productsString = cartItems
-        .map(item => `${item.name}${item.size ? ` (${item.size})` : ''} (x${item.quantity})`)
-        .join('; ');
-
-    const payload = {
-        orderId,
-        orderTime,
-        customerName: values.name,
-        phone: values.phone,
-        address: values.address || 'Không cung cấp',
-        notes: values.notes || '',
-        products: productsString,
-        totalPrice: new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ'
+    const order = {
+      customerName: values.name,
+      phone: values.phone,
+      address: values.address || '',
+      notes: values.notes || '',
+      items: cartItems.map(({ id, quantity, size }) => ({ id, quantity, ...(size ? { size } : {}) })),
     };
+    const signature = JSON.stringify(order);
+    if (pendingOrder.current?.signature !== signature) {
+      pendingOrder.current = { signature, key: crypto.randomUUID() };
+    }
+    const payload = { ...order, idempotencyKey: pendingOrder.current.key };
 
     try {
         const response = await fetch(API_URL, {
@@ -86,6 +84,7 @@ export default function CheckoutPage() {
                 title: "Đơn hàng đã được gửi!",
                 description: "Cảm ơn bạn đã mua hàng. Chúng tôi sẽ liên hệ để xác nhận sớm."
             });
+            invalidateData('cakes');
             clearCart();
             router.push('/');
         } else {

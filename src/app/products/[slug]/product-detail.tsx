@@ -1,0 +1,275 @@
+'use client';
+
+import * as React from 'react';
+
+import { faqs } from '@/lib/data';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { useAppStore } from '@/hooks/use-app-store';
+
+import { Minus, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { AnnouncementBar } from '@/components/layout/announcement-bar';
+import type { Product, ProductCategory, BirthdayCakeSize } from '@/lib/types';
+import { generateSlug } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, query, orderBy } from '@/lib/data-client';
+
+
+export default function ProductDetail({ product, initialCategories, initialSizes }: { product: Product; initialCategories: ProductCategory[]; initialSizes: BirthdayCakeSize[] }) {
+    const { addToCart, cartItems } = useAppStore();
+    const { toast } = useToast();
+
+    const database = useDatabase();
+
+
+    const categoriesCollection = useDataMemo(() => database ? collection(database, 'categories') : null, [database]);
+    const { data: productCategories } = useCollection<ProductCategory>(categoriesCollection, initialCategories);
+
+    const birthdaySizesCollection = useDataMemo(() => database ? query(collection(database, 'birthday_cake_sizes'), orderBy('order')) : null, [database]);
+    const { data: birthdayCakeSizes } = useCollection<BirthdayCakeSize>(birthdaySizesCollection, initialSizes);
+
+    const [quantity, setQuantity] = useState(1);
+    const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (!product) return;
+
+        const isBirthday = product.categorySlug === 'banh-sinh-nhat';
+
+        if (isBirthday) {
+            if (birthdayCakeSizes && birthdayCakeSizes.length > 0 && !selectedSize) {
+                 setSelectedSize(birthdayCakeSizes[0].name);
+            }
+        } else {
+            if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+                setSelectedSize(product.sizes[0].name);
+            }
+        }
+    }, [product, birthdayCakeSizes, selectedSize]);
+
+    const isBirthdayCake = product.categorySlug === 'banh-sinh-nhat';
+    const availableSizes = isBirthdayCake
+        ? birthdayCakeSizes?.map(s => ({ name: s.name, price: s.price }))
+        : (product.sizes || []);
+
+    const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+    const selectedSizeData = availableSizes?.find(s => s.name === selectedSize);
+    const priceToShow = selectedSizeData ? selectedSizeData.price : product.price;
+
+    const category = productCategories?.find(cat => cat.slug === product.categorySlug);
+
+    const handleAddToCart = () => {
+        if (isOutOfStock) return;
+
+        const existingItem = cartItems.find(
+          (i) => i.id === product.id && i.size === selectedSize
+        );
+        const quantityInCart = existingItem?.quantity || 0;
+        const newTotalQuantity = quantityInCart + quantity;
+
+        if (product.stock !== undefined && product.stock < newTotalQuantity) {
+            toast({
+                variant: "destructive",
+                title: "Số lượng tồn kho không đủ",
+                description: `Chỉ còn ${product.stock} sản phẩm trong kho.`,
+            });
+            return;
+        }
+
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: priceToShow,
+            imageUrl: product.imageUrl,
+            slug: product.slug,
+            quantity: quantity,
+            size: selectedSize,
+        });
+    };
+
+    return (
+        <>
+        <div className="sticky top-20 z-30">
+            <AnnouncementBar />
+        </div>
+        <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
+            <div className="relative h-fit">
+                 <div className="aspect-square w-full overflow-hidden rounded-lg">
+                    {product.imageUrl ? (
+                        <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={800}
+                            height={800}
+                            className="h-full w-full object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            priority
+                        />
+                    ) : (
+                        <div className="h-full w-full bg-muted flex items-center justify-center">
+                            <span className="text-muted-foreground">No Image</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="relative">
+                <div className="md:sticky md:top-24">
+                    {category && (
+                        <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.title}</p>
+                    )}
+                    <h1 className="font-headline text-6xl mt-2">{product.name}</h1>
+                    <p className="text-2xl font-medium mt-4">
+                        {priceToShow > 0
+                            ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(priceToShow)
+                            : "Giá: Liên hệ"}
+                    </p>
+
+                    {isOutOfStock ? (
+                        <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
+                    ) : (
+                        <>
+                            {availableSizes && availableSizes.length > 0 && (
+                            <div className="mt-8">
+                                <h3 className="font-bold tracking-wider text-sm uppercase">Kích thước</h3>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                {availableSizes.map((size) => (
+                                    <Button
+                                    key={size.name}
+                                    variant={selectedSize === size.name ? 'default' : 'outline'}
+                                    onClick={() => setSelectedSize(size.name)}
+                                    className="rounded-full"
+                                    >
+                                    {size.name}
+                                    </Button>
+                                ))}
+                                </div>
+                            </div>
+                            )}
+
+                            <div className="mt-8 flex items-center gap-4">
+                            <div className="flex items-center border rounded-md">
+                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Giảm số lượng">
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <Input type="text" value={quantity} readOnly className="h-11 w-11 border-0 text-center bg-transparent" inputMode="numeric" aria-label="Số lượng sản phẩm" />
+                                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setQuantity(q => q + 1)} aria-label="Tăng số lượng">
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <Button size="lg" onClick={handleAddToCart} className="flex-1 bg-black text-white hover:bg-black/80 rounded-md">
+                                {`THÊM VÀO GIỎ • ${new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                }).format(priceToShow * quantity)}`}
+                            </Button>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="mt-10 space-y-6 border-t pt-8">
+                    {product.subtitle && product.detailedDescription?.flavor && (
+                        <div>
+                            <h3 className="font-bold tracking-wider text-sm uppercase">{product.subtitle}</h3>
+                            <p className="mt-2 text-muted-foreground leading-relaxed">{product.detailedDescription.flavor}</p>
+                        </div>
+                    )}
+
+                    {product.flavorProfile && product.flavorProfile.length > 0 && (
+                        <div>
+                            <h3 className="font-bold tracking-wider text-sm uppercase">CẢM GIÁC BÁNH</h3>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {product.flavorProfile.map(tag => (
+                                    <div key={tag} className="px-4 py-1.5 rounded-full border text-sm">
+                                        {tag}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {product.structure && product.structure.length > 0 && (
+                        <div>
+                            <h3 className="font-bold tracking-wider text-sm uppercase">CẤU TRÚC VỊ BÁNH</h3>
+                            <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                                {product.structure.map((layer, index) => (
+                                    <div key={index} className="flex justify-between border-b pb-2">
+                                        <span>Lớp {String(index + 1).padStart(2, '0')}</span>
+                                        <span className="text-right text-foreground">{layer}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <div className="mt-16 border-t border-b">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x">
+                    {product.detailedDescription?.dimensions && (
+                        <div className="py-8 md:px-8">
+                        <h4 className="font-bold tracking-wider text-sm uppercase mb-4">KÍCH THƯỚC & KHẨU PHẦN</h4>
+                        <p className="text-muted-foreground text-sm">{product.detailedDescription.dimensions}</p>
+                        </div>
+                    )}
+                    {product.detailedDescription?.storage && (
+                        <div className="py-8 md:px-8">
+                        <h4 className="font-bold tracking-wider text-sm uppercase mb-4">HƯỚNG DẪN SỬ DỤNG</h4>
+                        <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                            {product.detailedDescription.storage.split('\n').filter(s => s).map((line, index) => (
+                                <li key={index}>{line}</li>
+                            ))}
+                        </ul>
+                        </div>
+                    )}
+                    {product.detailedDescription?.accessories && product.detailedDescription.accessories.length > 0 && (
+                        <div className="py-8 md:pl-8">
+                        <h4 className="font-bold tracking-wider text-sm uppercase mb-4">PHỤ KIỆN ĐÍNH KÈM</h4>
+                        <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
+                            {product.detailedDescription.accessories.map((item, index) => (
+                                <li key={index}>{item}</li>
+                            ))}
+                        </ul>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="mt-16 sm:mt-24 grid grid-cols-1 gap-12 sm:grid-cols-3">
+                <div className="sm:col-span-1">
+                    <h2 className="font-headline text-3xl">Câu hỏi thường gặp</h2>
+                    <p className="mt-4 text-muted-foreground">
+                        Một số câu hỏi thường gặp khi đặt bánh. Xem thêm tại{' '}
+                        <Link href="/faq" className="font-medium text-foreground underline hover:text-accent">
+                            Hỏi Đáp
+                        </Link>.
+                    </p>
+                </div>
+                <div className="sm:col-span-2">
+                    <Accordion type="single" collapsible className="w-full">
+                    {faqs.map((faq) => (
+                        <AccordionItem key={faq.id} value={faq.id}>
+                        <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                        <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+                </div>
+            </div>
+        </div>
+        </>
+    );
+}

@@ -2,8 +2,8 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, query, orderBy } from '@/lib/data-client';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,12 +21,12 @@ import { RecipeEditor } from './recipe-editor';
 import { Loader2 } from 'lucide-react';
 
 function RecipesContent() {
-    const firestore = useFirestore();
+    const database = useDatabase();
     const searchParams = useSearchParams();
     const initialProductId = searchParams.get('productId');
 
     // Fetch Products (Cakes)
-    const productsCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'cakes'), orderBy('name')) : null, [firestore]);
+    const productsCollection = useDataMemo(() => database ? query(collection(database, 'cakes'), orderBy('name')) : null, [database]);
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

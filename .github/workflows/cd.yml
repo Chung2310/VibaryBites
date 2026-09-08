@@ -1,0 +1,140 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [develop, production]
+  pull_request:
+    branches: [develop, production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash -n docker/deploy.sh
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:port
+      - run: npm run test:cache
+      - run: npm run test:auth
+      - run: npm run test:backend
+
+  build-image:
+    runs-on: ubuntu-latest
+    needs: ci-checks
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_ref: ${{ steps.publish.outputs.image_ref }}
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: vibary-bites:ci
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=vibary-${{ github.ref_name }}
+          cache-to: type=gha,scope=vibary-${{ github.ref_name }},mode=max
+      - name: Smoke test container with default and custom port
+        shell: bash
+        run: |
+          set -euo pipefail
+          for port in 3009 3010; do
+            args=()
+            if [ "$port" = 3010 ]; then args=(-e PORT=3010); fi
+            docker run -d --name vibary-smoke --network host \
+              -e MONGODB_URI=mongodb://127.0.0.1:27017/vibary_ci \
+              "${args[@]}" vibary-bites:ci
+            ready=false
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent "http://127.0.0.1:$port/api/health" >/dev/null; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ready" != true ]; then docker logs vibary-smoke; exit 1; fi
+            curl --fail --silent "http://127.0.0.1:$port/admin/login" >/dev/null
+            docker rm -f vibary-smoke
+          done
+      - name: Clean up smoke container
+        if: always()
+        run: docker rm -f vibary-smoke 2>/dev/null || true
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish tested image
+        id: publish
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/vibary-bites"
+          docker tag vibary-bites:ci "$image:sha-$GITHUB_SHA"
+          docker tag vibary-bites:ci "$image:$GITHUB_REF_NAME"
+          docker push "$image:sha-$GITHUB_SHA"
+          docker push "$image:$GITHUB_REF_NAME"
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image:sha-$GITHUB_SHA")
+          echo "image_ref=$digest" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: github.event_name == 'push'
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy deployment configuration
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets[github.ref_name == 'production' && 'SSH_HOST_PROD' || 'SSH_HOST'] }}
+          username: ${{ secrets[github.ref_name == 'production' && 'SSH_USER_PROD' || 'SSH_USER'] }}
+          key: ${{ secrets[github.ref_name == 'production' && 'SSH_KEY_PROD' || 'SSH_KEY'] }}
+          port: ${{ secrets[github.ref_name == 'production' && 'SSH_PORT_PROD' || 'SSH_PORT'] || '22' }}
+          source: docker-compose.yml,docker/deploy.sh
+          target: /opt/vibary-bites/${{ github.ref_name }}
+      - name: Deploy tested image and wait for healthy service
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ENV_FILE_CONTENT: ${{ secrets[github.ref_name == 'production' && 'ENV_FILE_PROD' || 'ENV_FILE'] }}
+          IMAGE_REF: ${{ needs.build-image.outputs.image_ref }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_ENV: ${{ github.ref_name }}
+        with:
+          host: ${{ secrets[github.ref_name == 'production' && 'SSH_HOST_PROD' || 'SSH_HOST'] }}
+          username: ${{ secrets[github.ref_name == 'production' && 'SSH_USER_PROD' || 'SSH_USER'] }}
+          key: ${{ secrets[github.ref_name == 'production' && 'SSH_KEY_PROD' || 'SSH_KEY'] }}
+          port: ${{ secrets[github.ref_name == 'production' && 'SSH_PORT_PROD' || 'SSH_PORT'] || '22' }}
+          envs: ENV_FILE_CONTENT,IMAGE_REF,GHCR_USER,GHCR_TOKEN,DEPLOY_ENV
+          script: bash /opt/vibary-bites/${{ github.ref_name }}/docker/deploy.sh

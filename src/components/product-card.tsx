@@ -29,8 +29,8 @@ export function ProductCard({ product, hideStockStatus = false, hideDescription 
             TẠM<br/>HẾT<br/>HÀNG
         </div>
       )}
-      <Link 
-        href={`/products/${sanitizedSlug}`} 
+      <Link
+        href={`/products/${sanitizedSlug}`} prefetch={false}
         className="flex flex-col h-full text-left"
       >
         <div className="p-4">
@@ -56,6 +56,7 @@ export function ProductCard({ product, hideStockStatus = false, hideDescription 
               src={thumbnailUrl}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={cn("object-contain transition-transform duration-300 ease-in-out group-hover:scale-105", isOutOfStock && "opacity-60")}
             />
           )}

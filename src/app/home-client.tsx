@@ -238,7 +238,7 @@ export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps
                         {latestArticles.map(article => (
                             <Link key={article.id} href={`/news/${article.slug || generateSlug(article.title)}`} className="group">
                                 <div className="aspect-[4/3] relative rounded-lg overflow-hidden mb-4">
-                                    <Image src={article.imageUrl} alt={article.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                                    <Image src={article.imageUrl} alt={article.title} sizes="(max-width: 768px) 100vw, 25vw" fill className="object-cover transition-transform group-hover:scale-105" />
                                 </div>
                                 <h3 className="font-headline text-lg line-clamp-2 group-hover:text-primary transition-colors">{article.title}</h3>
                             </Link>

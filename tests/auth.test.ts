@@ -1,0 +1,94 @@
+﻿import { after, before, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { getDb, getMongoClient } from '../src/lib/backend/mongodb';
+import { initializeAdminFromEnv, type AdminAccount } from '../src/lib/backend/admin-accounts';
+import { verifyPassword } from '../src/lib/backend/password';
+import { requireAdmin, sessionHash, type AdminSession } from '../src/lib/backend/auth';
+import { POST as login } from '../src/app/api/auth/login/route';
+import { POST as logout } from '../src/app/api/auth/logout/route';
+import { GET as session } from '../src/app/api/auth/session/route';
+let server: MongoMemoryServer;
+const password='test-only-long-password-42';
+const origin='http://localhost';
+const request=(path:string,body?:unknown,cookie?:string,source=origin)=>new Request(origin+'/api/auth/'+path,{method:body===undefined?'GET':'POST',headers:{Origin:source,...(cookie?{Cookie:cookie}:{}),'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+before(async()=>{
+ server=await MongoMemoryServer.create();
+ process.env.MONGODB_URI=server.getUri('auth_test');
+ process.env.MONGODB_USER='';process.env.MONGODB_PASSWORD='';process.env.APP_ORIGIN=origin;
+ process.env.ADMIN_USERNAME='Owner';process.env.ADMIN_PASSWORD=password;process.env.ADMIN_NAME='Owner';
+}, {timeout:300000});
+after(async()=>{if(server){await (await getMongoClient()).close();await server.stop();}});
+test('bootstrap uses env and stores only a hash; reruns never reset the account',async()=>{
+ delete process.env.ADMIN_PASSWORD;
+ assert.equal(await initializeAdminFromEnv(),'not-configured');
+ assert.equal(await (await getDb()).collection('admin_users').countDocuments(),0);
+ process.env.ADMIN_PASSWORD=password;
+ assert.equal(await initializeAdminFromEnv(),'created');
+ const users=(await getDb()).collection<AdminAccount>('admin_users');
+ const user=await users.findOne({_id:'initial-admin'});
+ assert.equal(user?.username,'owner');assert.notEqual(user?.passwordHash,password);
+ assert.equal(await verifyPassword(password,user!.passwordHash),true);
+ process.env.ADMIN_PASSWORD='changed-but-must-not-reset';
+ assert.equal(await initializeAdminFromEnv(),'exists');
+ assert.equal((await users.findOne({_id:'initial-admin'}))?.passwordHash,user?.passwordHash);
+});
+test('login issues HttpOnly cookie, persists hashed token and logout revokes access',async()=>{
+ const response=await login(request('login',{username:'OWNER',password}));
+ assert.equal(response.status,200);
+ const setCookie=response.headers.get('set-cookie')!;
+ assert.match(setCookie,/HttpOnly/i);assert.match(setCookie,/SameSite=lax/i);
+ const cookie=setCookie.split(';')[0];const token=cookie.split('=')[1];
+ const stored=await (await getDb()).collection<AdminSession>('admin_sessions').findOne({_id:sessionHash(token)});
+ assert.ok(stored);assert.notEqual(stored._id,token);
+ const user=await (await session(request('session',undefined,cookie))).json();
+ assert.equal(user.user.username,'owner');assert.equal(user.user.passwordHash,undefined);
+ assert.equal((await requireAdmin(request('session',undefined,cookie))).id,'initial-admin');
+ assert.equal((await logout(request('logout',{},cookie))).status,200);
+ assert.equal((await (await session(request('session',undefined,cookie))).json()).user,null);
+ await assert.rejects(requireAdmin(request('session',undefined,cookie)));
+});
+test('reject forged origins, invalid credentials, expired and disabled sessions',async()=>{
+ assert.equal((await login(request('login',{username:'owner',password},undefined,'https://evil.example'))).status,403);
+ assert.equal((await login(request('login',{username:'owner',password:'wrong'}))).status,401);
+ const response=await login(request('login',{username:'owner',password}));
+ const cookie=response.headers.get('set-cookie')!.split(';')[0];
+ await assert.rejects(requireAdmin(request('write',{},cookie,'https://evil.example')));
+ const db=await getDb();
+ await db.collection<AdminAccount>('admin_users').updateOne({_id:'initial-admin'},{$set:{disabled:true}});
+ assert.equal((await (await session(request('session',undefined,cookie))).json()).user,null);
+ await db.collection<AdminAccount>('admin_users').updateOne({_id:'initial-admin'},{$set:{disabled:false}});
+ await db.collection<AdminSession>('admin_sessions').updateOne({_id:sessionHash(cookie.split('=')[1])},{$set:{expiresAt:new Date(0)}});
+ await assert.rejects(requireAdmin(request('session',undefined,cookie)));
+});
+test('login attempts are rate limited',async()=>{
+ let status=0;
+ for(let i=0;i<11;i++) status=(await login(request('login',{username:'absent',password:'incorrect'}))).status;
+ assert.equal(status,429);
+});
+
+test('reject email login and invalid usernames',async()=>{
+ assert.equal((await login(request('login',{email:'owner@example.com',password}))).status,400);
+ assert.equal((await login(request('login',{username:'owner@example.com',password}))).status,400);
+ assert.equal((await login(request('login',{username:'a',password}))).status,400);
+ assert.equal((await login(request('login',{username:' Owner ',password}))).status,200);
+});
+test('legacy initial admin gets env username without resetting password or ID',async()=>{
+ const db=await getDb();const users=db.collection<AdminAccount>('admin_users');
+ const original=await users.findOne({_id:'initial-admin'});
+ assert.ok(original);
+ await users.updateOne({_id:'initial-admin'},{$unset:{username:''},$set:{email:'old@example.com'}});
+ await users.createIndex({email:1},{unique:true});
+ delete process.env.ADMIN_USERNAME;
+ assert.equal(await initializeAdminFromEnv(),'not-configured');
+ process.env.ADMIN_USERNAME='New.Owner';
+ assert.equal(await initializeAdminFromEnv(),'migrated');
+ const migrated=await users.findOne({_id:'initial-admin'});
+ assert.equal(migrated?.username,'new.owner');
+ assert.equal(migrated?.passwordHash,original.passwordHash);
+ assert.equal(await initializeAdminFromEnv(),'exists');
+ assert.equal((await login(request('login',{username:'NEW.OWNER',password}))).status,200);
+ assert.equal((await users.indexes()).some(index=>index.name==='email_1'),false);
+ await users.insertOne({...original,_id:'second-admin',username:'second'});
+ await assert.rejects(users.insertOne({...original,_id:'duplicate-admin',username:'new.owner'}));
+});

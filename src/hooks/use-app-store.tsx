@@ -33,6 +33,7 @@ export const useAppStore = () => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const [cartLoaded, setCartLoaded] = useState(false);
   
   // Load cart from localStorage on initial client-side render
   useEffect(() => {
@@ -46,14 +47,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to parse data from localStorage", e);
         }
     }
+    setCartLoaded(true);
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (cartLoaded && typeof window !== 'undefined') {
         localStorage.setItem("vibary-cart", JSON.stringify(cartItems));
     }
-  }, [cartItems]);
+  }, [cartItems, cartLoaded]);
 
 
   const addToCart = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {

@@ -23,8 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { useDatabase } from '@/lib/data-client';
+import { doc, setDoc } from '@/lib/data-client';
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -44,7 +44,7 @@ interface SizeFormProps {
 }
 
 export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
-  const firestore = useFirestore();
+  const database = useDatabase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,11 +70,11 @@ export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
   }, [isOpen, size, form]);
 
   const onSubmit = async (values: SizeFormValues) => {
-    if (!firestore) return;
+    if (!database) return;
     setIsSubmitting(true);
 
     const id = size ? size.id : `size-${Date.now()}`;
-    const docRef = doc(firestore, 'birthday_cake_sizes', id);
+    const docRef = doc(database, 'birthday_cake_sizes', id);
     const dataToSave = { id, ...values };
 
     try {
@@ -85,13 +85,8 @@ export function SizeForm({ isOpen, onClose, size }: SizeFormProps) {
       });
       onClose();
     } catch (error) {
-       const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: size ? 'update' : 'create',
-          requestResourceData: dataToSave
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    } finally {
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
+        } finally {
       setIsSubmitting(false);
     }
   };

@@ -24,20 +24,19 @@ import {
 } from '@/components/ui/table';
 import { useState, useRef } from 'react';
 import type { BirthdayCakeSize } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, query, orderBy, setDoc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, deleteDoc, doc, query, orderBy, setDoc } from '@/lib/data-client';
 import { SizeForm } from './size-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import * as XLSX from 'xlsx';
 
 export default function BirthdaySizesPage() {
-  const firestore = useFirestore();
+  const database = useDatabase();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sizesCollection = useMemoFirebase(() => firestore ? query(collection(firestore, 'birthday_cake_sizes'), orderBy('order')) : null, [firestore]);
+  const sizesCollection = useDataMemo(() => database ? query(collection(database, 'birthday_cake_sizes'), orderBy('order')) : null, [database]);
   const { data: sizes, isLoading } = useCollection<BirthdayCakeSize>(sizesCollection);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -62,9 +61,9 @@ export default function BirthdaySizesPage() {
   };
 
   const handleDelete = async () => {
-    if (!sizeToDelete || !firestore) return;
+    if (!sizeToDelete || !database) return;
     setIsDeleting(true);
-    const docRef = doc(firestore, 'birthday_cake_sizes', sizeToDelete.id);
+    const docRef = doc(database, 'birthday_cake_sizes', sizeToDelete.id);
     
     try {
         await deleteDoc(docRef);
@@ -72,17 +71,14 @@ export default function BirthdaySizesPage() {
         setIsDeleteConfirmOpen(false);
         setSizeToDelete(null);
     } catch (error) {
-        const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    } finally {
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
+        } finally {
         setIsDeleting(false);
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+        const XLSX = await import('xlsx');
     if (!sizes || sizes.length === 0) {
       toast({ variant: "destructive", title: "Lỗi", description: "Không có dữ liệu để xuất." });
       return;
@@ -114,11 +110,12 @@ export default function BirthdaySizesPage() {
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !firestore) return;
+    if (!file || !database) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
@@ -143,7 +140,7 @@ export default function BirthdaySizesPage() {
             order: Number(row['Thứ tự hiển thị']) || 0,
           };
 
-          const docRef = doc(firestore, 'birthday_cake_sizes', id);
+          const docRef = doc(database, 'birthday_cake_sizes', id);
           await setDoc(docRef, sizeData, { merge: true });
           count++;
         }

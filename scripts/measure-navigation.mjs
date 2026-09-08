@@ -1,0 +1,52 @@
+import { chromium, expect } from '@playwright/test';
+const browser = await chromium.launch();
+try {
+ const page = await browser.newPage();
+ const base = process.env.SMOKE_BASE_URL || 'http://localhost:3100';
+ const results=[];
+ for (let i=0;i<3;i++) {
+  await page.goto(base+'/products');
+  await page.locator('nav a[href*="category="]').last().waitFor();
+  await page.waitForTimeout(400);
+  let requests=[];
+  const listen=r=>{if(r.url().includes('/api/data/') || r.url().includes('_rsc')) requests.push(r.url());};
+  page.on('request',listen);
+  const start=Date.now();
+  await page.locator('nav a[href*="category="]').last().click();
+  await expect(page).toHaveURL(/category=/);
+  const categoryMs=Date.now()-start;
+  await page.waitForTimeout(300);
+  const categoryServerRequests=requests.filter(u=>new URL(u).pathname==='/products').length;
+  expect(categoryServerRequests).toBe(0);
+  await page.goBack();
+  await expect(page).toHaveURL(base+'/products');
+  await expect(page.locator('nav a[href*="category="]').first()).not.toHaveClass(/border-transparent/);
+  await page.goForward();
+  await expect(page).toHaveURL(/category=/);
+  await expect(page.locator('nav a[href*="category="]').last()).not.toHaveClass(/border-transparent/);
+  requests=[];
+  const link=page.locator('a[href^="/products/"]').first();
+  await link.scrollIntoViewIfNeeded();
+  await expect(link).toBeInViewport();
+  const href=await link.getAttribute('href');
+  const startDetail=Date.now();
+  await link.locator('h3').click();
+  await page.waitForFunction(path => window.location.pathname === path, href);
+  await page.locator('h1.text-6xl').waitFor();
+  results.push({categoryMs,categoryServerRequests,detailContentMs:Date.now()-startDetail,detailApiRequests:requests.filter(u=>u.includes('/api/data/')).length});
+  expect(requests.filter(u=>u.includes('/api/data/'))).toHaveLength(0);
+  page.off('request',listen);
+ }
+ await page.goto(base+'/news');
+ const articleLink=page.locator('a[href^="/news/"]').first();
+ const articleHref=await articleLink.getAttribute('href');
+ const html=await (await page.request.get(base+articleHref)).text();
+ expect(html).toContain('<h1');
+ const detailCalls=[];
+ page.on('request',r=>{if(r.url().includes('/api/data/'))detailCalls.push(r.url());});
+ await articleLink.locator('.font-headline').click();
+ await page.waitForFunction(path => window.location.pathname === path, articleHref);
+ await page.locator('article h1').waitFor();
+ expect(detailCalls).toHaveLength(0);
+ console.log(JSON.stringify({runs:results,articleServerRendered:true,articleApiRequests:detailCalls.length},null,2));
+} finally { await browser.close(); }

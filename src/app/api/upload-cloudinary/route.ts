@@ -1,3 +1,5 @@
+import { requireAdmin } from '@/lib/backend/auth';
+import { apiError, HttpError } from '@/lib/backend/http';
 import { NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -11,12 +13,15 @@ cloudinary.config({
 
 export async function POST(request: Request) {
   try {
+    await requireAdmin(request);
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
     }
+
+    if (!(file instanceof File) || file.size > 10 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new HttpError(400, 'Ảnh phải là JPG, PNG, WEBP hoặc GIF, tối đa 10 MB.');
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -37,7 +42,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ imageUrl: result.secure_url });
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
-    return NextResponse.json({ error: 'Failed to upload image.' }, { status: 500 });
+    return apiError(error);
   }
 }

@@ -31,8 +31,8 @@ import {
 } from '@/components/ui/table';
 import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import Link from 'next/link';
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, doc, query } from 'firebase/firestore';
+import { useCollection, useDoc, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, collectionGroup, doc, query } from '@/lib/data-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 
@@ -46,10 +46,10 @@ const statusMapping: Record<OrderStatus, { text: string; className: string }> = 
 
 
 function RecentOrderRow({ order }: { order: Order }) {
-    const firestore = useFirestore();
-    const customerRef = useMemoFirebase(
-        () => (firestore && order.customerId ? doc(firestore, 'customers', order.customerId) : null),
-        [firestore, order.customerId]
+    const database = useDatabase();
+    const customerRef = useDataMemo(
+        () => (database && order.customerId ? doc(database, 'customers', order.customerId) : null),
+        [database, order.customerId]
     );
     const { data: customer, isLoading } = useDoc<CustomerProfile>(customerRef);
 
@@ -76,13 +76,13 @@ function RecentOrderRow({ order }: { order: Order }) {
 }
 
 export default function Dashboard() {
-  const firestore = useFirestore();
+  const database = useDatabase();
   
   // --- Data Fetching ---
-  const ingredientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'ingredients') : null, [firestore]);
+  const ingredientsCollection = useDataMemo(() => database ? collection(database, 'ingredients') : null, [database]);
   const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
 
-  const allOrdersQuery = useMemoFirebase(() => firestore ? collectionGroup(firestore, 'orders') : null, [firestore]);
+  const allOrdersQuery = useDataMemo(() => database ? collectionGroup(database, 'orders') : null, [database]);
   const { data: allOrders, isLoading: isLoadingOrders } = useCollection<Order>(allOrdersQuery);
 
   // --- KPI Calculation ---

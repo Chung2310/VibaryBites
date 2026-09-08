@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { doc, setDoc } from '@/lib/data-client';
+import { useDatabase } from '@/lib/data-client';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../product-form';
 import type { Product } from '@/lib/types';
@@ -28,12 +28,12 @@ const parseSizes = (sizesString?: string): { name: string; price: number }[] => 
 
 export default function NewProductPage() {
     const router = useRouter();
-    const firestore = useFirestore();
+    const database = useDatabase();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore) {
+        if (!database) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ cơ sở dữ liệu." });
             return;
         }
@@ -43,7 +43,7 @@ export default function NewProductPage() {
         
         try {
             const productId = `prod-${Date.now()}`;
-            const docRef = doc(firestore, 'cakes', productId);
+            const docRef = doc(database, 'cakes', productId);
 
             const newProductData: Product = {
                 id: productId,
@@ -74,12 +74,6 @@ export default function NewProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo sản phẩm:", error);
-            const permissionError = new FirestorePermissionError({
-                path: 'cakes',
-                operation: 'create',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',

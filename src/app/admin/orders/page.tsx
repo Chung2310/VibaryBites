@@ -40,8 +40,9 @@ import {
 } from '@/components/ui/tabs';
 import type { Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import { useState, useMemo } from 'react';
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, doc } from 'firebase/firestore';
+import { useCollection, useDoc, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collectionGroup, query, doc, setDoc } from '@/lib/data-client';
+import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const statusMapping: Record<OrderStatus, { text: string; className: string }> = {
@@ -62,11 +63,22 @@ const TABS: { value: OrderStatus | 'all'; label: string; }[] = [
 ]
 
 function OrderRow({ order }: { order: Order }) {
-    const firestore = useFirestore();
+    const database = useDatabase();
+    const { toast } = useToast();
+    const [saving, setSaving] = useState(false);
+    async function changeStatus(status: OrderStatus) {
+      setSaving(true);
+      try {
+        await setDoc(doc(database, 'orders', order.id), { orderStatus: status }, { merge: true });
+        toast({ title: 'Đã cập nhật đơn hàng' });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Không thể cập nhật', description: (error as Error).message });
+      } finally { setSaving(false); }
+    }
     
-    const customerRef = useMemoFirebase(
-        () => (firestore && order.customerId ? doc(firestore, 'customers', order.customerId) : null),
-        [firestore, order.customerId]
+    const customerRef = useDataMemo(
+        () => (database && order.customerId ? doc(database, 'customers', order.customerId) : null),
+        [database, order.customerId]
     );
     const { data: customer, isLoading } = useDoc<CustomerProfile>(customerRef);
 
@@ -99,12 +111,10 @@ function OrderRow({ order }: { order: Order }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                    <DropdownMenuItem>Xem chi tiết</DropdownMenuItem>
-                    <DropdownMenuItem>In hóa đơn</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
-                        Hủy đơn
-                    </DropdownMenuItem>
+                    {order.orderStatus === 'new' && <DropdownMenuItem disabled={saving} onSelect={() => void changeStatus('processing')}>Xác nhận đơn</DropdownMenuItem>}
+                    {order.orderStatus === 'processing' && <DropdownMenuItem disabled={saving} onSelect={() => void changeStatus('shipping')}>Bắt đầu giao</DropdownMenuItem>}
+                    {order.orderStatus === 'shipping' && <DropdownMenuItem disabled={saving} onSelect={() => void changeStatus('completed')}>Hoàn thành</DropdownMenuItem>}
+                    {['new', 'processing'].includes(order.orderStatus) && <DropdownMenuItem disabled={saving} className="text-destructive" onSelect={() => void changeStatus('cancelled')}>Hủy đơn và hoàn kho</DropdownMenuItem>}
                 </DropdownMenuContent>
                 </DropdownMenu>
             </TableCell>
@@ -115,12 +125,12 @@ function OrderRow({ order }: { order: Order }) {
 
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
-    const firestore = useFirestore();
+    const database = useDatabase();
 
-    const allOrdersQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collectionGroup(firestore, 'orders');
-    }, [firestore]);
+    const allOrdersQuery = useDataMemo(() => {
+        if (!database) return null;
+        return collectionGroup(database, 'orders');
+    }, [database]);
 
     const { data: allOrders, isLoading } = useCollection<Order>(allOrdersQuery);
 

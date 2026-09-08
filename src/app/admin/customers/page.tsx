@@ -19,16 +19,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection } from '@/lib/data-client';
 import type { CustomerProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CustomersPage() {
-  const firestore = useFirestore();
-  const customersCollection = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'customers') : null),
-    [firestore]
+  const database = useDatabase();
+  const customersCollection = useDataMemo(
+    () => (database ? collection(database, 'customers') : null),
+    [database]
   );
   const { data: customers, isLoading } = useCollection<CustomerProfile>(customersCollection);
 

@@ -7,8 +7,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection } from '@/lib/data-client';
 import type { Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,9 +16,9 @@ export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, totalPrice, cartCount } = useAppStore();
   const { toast } = useToast();
 
-  const firestore = useFirestore();
+  const database = useDatabase();
   // Fetch all products for stock checking
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const productsCollection = useDataMemo(() => database ? collection(database, 'cakes') : null, [database]);
   const { data: products } = useCollection<Product>(productsCollection);
 
   const handleUpdateQuantity = (id: string, quantity: number, size?: string) => {

@@ -26,8 +26,8 @@ import {
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection } from '@/lib/data-client';
 import { ImageUploader } from "@/components/image-uploader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -66,8 +66,8 @@ Không nên để bánh ở nhiệt độ phòng quá 30 phút (Bánh sẽ bị 
 Sử dụng trong vòng 03 ngày`;
 
 export function ProductForm({ product, onSubmit, onCancel, isSubmitting, isEditMode }: ProductFormProps) {
-  const firestore = useFirestore();
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+  const database = useDatabase();
+  const categoriesCollection = useDataMemo(() => database ? collection(database, 'categories') : null, [database]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection);
   
   const [priceType, setPriceType] = useState<'specific' | 'pending'>(

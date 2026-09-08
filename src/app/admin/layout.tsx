@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useAuth, useUser } from '@/firebase';
+import { AuthProvider, useAuth, useUser } from '@/lib/auth/provider';
 import { useToast } from '@/hooks/use-toast';
 
 const mainNavLinks = [
@@ -175,7 +175,7 @@ function AdminSidebar() {
 }
 
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -217,7 +217,7 @@ export default function AdminLayout({
       return;
     };
     try {
-      await user.getIdToken(true);
+      await auth.refresh();
       toast({ title: "Thành công", description: "Phiên đăng nhập đã được làm mới. Đang tải lại trang..." });
       window.location.reload();
     } catch (error) {
@@ -295,12 +295,12 @@ export default function AdminLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
-                 <Image src={user.photoURL || `https://i.pravatar.cc/40?u=${user.uid}`} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
+                 <Image src={'/logo.png'} width={36} height={36} alt="Admin Avatar" className="rounded-full" />
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.displayName || user.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>{user.displayName || user.username}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuItem>Hỗ trợ</DropdownMenuItem>
@@ -322,4 +322,8 @@ export default function AdminLayout({
       </div>
     </div>
   );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return <AuthProvider><AdminLayoutContent>{children}</AdminLayoutContent></AuthProvider>;
 }

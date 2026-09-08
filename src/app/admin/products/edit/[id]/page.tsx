@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { doc, setDoc } from '@/lib/data-client';
+import { useDatabase, useDoc, useDataMemo } from '@/lib/data-client';
 import { useToast } from '@/hooks/use-toast';
 import { ProductForm, type ProductFormValues } from '../../product-form';
 import type { Product } from '@/lib/types';
@@ -33,19 +33,19 @@ export default function EditProductPage() {
     const params = useParams();
     const productId = (params.id || '') as string;
     
-    const firestore = useFirestore();
+    const database = useDatabase();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const productDocRef = useMemoFirebase(() => {
-        if (!firestore || !productId) return null;
-        return doc(firestore, 'cakes', productId);
-    }, [firestore, productId]);
+    const productDocRef = useDataMemo(() => {
+        if (!database || !productId) return null;
+        return doc(database, 'cakes', productId);
+    }, [database, productId]);
 
     const { data: product, isLoading } = useDoc<Product>(productDocRef);
     
     const handleFormSubmit = async (values: ProductFormValues) => {
-        if (!firestore || !product || !productDocRef) {
+        if (!database || !product || !productDocRef) {
             toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể kết nối hoặc tìm thấy sản phẩm.' });
             return;
         }
@@ -82,12 +82,6 @@ export default function EditProductPage() {
 
         } catch (error: any) {
             console.error("Lỗi khi cập nhật sản phẩm:", error);
-            const permissionError = new FirestorePermissionError({
-                path: productDocRef.path,
-                operation: 'update',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
             
             toast({
                 variant: 'destructive',

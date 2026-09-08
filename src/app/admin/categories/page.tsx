@@ -24,19 +24,18 @@ import {
 } from '@/components/ui/table';
 import { useState, useRef } from 'react';
 import type { ProductCategory } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, deleteDoc, doc, setDoc } from '@/lib/data-client';
 import { CategoryForm } from './category-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import * as XLSX from 'xlsx';
 import { generateSlug } from '@/lib/utils';
 
 export default function CategoriesPage() {
-  const firestore = useFirestore();
+  const database = useDatabase();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+  const categoriesCollection = useDataMemo(() => database ? collection(database, 'categories') : null, [database]);
   const { data: categories, isLoading } = useCollection<ProductCategory>(categoriesCollection);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -62,9 +61,9 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async () => {
-    if (!categoryToDelete || !firestore) return;
+    if (!categoryToDelete || !database) return;
     setIsDeleting(true);
-    const docRef = doc(firestore, 'categories', categoryToDelete.id);
+    const docRef = doc(database, 'categories', categoryToDelete.id);
     
     try {
         await deleteDoc(docRef);
@@ -72,17 +71,14 @@ export default function CategoriesPage() {
         setIsDeleteConfirmOpen(false);
         setCategoryToDelete(null);
     } catch (error) {
-        const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    } finally {
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
+        } finally {
         setIsDeleting(false);
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+        const XLSX = await import('xlsx');
     if (!categories || categories.length === 0) {
       toast({ variant: "destructive", title: "Lỗi", description: "Không có danh mục nào để xuất." });
       return;
@@ -115,11 +111,12 @@ export default function CategoriesPage() {
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !firestore) return;
+    if (!file || !database) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
@@ -145,7 +142,7 @@ export default function CategoriesPage() {
             description: String(row['Mô tả'] || ''),
           };
 
-          const docRef = doc(firestore, 'categories', id);
+          const docRef = doc(database, 'categories', id);
           await setDoc(docRef, categoryData, { merge: true });
           count++;
         }

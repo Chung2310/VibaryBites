@@ -1,0 +1,24 @@
+services:
+  vibary-bites:
+    image: ${IMAGE_REF:-vibary-bites:local}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3009}:${PORT:-3009}"
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3009}
+      HOSTNAME: 0.0.0.0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default_network:
+    external: true

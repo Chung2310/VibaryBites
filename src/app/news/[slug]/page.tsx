@@ -1,80 +1,11 @@
-'use client';
-
-import * as React from 'react';
-import { use } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import type { NewsArticle } from '@/lib/types';
-import { useEffect, useState } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-
-async function getArticleBySlug(firestore: any, slug: string): Promise<NewsArticle | null> {
-    const articlesRef = collection(firestore, 'news_articles');
-    const q = query(articlesRef, where("slug", "==", slug));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-        return null;
-    }
-    const docData = querySnapshot.docs[0].data();
-    return { ...docData, id: querySnapshot.docs[0].id } as NewsArticle;
-}
-
-export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
-    const firestore = useFirestore();
-    const [article, setArticle] = useState<NewsArticle | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(false);
-
-    useEffect(() => {
-        if (!firestore || !slug) return;
-
-        const fetchArticle = async () => {
-            setIsLoading(true);
-            setError(false);
-            try {
-                const articleData = await getArticleBySlug(firestore, slug);
-                if (!articleData) {
-                    setError(true);
-                } else {
-                    setArticle(articleData);
-                }
-            } catch (e) {
-                console.error("Error fetching article:", e);
-                setError(true);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        
-        fetchArticle();
-    }, [firestore, slug]);
-    
-    if (isLoading) {
-        return (
-            <article>
-                <header className="relative h-[50vh] min-h-[300px] w-full bg-muted">
-                    <Skeleton className="h-full w-full" />
-                </header>
-                <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-                    <Skeleton className="h-6 w-1/4 mb-4" />
-                    <Skeleton className="h-12 w-3/4 mb-8" />
-                    <div className="space-y-4">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-5/6" />
-                    </div>
-                </div>
-            </article>
-        );
-    }
-
-    if (error || !article) {
-        notFound();
-    }
-
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import { getArticleBySlug } from '@/lib/server-data';
+export const dynamic = 'force-dynamic';
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const article = await getArticleBySlug(slug);
+    if (!article) notFound();
     const formattedDate = article.publicationDate
         ? new Date(article.publicationDate).toLocaleDateString('vi-VN', {
             day: 'numeric',
@@ -91,6 +22,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
                 src={article.imageUrl}
                 alt={article.title}
                 fill
+                sizes="100vw"
                 className="object-cover"
                 priority
             />

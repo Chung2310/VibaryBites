@@ -6,6 +6,7 @@ export type Product = {
   subtitle?: string;
   description: string;
   detailedDescription: {
+    serving?: string;
     flavor: string;
     ingredients: string;
     storage: string;
@@ -80,7 +81,7 @@ export type CartItem = {
 // Admin Types
 export type OrderStatus = "new" | "processing" | "shipping" | "completed" | "cancelled";
 
-// Represents an Order document from Firestore
+// Order returned by the MongoDB API
 export type Order = {
   id: string;
   customerId: string;
@@ -90,11 +91,13 @@ export type Order = {
   paymentMethod: string;
   totalAmount: number;
   orderStatus: OrderStatus;
+  items?: CartItem[];
+  notes?: string;
   // Optional customer data that can be joined client-side
   customer?: CustomerProfile; 
 };
 
-// Represents a Customer document from Firestore
+// Customer contact snapshot returned by the MongoDB API
 export type CustomerProfile = {
   id: string;
   firstName: string;

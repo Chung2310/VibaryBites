@@ -24,8 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { useDatabase } from '@/lib/data-client';
+import { doc, setDoc } from '@/lib/data-client';
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -46,7 +46,7 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ isOpen, onClose, category }: CategoryFormProps) {
-  const firestore = useFirestore();
+  const database = useDatabase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,12 +72,12 @@ export function CategoryForm({ isOpen, onClose, category }: CategoryFormProps) {
   }, [isOpen, category, form]);
 
   const onSubmit = async (values: CategoryFormValues) => {
-    if (!firestore) return;
+    if (!database) return;
     setIsSubmitting(true);
 
     const id = category ? category.id : `cat-${Date.now()}`;
     const slug = generateSlug(values.title);
-    const docRef = doc(firestore, 'categories', id);
+    const docRef = doc(database, 'categories', id);
     const dataToSave = { id, slug, ...values };
 
     try {
@@ -88,13 +88,8 @@ export function CategoryForm({ isOpen, onClose, category }: CategoryFormProps) {
       });
       onClose();
     } catch (error) {
-       const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: category ? 'update' : 'create',
-          requestResourceData: dataToSave
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    } finally {
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
+        } finally {
       setIsSubmitting(false);
     }
   };

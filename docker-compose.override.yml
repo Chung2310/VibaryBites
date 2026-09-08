@@ -1,0 +1,5 @@
+services:
+  vibary-bites:
+    build:
+      context: .
+      dockerfile: Dockerfile

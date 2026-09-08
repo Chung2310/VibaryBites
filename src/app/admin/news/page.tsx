@@ -47,22 +47,21 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { NewsArticle } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, deleteDoc, doc, setDoc } from '@/lib/data-client';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateSlug } from '@/lib/utils';
-import * as XLSX from 'xlsx';
 
 export default function NewsPage() {
     const router = useRouter();
-    const firestore = useFirestore();
+    const database = useDatabase();
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const articlesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'news_articles') : null, [firestore]);
+    const articlesCollection = useDataMemo(() => database ? collection(database, 'news_articles') : null, [database]);
     const { data: articles, isLoading } = useCollection<NewsArticle>(articlesCollection);
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -75,10 +74,10 @@ export default function NewsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedArticle || !firestore) return;
+        if (!selectedArticle || !database) return;
 
         setIsDeleting(true);
-        const docRef = doc(firestore, 'news_articles', selectedArticle.id);
+        const docRef = doc(database, 'news_articles', selectedArticle.id);
         
         try {
             await deleteDoc(docRef);
@@ -88,11 +87,6 @@ export default function NewsPage() {
                 description: `Bài viết "${selectedArticle.title}" đã được xóa.`,
             });
         } catch (error) {
-             const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
              toast({
                 title: "Lỗi",
                 description: `Không thể xóa bài viết. Vui lòng thử lại.`,
@@ -105,7 +99,8 @@ export default function NewsPage() {
         }
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
+        const XLSX = await import('xlsx');
         if (!articles || articles.length === 0) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không có bài viết nào để xuất." });
             return;
@@ -148,11 +143,12 @@ export default function NewsPage() {
 
     const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !firestore) return;
+        if (!file || !database) return;
 
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
+        const XLSX = await import('xlsx');
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
@@ -183,7 +179,7 @@ export default function NewsPage() {
                         imageUrl: String(row['URL Ảnh'] || 'https://placehold.co/1200x800/F4DDDD/333333?text=No+Image'),
                     };
                     
-                    const docRef = doc(firestore, 'news_articles', id);
+                    const docRef = doc(database, 'news_articles', id);
                     await setDoc(docRef, articleData, { merge: true });
                     count++;
                 }

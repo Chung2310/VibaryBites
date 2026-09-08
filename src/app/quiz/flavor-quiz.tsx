@@ -27,8 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection } from '@/lib/data-client';
 import type { Product } from "@/lib/types";
 
 const formSchema = z.object({
@@ -52,8 +52,8 @@ const steps = [
 ];
 
 export function FlavorQuiz() {
-  const firestore = useFirestore();
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+  const database = useDatabase();
+  const productsCollection = useDataMemo(() => database ? collection(database, 'cakes') : null, [database]);
   const { data: products } = useCollection<Product>(productsCollection);
 
   const [currentStep, setCurrentStep] = useState(0);

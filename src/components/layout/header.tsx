@@ -64,6 +64,7 @@ export function Header() {
             <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 className={cn(
                   "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full text-black",
                   isLinkActive(link.href) && "border border-black"
@@ -90,6 +91,7 @@ export function Header() {
                 <Link
                     key={link.href}
                     href={link.href}
+                prefetch={true}
                     className={cn(
                       "text-xs font-body uppercase tracking-widest transition-all hover:opacity-70 py-2 px-3 rounded-full text-black",
                       isLinkActive(link.href) && "border border-black"
@@ -139,6 +141,7 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
+                prefetch={true}
                       className={cn(
                         "text-lg font-medium transition-colors hover:text-primary",
                         isLinkActive(link.href) ? "text-primary" : "text-muted-foreground"

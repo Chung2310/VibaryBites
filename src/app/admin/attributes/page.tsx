@@ -3,8 +3,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
+import { collection, doc, setDoc } from '@/lib/data-client';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,11 +22,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 function AttributesContent() {
-    const firestore = useFirestore();
+    const database = useDatabase();
     const searchParams = useSearchParams();
     const initialProductId = searchParams.get('productId');
 
-    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'cakes') : null, [firestore]);
+    const productsCollection = useDataMemo(() => database ? collection(database, 'cakes') : null, [database]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -47,23 +47,23 @@ function AttributesContent() {
     };
 
     const handleFormSubmit = async (values: ProductAttributesFormValues) => {
-        if (!selectedProduct || !firestore) {
+        if (!selectedProduct || !database) {
             toast({ variant: "destructive", title: "Lỗi", description: "Vui lòng chọn một sản phẩm." });
             return;
         }
 
         setIsSubmitting(true);
-        const docRef = doc(firestore, 'cakes', selectedProduct.id);
+        const docRef = doc(database, 'cakes', selectedProduct.id);
         const updatedProductData: Partial<Product> = {
             detailedDescription: {
                 flavor: values.detailedDescription_flavor,
                 ingredients: values.detailedDescription_ingredients,
                 storage: values.detailedDescription_storage,
                 dimensions: values.detailedDescription_dimensions,
-                accessories: values.detailedDescription_accessories.split('\n').filter(Boolean),
+                accessories: (values.detailedDescription_accessories || '').split('\n').filter(Boolean),
             },
-            flavorProfile: values.flavorProfile.split('\n').filter(Boolean),
-            structure: values.structure.split('\n').filter(Boolean),
+            flavorProfile: (values.flavorProfile || '').split('\n').filter(Boolean),
+            structure: (values.structure || '').split('\n').filter(Boolean),
         };
 
         try {
@@ -74,12 +74,7 @@ function AttributesContent() {
             });
             setSelectedProduct(null);
         } catch (error) {
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'update',
-                requestResourceData: updatedProductData
-            });
-            errorEmitter.emit('permission-error', permissionError);
+          toast({ variant: 'destructive', title: 'Thao tác thất bại', description: (error as Error).message });
         } finally {
             setIsSubmitting(false);
         }

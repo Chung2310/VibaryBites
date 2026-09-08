@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { doc, setDoc } from '@/lib/data-client';
+import { useDatabase } from '@/lib/data-client';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm, type NewsFormValues } from '../news-form';
 import type { NewsArticle } from '@/lib/types';
@@ -15,12 +15,12 @@ import { generateSlug } from '@/lib/utils';
 
 export default function NewNewsArticlePage() {
     const router = useRouter();
-    const firestore = useFirestore();
+    const database = useDatabase();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleFormSubmit = async (values: NewsFormValues) => {
-        if (!firestore) {
+        if (!database) {
             toast({ variant: "destructive", title: "Lỗi", description: "Không thể kết nối tới dịch vụ." });
             return;
         }
@@ -30,7 +30,7 @@ export default function NewNewsArticlePage() {
 
         try {
             const articleId = `news-${Date.now()}`;
-            const docRef = doc(firestore, 'news_articles', articleId);
+            const docRef = doc(database, 'news_articles', articleId);
         
             const newArticleData: NewsArticle = {
                 id: articleId,
@@ -51,12 +51,6 @@ export default function NewNewsArticlePage() {
 
         } catch (error: any) {
             console.error("Lỗi khi tạo bài viết:", error);
-            const permissionError = new FirestorePermissionError({
-                path: 'news_articles',
-                operation: 'create',
-                requestResourceData: values,
-            });
-            errorEmitter.emit('permission-error', permissionError);
 
             toast({
                 variant: 'destructive',
