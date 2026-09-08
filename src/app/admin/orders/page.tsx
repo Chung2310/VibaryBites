@@ -41,7 +41,7 @@ import {
 import type { Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import { useState, useMemo } from 'react';
 import { useCollection, useDoc, useDatabase, useDataMemo } from '@/lib/data-client';
-import { collectionGroup, query, doc, setDoc } from '@/lib/data-client';
+import { collectionGroup, query, doc, setDoc, orderBy } from '@/lib/data-client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -60,7 +60,7 @@ const TABS: { value: OrderStatus | 'all'; label: string; }[] = [
     { value: 'shipping', label: 'Đang giao' },
     { value: 'completed', label: 'Hoàn thành' },
     { value: 'cancelled', label: 'Đã hủy' },
-]
+];
 
 function OrderRow({ order }: { order: Order }) {
     const database = useDatabase();
@@ -122,14 +122,13 @@ function OrderRow({ order }: { order: Order }) {
     );
 }
 
-
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
     const database = useDatabase();
 
     const allOrdersQuery = useDataMemo(() => {
         if (!database) return null;
-        return collectionGroup(database, 'orders');
+        return query(collectionGroup(database, 'orders'), orderBy('orderDate', 'desc'));
     }, [database]);
 
     const { data: allOrders, isLoading } = useCollection<Order>(allOrdersQuery);

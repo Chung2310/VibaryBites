@@ -27,16 +27,33 @@ export function requireSameOrigin(request: Request) {
 
   if (origin !== new URL(expected).origin) throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
 }
+const sessionUserCache = new Map<string, { user: AdminAccount | null; expiresAt: number }>();
+const SESSION_CACHE_TTL_MS = 30_000;
+
 export function publicUser(user: AdminAccount): AdminUser {
   return { id: user._id, username: user.username, displayName: user.displayName };
 }
 export async function getSessionUser(request: Request) {
   const token = getSessionToken(request);
   if (!token) return null;
+  const hash = sessionHash(token);
+  const now = Date.now();
+  const cached = sessionUserCache.get(hash);
+  if (cached && cached.expiresAt > now) return cached.user;
+
   const db = await getDb();
-  const session = await db.collection<AdminSession>('admin_sessions').findOne({ _id: sessionHash(token), expiresAt: { $gt: new Date() } });
-  if (!session) return null;
-  return db.collection<AdminAccount>('admin_users').findOne({ _id: session.userId, disabled: false });
+  const session = await db.collection<AdminSession>('admin_sessions').findOne({ _id: hash, expiresAt: { $gt: new Date() } });
+  if (!session) {
+    sessionUserCache.delete(hash);
+    return null;
+  }
+  const user = await db.collection<AdminAccount>('admin_users').findOne({ _id: session.userId, disabled: false });
+  if (sessionUserCache.size > 200) {
+    const oldestKey = sessionUserCache.keys().next().value;
+    if (oldestKey) sessionUserCache.delete(oldestKey);
+  }
+  sessionUserCache.set(hash, { user, expiresAt: now + SESSION_CACHE_TTL_MS });
+  return user;
 }
 export async function requireAdmin(request: Request) {
   const user = await getSessionUser(request);
@@ -52,7 +69,11 @@ export async function createSession(userId: string) {
 }
 export async function revokeSession(request: Request) {
   const token = getSessionToken(request);
-  if (token) await (await getDb()).collection<AdminSession>('admin_sessions').deleteOne({ _id: sessionHash(token) });
+  if (token) {
+    const hash = sessionHash(token);
+    sessionUserCache.delete(hash);
+    await (await getDb()).collection<AdminSession>('admin_sessions').deleteOne({ _id: hash });
+  }
 }
 export function sessionCookieOptions(request: Request) {
   return { httpOnly: true, secure: new URL(process.env.APP_ORIGIN || request.url).protocol === 'https:', sameSite: 'lax' as const, path: '/', maxAge: SESSION_SECONDS };

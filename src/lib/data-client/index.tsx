@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useMemo, useState, type DependencyList } from 'react';
 import { createRequestCache } from './request-cache';
 import { useToast } from '@/hooks/use-toast';
@@ -22,17 +22,14 @@ export const where = (field: string, operation: string, value: string): Constrai
 export const orderBy = (field: string, direction: 'asc' | 'desc' = 'asc'): Constraint => ({ field: 'sort', value: `${field}:${direction}` });
 export const limit = (value: number): Constraint => ({ field: 'limit', value });
 export const query = (reference: Reference, ...constraints: Constraint[]): Reference => ({ ...reference, constraints: [...reference.constraints, ...constraints] });
-
 const publicResources = new Set(['cakes', 'categories', 'news_articles', 'birthday_cake_sizes']);
-const publicCache = createRequestCache();
+const dataCache = createRequestCache(15000);
 export function invalidateData(resource: string) {
-  publicCache.invalidate('/api/data/' + encodeURIComponent(resource));
+  dataCache.invalidate('/api/data/' + encodeURIComponent(resource));
   window.dispatchEvent(new CustomEvent(changed, { detail: resource }));
 }
 export async function apiFetch(url: string, options: RequestInit = {}) {
   const method = (options.method || 'GET').toUpperCase();
-  const resource = /^\/api\/data\/([^/?]+)/.exec(url)?.[1];
-  const publicRead = method === 'GET' && !!resource && publicResources.has(resource);
   const perform = async () => {
     const headers = new Headers(options.headers);
 
@@ -43,7 +40,7 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     if (!response.ok) throw Object.assign(new Error(payload.error || 'Không thể tải dữ liệu.'), { status: response.status });
     return payload;
   };
-  return publicRead ? publicCache.get(url, perform) : perform();
+  return method === 'GET' ? dataCache.get(url, perform) : perform();
 }
 
 function urlFor(reference: Reference, skip = 0) {
@@ -91,6 +88,7 @@ function useData<T>(reference: Reference | null | undefined, initialData?: T) {
   useEffect(() => {
     let active = true;
     let generation = 0;
+    let lastFetched = 0;
     const ref = key ? JSON.parse(key) as Reference | null : null;
     setData(initialData ?? null); setError(null); setLoading(!!ref && initialData === undefined);
     if (!ref) return;
@@ -98,10 +96,14 @@ function useData<T>(reference: Reference | null | undefined, initialData?: T) {
       const request = ++generation;
       try {
         const result = await read(ref);
-        if (active && request === generation) { setData(result as T); setError(null); }
+        if (active && request === generation) {
+          setData(result as T);
+          setError(null);
+          lastFetched = Date.now();
+        }
       } catch (error) {
         if (active && request === generation) {
-          setData(null); setError(error as Error);
+          setError(error as Error);
           toast({ variant: 'destructive', title: 'Không thể tải dữ liệu', description: (error as Error).message });
         }
       } finally { if (active && request === generation) setLoading(false); }
@@ -111,9 +113,15 @@ function useData<T>(reference: Reference | null | undefined, initialData?: T) {
       if ((event as CustomEvent<string>).detail === ref.path) void refresh();
     };
     const onAuth = () => {
-      if (!publicResources.has(ref.path)) { setData(null); void refresh(); }
+      // Khi auth thay doi, refresh ngam du lieu ma khong xoa data cu tranh giat lag man hinh
+      if (!publicResources.has(ref.path)) void refresh();
     };
-    const onFocus = () => { if (document.visibilityState === 'visible') void refresh(); };
+    const onFocus = () => {
+      // Throttle onFocus: chi refresh neu da qua it nhat 60s ke tu lan fetch truoc
+      if (document.visibilityState === 'visible' && Date.now() - lastFetched > 60_000) {
+        void refresh();
+      }
+    };
     window.addEventListener(changed, onChange);
     window.addEventListener('focus', onFocus);
     window.addEventListener('vibary:auth-changed', onAuth);

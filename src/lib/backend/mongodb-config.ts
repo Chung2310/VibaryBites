@@ -1,4 +1,4 @@
-﻿import type { MongoClientOptions } from 'mongodb';
+import type { MongoClientOptions } from 'mongodb';
 
 // Shared by the server and setup script; call only in the server environment.
 export function getMongoConfig(env: Record<string, string | undefined> = process.env) {
@@ -10,7 +10,7 @@ export function getMongoConfig(env: Record<string, string | undefined> = process
     throw new Error('Set both MONGODB_USER and MONGODB_PASSWORD, or leave both empty.');
   }
   const options: MongoClientOptions = {
-    maxPoolSize: 10,
+    maxPoolSize: 30,
     serverSelectionTimeoutMS: 5000,
     authSource: env.MONGODB_AUTH_SOURCE || 'admin',
     ...(username ? { auth: { username, password } } : {}),

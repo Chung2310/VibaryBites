@@ -32,7 +32,7 @@ import {
 import type { Ingredient, Order, OrderStatus, CustomerProfile } from '@/lib/types';
 import Link from 'next/link';
 import { useCollection, useDoc, useDatabase, useDataMemo } from '@/lib/data-client';
-import { collection, collectionGroup, doc, query } from '@/lib/data-client';
+import { collection, collectionGroup, doc, query, orderBy } from '@/lib/data-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
 
@@ -82,7 +82,7 @@ export default function Dashboard() {
   const ingredientsCollection = useDataMemo(() => database ? collection(database, 'ingredients') : null, [database]);
   const { data: ingredients, isLoading: isLoadingIngredients } = useCollection<Ingredient>(ingredientsCollection);
 
-  const allOrdersQuery = useDataMemo(() => database ? collectionGroup(database, 'orders') : null, [database]);
+  const allOrdersQuery = useDataMemo(() => database ? query(collectionGroup(database, 'orders'), orderBy('orderDate', 'desc')) : null, [database]);
   const { data: allOrders, isLoading: isLoadingOrders } = useCollection<Order>(allOrdersQuery);
 
   // --- KPI Calculation ---

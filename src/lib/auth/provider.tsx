@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { AdminUser } from './types';
 type AuthState = { user: AdminUser | null; isUserLoading: boolean; userError: Error | null };
@@ -7,6 +7,8 @@ const Context = createContext<(AuthState & { auth: AuthActions }) | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, isUserLoading: true, userError: null });
   const generation = useRef(0);
+  const lastUserId = useRef<string | null | undefined>(undefined);
+  const lastFocusCheck = useRef(0);
   const perform = useCallback(async (endpoint: string, body?: unknown) => {
     const current = ++generation.current;
     try {
@@ -15,10 +17,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) throw new Error(data.error || 'Không thể xác thực tài khoản.');
       if (current === generation.current) {
         setState({ user: data.user, isUserLoading: false, userError: null });
-        window.dispatchEvent(new Event('vibary:auth-changed'));
+        const newUserId = data.user?.id ?? null;
+        if (lastUserId.current !== newUserId) {
+          lastUserId.current = newUserId;
+          window.dispatchEvent(new Event('vibary:auth-changed'));
+        }
       }
     } catch (error) {
-      if (current === generation.current) setState(previous => ({ ...previous, isUserLoading: false, userError: error as Error }));
+      if (current === generation.current) {
+        setState(previous => ({ ...previous, isUserLoading: false, userError: error as Error }));
+        if (lastUserId.current !== null) {
+          lastUserId.current = null;
+          window.dispatchEvent(new Event('vibary:auth-changed'));
+        }
+      }
       throw error;
     }
   }, []);
@@ -27,7 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(() => perform('logout', {}), [perform]);
   useEffect(() => {
     void refresh().catch(() => {});
-    const onFocus = () => { void refresh().catch(() => {}); };
+    const onFocus = () => {
+      const now = Date.now();
+      if (now - lastFocusCheck.current > 60_000) {
+        lastFocusCheck.current = now;
+        void refresh().catch(() => {});
+      }
+    };
     window.addEventListener('focus', onFocus);
     return () => { ++generation.current; window.removeEventListener('focus', onFocus); };
   }, [refresh]);
