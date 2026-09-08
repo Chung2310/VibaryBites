@@ -27,8 +27,6 @@ export function requireSameOrigin(request: Request) {
 
   if (origin !== new URL(expected).origin) throw new HttpError(403, 'Nguồn yêu cầu không hợp lệ.');
 }
-const sessionUserCache = new Map<string, { user: AdminAccount | null; expiresAt: number }>();
-const SESSION_CACHE_TTL_MS = 30_000;
 
 export function publicUser(user: AdminAccount): AdminUser {
   return { id: user._id, username: user.username, displayName: user.displayName };
@@ -37,22 +35,12 @@ export async function getSessionUser(request: Request) {
   const token = getSessionToken(request);
   if (!token) return null;
   const hash = sessionHash(token);
-  const now = Date.now();
-  const cached = sessionUserCache.get(hash);
-  if (cached && cached.expiresAt > now) return cached.user;
+  // Recheck persisted state on every request so revocations and role changes apply immediately.
 
   const db = await getDb();
   const session = await db.collection<AdminSession>('admin_sessions').findOne({ _id: hash, expiresAt: { $gt: new Date() } });
-  if (!session) {
-    sessionUserCache.delete(hash);
-    return null;
-  }
+  if (!session) return null;
   const user = await db.collection<AdminAccount>('admin_users').findOne({ _id: session.userId, disabled: false });
-  if (sessionUserCache.size > 200) {
-    const oldestKey = sessionUserCache.keys().next().value;
-    if (oldestKey) sessionUserCache.delete(oldestKey);
-  }
-  sessionUserCache.set(hash, { user, expiresAt: now + SESSION_CACHE_TTL_MS });
   return user;
 }
 export async function requireAdmin(request: Request) {
@@ -71,7 +59,6 @@ export async function revokeSession(request: Request) {
   const token = getSessionToken(request);
   if (token) {
     const hash = sessionHash(token);
-    sessionUserCache.delete(hash);
     await (await getDb()).collection<AdminSession>('admin_sessions').deleteOne({ _id: hash });
   }
 }

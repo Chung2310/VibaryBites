@@ -4,7 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { getDb, getMongoClient } from '../src/lib/backend/mongodb';
 import { initializeAdminFromEnv, type AdminAccount } from '../src/lib/backend/admin-accounts';
 import { verifyPassword } from '../src/lib/backend/password';
-import { requireAdmin, sessionHash, type AdminSession } from '../src/lib/backend/auth';
+import { createSession, SESSION_COOKIE, requireAdmin, sessionHash, type AdminSession } from '../src/lib/backend/auth';
 import { POST as login } from '../src/app/api/auth/login/route';
 import { POST as logout } from '../src/app/api/auth/logout/route';
 import { GET as session } from '../src/app/api/auth/session/route';
@@ -92,3 +92,28 @@ test('legacy initial admin gets env username without resetting password or ID',a
  await users.insertOne({...original,_id:'second-admin',username:'second'});
  await assert.rejects(users.insertOne({...original,_id:'duplicate-admin',username:'new.owner'}));
 });
+
+for (const change of ['expire', 'revoke', 'demote', 'delete-account'] as const) {
+ test('a previously authorized session immediately rejects ' + change, async () => {
+  const db = await getDb();
+  const users = db.collection<AdminAccount>('admin_users');
+  const sessions = db.collection<AdminSession>('admin_sessions');
+  const original = await users.findOne({ _id: 'initial-admin' });
+  assert.ok(original);
+  const id = 'revocation-test-' + change;
+  await users.insertOne({ ...original, _id: id, username: id, role: 'admin', disabled: false });
+  try {
+   const token = await createSession(id);
+   const cookie = SESSION_COOKIE + '=' + token;
+   assert.equal((await requireAdmin(request('session', undefined, cookie))).id, id);
+   if (change === 'expire') await sessions.updateOne({ _id: sessionHash(token) }, { $set: { expiresAt: new Date(0) } });
+   if (change === 'revoke') await sessions.deleteOne({ _id: sessionHash(token) });
+   if (change === 'demote') await users.updateOne({ _id: id }, { $set: { role: 'user' } });
+   if (change === 'delete-account') await users.deleteOne({ _id: id });
+   await assert.rejects(requireAdmin(request('session', undefined, cookie)), { status: change === 'demote' ? 403 : 401 });
+  } finally {
+   await sessions.deleteMany({ userId: id });
+   await users.deleteOne({ _id: id });
+  }
+ });
+}
