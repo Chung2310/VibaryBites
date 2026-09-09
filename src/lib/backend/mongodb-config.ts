@@ -10,7 +10,7 @@ export function getMongoConfig(env: Record<string, string | undefined> = process
     throw new Error('Set both MONGODB_USER and MONGODB_PASSWORD, or leave both empty.');
   }
   const options: MongoClientOptions = {
-    maxPoolSize: 30,
+    maxPoolSize: Number(env.MONGODB_MAX_POOL_SIZE) || 10,
     serverSelectionTimeoutMS: 5000,
     authSource: env.MONGODB_AUTH_SOURCE || 'admin',
     ...(username ? { auth: { username, password } } : {}),

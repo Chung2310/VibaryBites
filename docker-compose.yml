@@ -4,8 +4,8 @@ services:
     restart: unless-stopped
     # Bound this service so a traffic spike cannot consume the entire VPS.
     cpus: ${APP_CPU_LIMIT:-1.0}
-    mem_limit: ${APP_MEMORY_LIMIT:-1g}
-    memswap_limit: ${APP_MEMORY_LIMIT:-1g}
+    mem_limit: ${APP_MEMORY_LIMIT:-512m}
+    memswap_limit: ${APP_MEMORY_LIMIT:-512m}
     pids_limit: 128
     ports:
       - "${PORT:-3009}:${PORT:-3009}"
@@ -14,7 +14,7 @@ services:
     environment:
       NODE_ENV: production
       APP_ENV: production
-      NODE_OPTIONS: ${APP_NODE_OPTIONS:---max-old-space-size=512}
+      NODE_OPTIONS: ${APP_NODE_OPTIONS:---max-old-space-size=256 --optimize-for-size}
       PORT: ${PORT:-3009}
       HOSTNAME: 0.0.0.0
     extra_hosts:
