@@ -13,7 +13,7 @@ export async function getNewsArticles(options: { limit?: number; orderBy?: strin
   return result.map(serialize) as NewsArticle[];
 }
 export async function getCategories(): Promise<ProductCategory[]> {
-  const result = await (await getDb()).collection<StoreDocument>('categories').find().toArray();
+  const result = await (await getDb()).collection<StoreDocument>('categories').find().sort({ order: 1, title: 1 }).toArray();
   return result.map(serialize) as ProductCategory[];
 }
 

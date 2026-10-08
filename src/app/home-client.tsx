@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import React from 'react';
 import { cn, generateSlug } from '@/lib/utils';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
-import type { Product, NewsArticle } from '@/lib/types';
+import type { Product, NewsArticle, ProductCategory } from '@/lib/types';
 import {
   Carousel,
   CarouselContent,
@@ -74,6 +74,55 @@ const heroBanners = [
 interface HomeClientProps {
   featuredProducts: Product[];
   latestArticles: NewsArticle[];
+  categories: ProductCategory[];
+}
+
+function CakeCategories({ categories }: { categories: ProductCategory[] }) {
+  if (categories.length === 0) return null;
+
+  return (
+    <section className="bg-[#f7f3ed] py-16 sm:py-24">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <ScrollRevealWrapper>
+          <div className="mb-12 text-center">
+            <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Chọn bánh theo dịp</p>
+            <h2 className="mt-3 font-headline text-4xl md:text-5xl">Danh mục các loại bánh</h2>
+            <p className="mx-auto mt-4 max-w-2xl font-fraunces text-lg text-muted-foreground">
+              Khám phá mẫu bánh phù hợp với từng người nhận và từng khoảnh khắc đặc biệt.
+            </p>
+          </div>
+        </ScrollRevealWrapper>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((category, index) => (
+            <ScrollRevealWrapper key={category.slug} delay={Math.min(index, 5) * 0.06} amount={0.1}>
+              <Link
+                href={`/products?category=${encodeURIComponent(category.slug)}`}
+                className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[#ded4c8] shadow-sm"
+              >
+                {category.imageUrl ? (
+                  <Image
+                    src={category.imageUrl}
+                    alt={category.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_#fff_0,_#eadfd2_42%,_#cbb8a5_100%)]" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6 text-white">
+                  <h3 className="font-headline text-2xl uppercase drop-shadow-md">{category.title}</h3>
+                  <p className="mt-2 line-clamp-2 text-sm text-white/85">{category.subtitle}</p>
+                </div>
+              </Link>
+            </ScrollRevealWrapper>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 const ScrollRevealWrapper = ({ children, delay = 0, amount = 0.2 }: { children: React.ReactNode, delay?: number, amount?: number }) => {
@@ -232,7 +281,7 @@ function FeaturedProducts({ products: featuredDisplayProducts }: { products: Pro
     );
 }
 
-export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps) {
+export function HomeClient({ featuredProducts, latestArticles, categories }: HomeClientProps) {
   return (
     <LazyMotion features={loadMotionFeatures} strict>
     <div className="flex flex-col min-h-screen">
@@ -241,6 +290,7 @@ export function HomeClient({ featuredProducts, latestArticles }: HomeClientProps
         <AnnouncementBar />
       </div>
       <main className="flex-grow">
+        <CakeCategories categories={categories} />
         <FeaturedProducts products={featuredProducts} />
         {latestArticles.length > 0 && (
             <section className="bg-secondary/20 py-16 sm:py-24">

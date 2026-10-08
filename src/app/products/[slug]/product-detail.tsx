@@ -136,7 +136,11 @@ export default function ProductDetail({ product, initialCategories, initialSizes
                             : "Giá: Liên hệ"}
                     </p>
 
-                    {isOutOfStock ? (
+                    {priceToShow <= 0 ? (
+                        <Button asChild size="lg" className="mt-8 w-full bg-black text-white hover:bg-black/80 rounded-md">
+                            <Link href="/contact">LIÊN HỆ ĐỂ ĐƯỢC TƯ VẤN</Link>
+                        </Button>
+                    ) : isOutOfStock ? (
                         <p className="mt-8 text-lg font-medium text-destructive">Sản phẩm tạm hết hàng</p>
                     ) : (
                         <>
