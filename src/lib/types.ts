@@ -123,6 +123,9 @@ export type ProductCategory = {
   title: string;
   subtitle: string;
   description: string;
+  imageUrl?: string;
+  order?: number;
+  source?: 'cake-catalog';
 }
 
 export type BirthdayCakeSize = {
