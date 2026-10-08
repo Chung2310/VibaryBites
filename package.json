@@ -11,6 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:setup": "tsx scripts/setup-db.ts",
+    "db:import-cake-catalog": "tsx scripts/import-cake-catalog.ts",
     "test:backend": "node --conditions=react-server --import tsx --test tests/backend.test.ts",
     "test:cache": "tsx --test tests/request-cache.test.ts",
     "test:web": "node scripts/smoke-web.mjs",

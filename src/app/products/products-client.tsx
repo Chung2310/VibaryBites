@@ -12,7 +12,8 @@ import { useSearchParams, usePathname } from 'next/navigation';
 import { useCollection, useDatabase, useDataMemo } from '@/lib/data-client';
 import { collection } from '@/lib/data-client';
 import { Button } from "@/components/ui/button";
-import { PackageOpen, ArrowRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PackageOpen, ArrowRight, ChevronDown, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 
 function ProductsContent({ initialProducts, initialCategories }: CatalogProps) {
@@ -29,20 +30,14 @@ function ProductsContent({ initialProducts, initialCategories }: CatalogProps) {
   const { data: categories, isLoading: isLoadingCategories } = useCollection<ProductCategory>(categoriesCollection, initialCategories);
 
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  // Define the desired order
-  const desiredCategoryOrder = ["Bánh sinh nhật", "Bánh lẻ", "Bánh nướng", "Bánh Tea-Break"];
 
   const sortedCategories = useMemo(() => {
     if (!categories) return [];
     return [...categories].sort((a, b) => {
-        const indexA = desiredCategoryOrder.indexOf(a.title);
-        const indexB = desiredCategoryOrder.indexOf(b.title);
-        // If a category is not in the desired order, push it to the end
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
+        const orderDifference = (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
+        return orderDifference || a.title.localeCompare(b.title, 'vi');
     });
   }, [categories]);
 
@@ -63,10 +58,44 @@ function ProductsContent({ initialProducts, initialCategories }: CatalogProps) {
     }
   }, [searchParams, sortedCategories, isLoadingCategories]);
 
+  useEffect(() => {
+    if (isLoadingCategories || sortedCategories.length === 0) return;
+
+    let animationFrame = 0;
+    const updateActiveCategory = () => {
+      animationFrame = 0;
+      const activationLine = window.scrollY + 176;
+      let visibleCategory = sortedCategories[0].slug;
+
+      for (const category of sortedCategories) {
+        const section = sectionRefs.current[category.slug];
+        if (section && section.offsetTop <= activationLine) visibleCategory = category.slug;
+        else if (section) break;
+      }
+
+      setActiveCategory(current => current === visibleCategory ? current : visibleCategory);
+    };
+    const handleScroll = () => {
+      if (!animationFrame) animationFrame = window.requestAnimationFrame(updateActiveCategory);
+    };
+
+    updateActiveCategory();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [isLoadingCategories, sortedCategories]);
+
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
+    setActiveCategory(slug);
+    setIsCategoryMenuOpen(false);
     window.history.pushState(null, "", `${pathname}?category=${encodeURIComponent(slug)}`);
+    sectionRefs.current[slug]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const hasNoData = !isLoadingCategories && !isLoadingProducts && (!categories || categories.length === 0) && (!products || products.length === 0);
@@ -77,23 +106,56 @@ function ProductsContent({ initialProducts, initialCategories }: CatalogProps) {
         {!hasNoData && (
             <nav className="sticky top-20 z-30 bg-background/80 backdrop-blur-lg border-b">
                 <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-start items-center h-16 space-x-6 overflow-x-auto">
-                        {isLoadingCategories && Array.from({length: 4}).map((_, i) => (
-                            <Skeleton key={i} className="h-4 w-24" />
-                        ))}
-                        {sortedCategories.map(category => (
-                            <a
-                                key={category.slug}
-                                href={`/products?category=${category.slug}`}
-                                onClick={(e) => handleNavClick(e, category.slug)}
-                                className={cn(
-                                    "text-sm font-lexend uppercase text-[#0A0A0A] hover:opacity-70 transition-all whitespace-nowrap pb-1",
-                                    activeCategory === category.slug ? 'border-b-2 border-[#0A0A0A]' : 'border-b-2 border-transparent'
-                                )}
-                            >
-                                {category.title}
-                            </a>
-                        ))}
+                    <div className="flex h-16 items-center justify-between gap-4">
+                        <div className="hidden items-center gap-2 text-sm font-medium uppercase tracking-wider text-muted-foreground sm:flex">
+                            <LayoutGrid className="h-4 w-4" />
+                            Khám phá theo danh mục
+                        </div>
+                        {isLoadingCategories ? (
+                            <Skeleton className="h-10 w-full rounded-full sm:w-80" />
+                        ) : (
+                            <Popover open={isCategoryMenuOpen} onOpenChange={setIsCategoryMenuOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full min-w-0 justify-between rounded-full bg-background px-5 sm:w-80"
+                                        aria-label="Chọn danh mục bánh"
+                                    >
+                                        <span className="truncate text-left">
+                                            {sortedCategories.find(category => category.slug === activeCategory)?.title || 'Chọn danh mục'}
+                                        </span>
+                                        <span className="ml-3 flex shrink-0 items-center gap-2 text-muted-foreground">
+                                            <ChevronDown className={cn("h-4 w-4 transition-transform", isCategoryMenuOpen && "rotate-180")} />
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    align="end"
+                                    sideOffset={8}
+                                    className="w-[calc(100vw-2rem)] max-w-4xl rounded-2xl p-3 sm:p-4"
+                                >
+                                    <div className="mb-3 px-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                                        Chọn danh mục bánh
+                                    </div>
+                                    <div className="grid max-h-[65vh] grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+                                        {sortedCategories.map(category => (
+                                            <a
+                                                key={category.slug}
+                                                href={`/products?category=${category.slug}`}
+                                                onClick={(event) => handleNavClick(event, category.slug)}
+                                                aria-current={activeCategory === category.slug ? 'true' : undefined}
+                                                className={cn(
+                                                    "rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-muted",
+                                                    activeCategory === category.slug && "bg-black text-white hover:bg-black/85"
+                                                )}
+                                            >
+                                                {category.title}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        )}
                     </div>
                 </div>
             </nav>
@@ -155,7 +217,7 @@ function ProductsContent({ initialProducts, initialCategories }: CatalogProps) {
                     key={category.slug}
                     id={category.slug}
                     ref={el => { sectionRefs.current[category.slug] = el; }}
-                    className="scroll-mt-24"
+                    className="scroll-mt-40"
                 >
                 <div className="mb-12 pt-12 text-center">
                     <p className="text-sm uppercase tracking-widest text-muted-foreground">{category.subtitle}</p>
