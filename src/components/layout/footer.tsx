@@ -31,12 +31,12 @@ export const Footer = React.forwardRef<HTMLDivElement>((props, ref) => {
             <div className="flex justify-center items-center gap-2 text-muted-foreground mt-4 text-sm">
               <MapPin className="h-4 w-4 shrink-0" />
               <a
-                href="https://www.google.com/maps/search/?api=1&query=Số+3+Nguyễn+Văn+Trỗi,+P.Ninh+Xá,+Bắc+Ninh,+Việt+Nam"
+                href="https://www.google.com/maps/search/?api=1&query=Số+3+Nguyễn+Văn+Trỗi,+Phường+Kinh+Bắc,+Thành+Phố+Bắc+Ninh"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
               >
-                Số 3 Nguyễn Văn Trỗi, P.Ninh Xá, Bắc Ninh, Việt Nam
+                Số 3 Nguyễn Văn Trỗi, Phường Kinh Bắc, Thành Phố Bắc Ninh
               </a>
             </div>
         </div>

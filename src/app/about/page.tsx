@@ -42,7 +42,7 @@ export default function AboutPage() {
 
                     <h2>Địa điểm</h2>
                     <p>
-                        Chúng tôi có trụ sở chính tại số 3 Nguyễn Văn Trỗi Phường Ninh Xá Thành Phố Bắc Ninh, nơi chúng tôi đã xây dựng một không gian sáng tạo và hiện đại để sản xuất các loại bánh tinh tế. Địa chỉ của chúng tôi là một điểm gặp gỡ của nghệ thuật ẩm thực và sự sáng tạo.
+                        Chúng tôi có trụ sở chính tại Số 3 Nguyễn Văn Trỗi, Phường Kinh Bắc, Thành Phố Bắc Ninh, nơi chúng tôi đã xây dựng một không gian sáng tạo và hiện đại để sản xuất các loại bánh tinh tế. Địa chỉ của chúng tôi là một điểm gặp gỡ của nghệ thuật ẩm thực và sự sáng tạo.
                     </p>
                     
                     {locationImage && (
