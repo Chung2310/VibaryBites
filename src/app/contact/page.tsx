@@ -33,8 +33,7 @@ export default function ContactPage() {
                     <div className="flex-shrink-0"><MapPin className="h-6 w-6 text-accent" /></div>
                     <div>
                         <h3 className="font-headline text-lg">Bếp Bánh Của Chúng Tôi</h3>
-                        <p className="text-muted-foreground font-fraunces">123 Phố Bánh, Hoàn Kiếm, Bắc Ninh</p>
-                        <p className="text-sm text-muted-foreground font-fraunces">(Chỉ nhận đơn hàng trực tuyến và giao hàng)</p>
+                        <p className="text-muted-foreground font-fraunces">Số 3 Nguyễn Văn Trỗi, Phường Kinh Bắc, Thành Phố Bắc Ninh</p>
                     </div>
                 </div>
             </div>
